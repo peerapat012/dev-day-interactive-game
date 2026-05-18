@@ -1,0 +1,56 @@
+"use client";
+
+import { motion } from "framer-motion";
+import { AppNav } from "@/shared/components/AppNav";
+import { PlayerBadge } from "@/shared/components/PlayerBadge";
+import { AppShell } from "@/shared/components/layout/AppShell";
+
+interface PageShellProps {
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+  /** When false, hides Groups/Summary nav (mobile tabs + desktop links). Use on cloud input page. */
+  showGameNav?: boolean;
+}
+
+export function PageShell({
+  title,
+  description,
+  children,
+  showGameNav = true,
+}: PageShellProps) {
+  return (
+    <AppShell showTabBar={showGameNav}>
+      <motion.div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4 px-4 pt-[max(1rem,env(safe-area-inset-top))] sm:gap-6 sm:px-6 sm:py-8 md:py-8">
+        <header className="flex flex-col gap-3 sm:gap-4 md:flex-row md:items-end md:justify-between">
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="min-w-0 flex-1"
+          >
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-violet-400 sm:text-xs">
+              Word Cloud Game
+            </p>
+            <h1 className="mt-0.5 truncate text-xl font-semibold tracking-tight text-zinc-50 sm:mt-1 sm:text-3xl">
+              {title}
+            </h1>
+            {description ? (
+              <p className="mt-1 line-clamp-2 text-xs text-zinc-400 sm:mt-2 sm:line-clamp-none sm:text-sm">
+                {description}
+              </p>
+            ) : null}
+          </motion.div>
+          <motion.div
+            className={`flex shrink-0 items-center gap-3 ${showGameNav ? "justify-between md:flex-col md:items-end" : "justify-end"}`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            <PlayerBadge />
+            {showGameNav ? <AppNav /> : null}
+          </motion.div>
+        </header>
+        <main className="flex min-h-0 flex-1 flex-col">{children}</main>
+      </motion.div>
+    </AppShell>
+  );
+}
