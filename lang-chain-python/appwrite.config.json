@@ -1,0 +1,21 @@
+{
+    "projectId": "6a06c2ed000de9a0d878",
+    "endpoint": "https://sgp.cloud.appwrite.io/v1",
+    "functions": [
+        {
+            "$id": "dev-day-interactive-game-backend",
+            "name": "Dev Day Interactive Game Backend",
+            "enabled": true,
+            "live": true,
+            "logging": true,
+            "runtime": "python-3.12",
+            "execute": [
+                "any"
+            ],
+            "timeout": 120,
+            "entrypoint": "main.py",
+            "commands": "pip install -r requirements.txt",
+            "path": "."
+        }
+    ]
+}

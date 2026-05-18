@@ -1,3 +1,7 @@
+import {
+  invokeAppwriteFunction,
+  useAppwriteLlmFunction,
+} from "@/services/ai/appwriteFunction";
 import { parseSummarizeResponse } from "@/services/ai/parseSummarizeResponse";
 import type {
   FastApiSummarizeRequest,
@@ -13,13 +17,33 @@ function getSummarizeUrl(): string {
 
 /**
  * Server-only: POST /summarize with { groups } → parsed summary cards.
- * Each group.inputs is a single plain-text string (comma-separated phrases).
+ * Uses Appwrite Function when LLM_USE_APPWRITE_FUNCTION=true, else direct URL.
  */
 export async function summarizeWithLlm(
   groups: SummarizeGroupPayload[],
 ): Promise<SummarizeResultItem[]> {
-  const url = getSummarizeUrl();
   const body: FastApiSummarizeRequest = { groups };
+
+  let data: unknown;
+  if (useAppwriteLlmFunction()) {
+    data = await invokeAppwriteFunction("/summarize", "POST", body);
+  } else {
+    data = await fetchSummarizeDirect(body);
+  }
+
+  try {
+    return parseSummarizeResponse(data);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "parse error";
+    const raw = JSON.stringify(data).slice(0, 400);
+    throw new Error(`${message}. Raw: ${raw}`);
+  }
+}
+
+async function fetchSummarizeDirect(
+  body: FastApiSummarizeRequest,
+): Promise<unknown> {
+  const url = getSummarizeUrl();
 
   let res: Response;
   try {
@@ -30,8 +54,7 @@ export async function summarizeWithLlm(
       cache: "no-store",
     });
   } catch (err) {
-    const hint =
-      err instanceof Error ? err.message : "network error";
+    const hint = err instanceof Error ? err.message : "network error";
     throw new Error(
       `Cannot reach LLM at ${url} (${hint}). Is FastAPI running? Try LLM_SUMMARIZE_URL=http://127.0.0.1:8000/summarize`,
     );
@@ -45,19 +68,11 @@ export async function summarizeWithLlm(
     );
   }
 
-  let data: unknown;
   try {
-    data = rawText ? JSON.parse(rawText) : null;
+    return rawText ? JSON.parse(rawText) : null;
   } catch {
     throw new Error(
       `LLM summarize returned non-JSON (status ${res.status}): ${rawText.slice(0, 300)}`,
     );
-  }
-
-  try {
-    return parseSummarizeResponse(data);
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "parse error";
-    throw new Error(`${message}. Raw: ${rawText.slice(0, 400)}`);
   }
 }

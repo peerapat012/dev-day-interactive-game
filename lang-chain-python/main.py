@@ -1,14 +1,8 @@
 import json
-import re
 
-from fastapi import FastAPI
-from pydantic import BaseModel
 from langchain_google_genai import ChatGoogleGenerativeAI
-from dotenv import load_dotenv
 from langchain.agents import create_agent
-load_dotenv()
-
-app = FastAPI()
+from pydantic import BaseModel
 
 SYSTEM_CLASSIFY_PROMPT = """You are a semantic classifier for a realtime interactive clustering game.
 
@@ -105,12 +99,12 @@ Input format:
 }
 
 OUTPUT FORMAT:
-{ "summaries": [ 
-        { "group": "group_name", "summary": "This group is heavily focused on scalable frontend architecture, realtime systems, and modern web development using Next.js." }, 
-        { "group": "group_name", "summary": "Interest in this group centers around dog behavior, pet care, and training techniques for puppies." }, 
-        { "group": "group_name", "summary": "This group mainly discusses Asian cuisine, especially ramen, spicy food, and simple home cooking ideas." } 
+{ "summaries": [
+        { "group": "group_name", "summary": "This group is heavily focused on scalable frontend architecture, realtime systems, and modern web development using Next.js." },
+        { "group": "group_name", "summary": "Interest in this group centers around dog behavior, pet care, and training techniques for puppies." },
+        { "group": "group_name", "summary": "This group mainly discusses Asian cuisine, especially ramen, spicy food, and simple home cooking ideas." }
         ...
-    ] 
+    ]
 }
 
 Rules:
@@ -139,60 +133,77 @@ Return valid JSON only.
 
 """
 
-classifyAgent = create_agent(
+classify_agent = create_agent(
     model=ChatGoogleGenerativeAI(model="gemini-3.1-flash-lite"),
     tools=[],
     system_prompt=SYSTEM_CLASSIFY_PROMPT,
 )
 
-summarizeAgent = create_agent(
+summarize_agent = create_agent(
     model=ChatGoogleGenerativeAI(model="gemini-3.1-flash-lite"),
     tools=[],
     system_prompt=SYSTEM_SUMMARIZE_PROMPT,
 )
 
 
-class ChatRequest(BaseModel):
-    message: str
-
-class ChatResponse(BaseModel):
-    message: str
-
-class HealthResponse(BaseModel):
-    status: str
-
 class Group(BaseModel):
     group: str
     inputs: str
 
+
 class SummarizeRequest(BaseModel):
     groups: list[Group]
 
-class Summary(BaseModel):
-    group: str
-    summary: str
 
 class SummarizeResponse(BaseModel):
-    summaries: list[Summary]
+    summaries: list[dict]
 
 
-@app.get("/health", response_model=HealthResponse)
-def healthcheck() -> HealthResponse:
-    return HealthResponse(status="ok")
-
-
-@app.post("/clarify", response_model=ChatResponse)
-def chat(request: ChatRequest) -> ChatResponse:
-    response = classifyAgent.invoke({
-        "messages": [{"role": "user", "content": request.message}]
+def classify_message(message: str) -> str:
+    response = classify_agent.invoke({
+        "messages": [{"role": "user", "content": message}],
     })
-    print(json.dumps(response, indent=4))
-    return ChatResponse(message=response["messages"][-1].text)
+    return response["messages"][-1].text
 
-@app.post("/summarize", response_model=SummarizeResponse)
-def summarize(request: SummarizeRequest) -> SummarizeResponse:
-    response = summarizeAgent.invoke({
-        "messages": [{"role": "user", "content": request.model_dump_json()}]
+
+def summarize_groups(payload: SummarizeRequest) -> SummarizeResponse:
+    response = summarize_agent.invoke({
+        "messages": [{"role": "user", "content": payload.model_dump_json()}],
     })
     print(json.dumps(response, indent=4, default=str))
     return SummarizeResponse.model_validate_json(response["messages"][-1].text)
+
+
+def _normalize_path(path: str) -> str:
+    normalized = (path or "/").split("?")[0].rstrip("/")
+    return normalized or "/"
+
+
+def main(context):
+    path = _normalize_path(context.req.path)
+    method = context.req.method.upper()
+
+    if method == "GET" and path in ("/health", "/"):
+        return context.res.json({"status": "ok"})
+
+    if method == "OPTIONS":
+        return context.res.empty()
+
+    if method == "POST" and path == "/clarify":
+        body = context.req.body_json or {}
+        message = body.get("message", "")
+        if not message:
+            return context.res.json({"error": "message is required"}, 400)
+        category = classify_message(message)
+        return context.res.json({"message": category})
+
+    if method == "POST" and path == "/summarize":
+        body = context.req.body_json or {}
+        try:
+            payload = SummarizeRequest.model_validate(body)
+        except Exception as exc:
+            return context.res.json({"error": f"invalid request: {exc}"}, 400)
+        result = summarize_groups(payload)
+        return context.res.json(result.model_dump())
+
+    return context.res.json({"error": "Not found"}, 404)

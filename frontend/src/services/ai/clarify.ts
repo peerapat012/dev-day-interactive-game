@@ -1,3 +1,7 @@
+import {
+  invokeAppwriteFunction,
+  useAppwriteLlmFunction,
+} from "@/services/ai/appwriteFunction";
 import type { ChatRequest, ChatResponse } from "@/types/api";
 
 const DEFAULT_CLARIFY_URL = "http://localhost:8000/clarify";
@@ -7,12 +11,26 @@ function getClarifyUrl(): string {
 }
 
 /**
- * Server-only: calls FastAPI POST /clarify with { message } → { message }.
+ * Server-only: calls POST /clarify with { message } → { message }.
+ * Uses Appwrite Function when LLM_USE_APPWRITE_FUNCTION=true, else direct URL.
  */
 export async function clarifyWithLlm(message: string): Promise<string> {
-  const url = getClarifyUrl();
   const body: ChatRequest = { message };
 
+  const data = useAppwriteLlmFunction()
+    ? ((await invokeAppwriteFunction("/clarify", "POST", body)) as ChatResponse)
+    : await fetchClarifyDirect(body);
+  const group = data.message?.trim();
+
+  if (!group) {
+    throw new Error("LLM clarify returned an empty message");
+  }
+
+  return group;
+}
+
+async function fetchClarifyDirect(body: ChatRequest): Promise<ChatResponse> {
+  const url = getClarifyUrl();
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -27,12 +45,5 @@ export async function clarifyWithLlm(message: string): Promise<string> {
     );
   }
 
-  const data = (await res.json()) as ChatResponse;
-  const group = data.message?.trim();
-
-  if (!group) {
-    throw new Error("LLM clarify returned an empty message");
-  }
-
-  return group;
+  return (await res.json()) as ChatResponse;
 }
