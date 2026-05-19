@@ -1,10 +1,9 @@
 "use client";
 
 import { useCallback } from "react";
-import { classifyInput } from "@/services/ai/classify";
+import { PENDING_GROUP } from "@/lib/constants";
 import { createEntry } from "@/services/appwrite/entries";
 import { getAccount } from "@/services/appwrite/auth";
-import { normalizeGroupName } from "@/lib/normalizeGroupName";
 import { useEntriesStore } from "@/store/entriesStore";
 import { usePlayerStore } from "@/store/playerStore";
 
@@ -24,9 +23,6 @@ export function useSubmitEntry() {
       setError(null);
 
       try {
-        const { group: rawGroup } = await classifyInput(input);
-        const group = normalizeGroupName(rawGroup);
-
         let name = displayName.trim() || "guest";
         if (!displayName.trim()) {
           try {
@@ -40,7 +36,7 @@ export function useSubmitEntry() {
         const entry = await createEntry({
           name,
           input,
-          group,
+          group: PENDING_GROUP,
           createdAt: new Date().toISOString(),
         });
 

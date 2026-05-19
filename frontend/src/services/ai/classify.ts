@@ -1,11 +1,20 @@
-import type { ClassifyResponse } from "@/types/api";
+import type {
+  ClassifyBatchItem,
+  ClassifyBatchResponse,
+} from "@/types/api";
 
-/** Client → Next.js /api/classify → FastAPI /clarify */
-export async function classifyInput(input: string): Promise<ClassifyResponse> {
+/** Client → Next.js /api/classify (batch, one LLM call). */
+export async function classifyInputsBatch(
+  items: ClassifyBatchItem[],
+): Promise<ClassifyBatchResponse> {
+  if (items.length === 0) {
+    return { results: [] };
+  }
+
   const res = await fetch("/api/classify", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ input }),
+    body: JSON.stringify({ items }),
   });
 
   if (!res.ok) {
@@ -13,5 +22,5 @@ export async function classifyInput(input: string): Promise<ClassifyResponse> {
     throw new Error(err || "Classification failed");
   }
 
-  return res.json() as Promise<ClassifyResponse>;
+  return res.json() as Promise<ClassifyBatchResponse>;
 }

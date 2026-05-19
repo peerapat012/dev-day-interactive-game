@@ -45,6 +45,15 @@ export function mockClassifyGroup(input: string): string {
   return firstWord && firstWord.length > 2 ? firstWord : "general";
 }
 
+export function mockClassifyBatch(
+  items: Array<{ id: string; input: string }>,
+): Array<{ id: string; group: string }> {
+  return items.map((item) => ({
+    id: item.id,
+    group: mockClassifyGroup(item.input),
+  }));
+}
+
 export function mockSummarize(group: string, inputsPlainText: string): string {
   const sample = inputsPlainText.slice(0, 200);
   return `Mock summary for "${group}": participants mentioned themes like ${sample || "varied topics"}.`;

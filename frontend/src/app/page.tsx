@@ -5,8 +5,7 @@ export default function HomePage() {
   return (
     <PageShell
       title="Live raw cloud"
-      description="Submit short phrases. They appear as animated bubbles sized by frequency, synced in real time."
-      showGameNav={false}
+      description="Submit phrases to the live cloud. Classification runs when you open Summary and press Summarize."
     >
       <CloudPageClient />
     </PageShell>

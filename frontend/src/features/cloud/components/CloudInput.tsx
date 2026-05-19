@@ -30,7 +30,7 @@ export function CloudInput() {
         maxLength={200}
       />
       <Button type="submit" disabled={isSubmitting || !text.trim()}>
-        {isSubmitting ? "Classifying…" : "Send"}
+        {isSubmitting ? "Sending…" : "Send"}
       </Button>
       {error ? (
         <p className="text-sm text-rose-400 sm:col-span-2">{error}</p>

@@ -47,17 +47,12 @@ export async function invokeAppwriteFunction(
   const execution = (await res.json()) as ExecutionResponse;
 
   if (!res.ok) {
-    throw new Error(
-      execution.errors ||
-        `Appwrite function request failed (${res.status})`,
-    );
+    throw new Error(formatExecutionError(execution, res.status));
   }
 
   if (execution.status === "failed" || (execution.responseStatusCode ?? 0) >= 400) {
     throw new Error(
-      execution.errors ||
-        execution.responseBody ||
-        `Appwrite function execution failed (${execution.responseStatusCode})`,
+      formatExecutionError(execution, execution.responseStatusCode ?? 500),
     );
   }
 
@@ -77,4 +72,24 @@ export async function invokeAppwriteFunction(
 
 export function useAppwriteLlmFunction(): boolean {
   return process.env.LLM_USE_APPWRITE_FUNCTION === "true";
+}
+
+function formatExecutionError(
+  execution: ExecutionResponse,
+  status: number,
+): string {
+  const err = execution.errors?.trim();
+  if (err) {
+    const leaked = err.includes("API key was reported as leaked");
+    const permission = err.includes("PERMISSION_DENIED");
+    if (leaked || permission) {
+      return "Google API key is invalid or revoked. Create a new key in Google AI Studio and update GOOGLE_API_KEY on the Appwrite function.";
+    }
+    const lastLine = err.split("\n").filter(Boolean).pop() ?? err;
+    return `Appwrite function error (${status}): ${lastLine.slice(0, 500)}`;
+  }
+  if (execution.responseBody?.trim()) {
+    return `Appwrite function error (${status}): ${execution.responseBody.trim()}`;
+  }
+  return `Appwrite function execution failed (${status})`;
 }

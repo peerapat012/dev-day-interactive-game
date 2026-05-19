@@ -1,0 +1,68 @@
+# --- OS & editors ---
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+*.sublime-*
+
+# --- Secrets & local env (never commit API keys) ---
+.env
+.env.*
+lang-chain-python/.env
+frontend/.env.local
+!.env.example
+!**/.env.example
+
+# --- Node / Next.js (frontend) ---
+frontend/node_modules/
+frontend/.pnp
+frontend/.pnp.*
+frontend/.yarn/*
+!frontend/.yarn/patches
+!frontend/.yarn/plugins
+!frontend/.yarn/releases
+!frontend/.yarn/versions
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/coverage/
+frontend/.vercel/
+frontend/*.tsbuildinfo
+frontend/next-env.d.ts
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/.pnpm-debug.log*
+
+# --- Python (lang-chain-python) ---
+lang-chain-python/.venv/
+lang-chain-python/venv/
+lang-chain-python/__pycache__/
+lang-chain-python/**/__pycache__/
+lang-chain-python/*.py[cod]
+lang-chain-python/*$py.class
+lang-chain-python/.pytest_cache/
+lang-chain-python/.mypy_cache/
+lang-chain-python/.ruff_cache/
+lang-chain-python/*.egg-info/
+lang-chain-python/dist/
+lang-chain-python/build/
+lang-chain-python/deploy.tar.gz
+
+# --- Appwrite / deploy artifacts ---
+*.tar.gz
+.appwrite/
+
+# --- Logs & temp ---
+*.log
+logs/
+tmp/
+temp/
+*.tmp
+*~
+
+# --- Misc build ---
+*.pem
+.cache/

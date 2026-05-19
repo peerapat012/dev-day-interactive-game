@@ -9,7 +9,7 @@ interface PageShellProps {
   title: string;
   description?: string;
   children: React.ReactNode;
-  /** When false, hides Groups/Summary nav (mobile tabs + desktop links). Use on cloud input page. */
+  /** When false, hides Cloud/Summary nav (mobile tabs + desktop links). */
   showGameNav?: boolean;
 }
 

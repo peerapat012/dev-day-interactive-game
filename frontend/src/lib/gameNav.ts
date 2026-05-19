@@ -1,6 +1,5 @@
 export const GAME_NAV = [
   { href: "/", label: "Cloud", mobileLabel: "Cloud" },
-  { href: "/groups", label: "Groups", mobileLabel: "Groups" },
   { href: "/summary", label: "Summary", mobileLabel: "Summary" },
 ] as const;
 

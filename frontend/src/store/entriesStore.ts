@@ -5,14 +5,12 @@ interface EntriesState {
   entries: Entry[];
   isHydrated: boolean;
   isSubmitting: boolean;
-  selectedGroup: string | null;
   error: string | null;
   setEntries: (entries: Entry[]) => void;
   upsertEntry: (entry: Entry) => void;
   removeEntry: (id: string) => void;
   setHydrated: (value: boolean) => void;
   setSubmitting: (value: boolean) => void;
-  setSelectedGroup: (group: string | null) => void;
   setError: (message: string | null) => void;
 }
 
@@ -20,7 +18,6 @@ export const useEntriesStore = create<EntriesState>((set) => ({
   entries: [],
   isHydrated: false,
   isSubmitting: false,
-  selectedGroup: null,
   error: null,
   setEntries: (entries) => set({ entries }),
   upsertEntry: (entry) =>
@@ -39,7 +36,6 @@ export const useEntriesStore = create<EntriesState>((set) => ({
     })),
   setHydrated: (isHydrated) => set({ isHydrated }),
   setSubmitting: (isSubmitting) => set({ isSubmitting }),
-  setSelectedGroup: (selectedGroup) => set({ selectedGroup }),
   setError: (error) => set({ error }),
 }));
 

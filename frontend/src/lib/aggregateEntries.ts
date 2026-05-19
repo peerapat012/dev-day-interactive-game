@@ -26,17 +26,29 @@ export function buildRawBubbles(entries: Entry[]): BubbleItem[] {
   }));
 }
 
+export function isValidGroupName(group: string | null | undefined): boolean {
+  return Boolean(group?.trim());
+}
+
+export function isClassifiedEntry(entry: Entry): boolean {
+  return isValidGroupName(entry.group);
+}
+
 export function buildGroupStats(entries: Entry[]): GroupStat[] {
   const map = new Map<string, GroupStat>();
 
   for (const entry of entries) {
-    const existing = map.get(entry.group);
+    if (!isClassifiedEntry(entry)) continue;
+
+    const group = entry.group.trim();
+
+    const existing = map.get(group);
     if (existing) {
       existing.count += 1;
       existing.inputs.push(entry.input);
     } else {
-      map.set(entry.group, {
-        group: entry.group,
+      map.set(group, {
+        group,
         count: 1,
         inputs: [entry.input],
       });
@@ -46,15 +58,8 @@ export function buildGroupStats(entries: Entry[]): GroupStat[] {
   return [...map.values()].sort((a, b) => b.count - a.count);
 }
 
-export function buildGroupBubbles(stats: GroupStat[]): BubbleItem[] {
-  return stats.map((stat) => ({
-    id: `group-${stat.group}`,
-    label: stat.group,
-    count: stat.count,
-    hue: hashString(stat.group) % 360,
-  }));
-}
-
 export function getTopGroups(stats: GroupStat[], limit: number): GroupStat[] {
-  return stats.slice(0, limit);
+  return stats
+    .filter((stat) => isValidGroupName(stat.group) && stat.count > 0)
+    .slice(0, limit);
 }

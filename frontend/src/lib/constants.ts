@@ -12,4 +12,7 @@ export const BUBBLE = {
   maxFont: 22,
 } as const;
 
-export const TOP_GROUPS_COUNT = 3;
+export const TOP_GROUPS_COUNT = 5;
+
+/** Stored on new rows until Summary runs classification. */
+export const PENDING_GROUP = "";

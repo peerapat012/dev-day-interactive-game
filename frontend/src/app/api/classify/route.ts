@@ -1,26 +1,52 @@
 import { NextResponse } from "next/server";
-import { clarifyWithLlm } from "@/services/ai/clarify";
-import { mockClassifyGroup } from "@/services/ai/mock";
+import { classifyBatchWithLlm } from "@/services/ai/classifyBatch";
+import { mockClassifyBatch } from "@/services/ai/mock";
 import { normalizeGroupName } from "@/lib/normalizeGroupName";
-import type { ClassifyRequest, ClassifyResponse } from "@/types/api";
+import type {
+  ClassifyBatchRequest,
+  ClassifyBatchResponse,
+} from "@/types/api";
 
 const USE_MOCK = process.env.LLM_USE_MOCK === "true";
 
 /**
- * Classify user input via FastAPI POST /clarify, or mock when LLM_USE_MOCK=true.
+ * Batch-classify pending inputs in one LLM call (FastAPI POST /classify-batch).
  */
 export async function POST(request: Request) {
-  const body = (await request.json()) as ClassifyRequest;
-  const input = body.input?.trim();
+  const body = (await request.json()) as ClassifyBatchRequest;
+  const items = Array.isArray(body.items)
+    ? body.items
+        .map((item) => ({
+          id: item.id?.trim() ?? "",
+          input: item.input?.trim() ?? "",
+        }))
+        .filter((item) => item.id && item.input)
+    : [];
 
-  if (!input) {
-    return NextResponse.json({ error: "input is required" }, { status: 400 });
+  if (items.length === 0) {
+    return NextResponse.json(
+      { error: "items array with id and input is required" },
+      { status: 400 },
+    );
   }
 
   try {
-    const rawGroup = USE_MOCK ? mockClassifyGroup(input) : await clarifyWithLlm(input);
-    const group = normalizeGroupName(rawGroup);
-    const response: ClassifyResponse = { input, group };
+    const llmResults = USE_MOCK
+      ? mockClassifyBatch(items)
+      : (await classifyBatchWithLlm(items)).results;
+
+    const groupById = new Map(
+      llmResults.map((row) => [row.id, normalizeGroupName(row.group)]),
+    );
+
+    const response: ClassifyBatchResponse = {
+      results: items.map((item) => ({
+        id: item.id,
+        input: item.input,
+        group: groupById.get(item.id) ?? normalizeGroupName(""),
+      })),
+    };
+
     return NextResponse.json(response);
   } catch (err) {
     const message =

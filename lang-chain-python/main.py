@@ -1,5 +1,9 @@
 import json
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.agents import create_agent
 from pydantic import BaseModel
@@ -63,6 +67,43 @@ Examples:
 # Final Rule
 
 Always prioritize semantic meaning over exact words.
+"""
+
+SYSTEM_CLASSIFY_BATCH_PROMPT = """You are a semantic classifier for a realtime interactive clustering game.
+
+You receive a JSON object with many user sentences. Assign each sentence exactly one short semantic category.
+
+# Rules
+
+* Categories must be SHORT (1-2 words)
+* Prefer broad reusable categories (Food, Sports, Programming, Animals, etc.)
+* Normalize similar meanings into the same category
+* DO NOT create overly specific categories
+* Return valid JSON only — no markdown, no explanation
+
+# Input format
+
+{
+  "inputs": [
+    { "id": "abc123", "input": "i love pizza" },
+    { "id": "def456", "input": "messi is the goat" }
+  ]
+}
+
+# Output format
+
+{
+  "results": [
+    { "id": "abc123", "group": "Food" },
+    { "id": "def456", "group": "Sports" }
+  ]
+}
+
+# Important
+
+* Return one result per input id
+* Preserve every id from the request
+* Use the "group" field for the category label only
 """
 
 SYSTEM_SUMMARIZE_PROMPT = """
@@ -139,6 +180,12 @@ classify_agent = create_agent(
     system_prompt=SYSTEM_CLASSIFY_PROMPT,
 )
 
+classify_batch_agent = create_agent(
+    model=ChatGoogleGenerativeAI(model="gemini-3.1-flash-lite"),
+    tools=[],
+    system_prompt=SYSTEM_CLASSIFY_BATCH_PROMPT,
+)
+
 summarize_agent = create_agent(
     model=ChatGoogleGenerativeAI(model="gemini-3.1-flash-lite"),
     tools=[],
@@ -159,11 +206,39 @@ class SummarizeResponse(BaseModel):
     summaries: list[dict]
 
 
+class ClassifyInputItem(BaseModel):
+    id: str
+    input: str
+
+
+class ClassifyBatchRequest(BaseModel):
+    inputs: list[ClassifyInputItem]
+
+
+class ClassifyBatchResultItem(BaseModel):
+    id: str
+    group: str
+
+
+class ClassifyBatchResponse(BaseModel):
+    results: list[ClassifyBatchResultItem]
+
+
 def classify_message(message: str) -> str:
     response = classify_agent.invoke({
         "messages": [{"role": "user", "content": message}],
     })
     return response["messages"][-1].text
+
+
+def classify_inputs_batch(payload: ClassifyBatchRequest) -> ClassifyBatchResponse:
+    if not payload.inputs:
+        return ClassifyBatchResponse(results=[])
+
+    response = classify_batch_agent.invoke({
+        "messages": [{"role": "user", "content": payload.model_dump_json()}],
+    })
+    return ClassifyBatchResponse.model_validate_json(response["messages"][-1].text)
 
 
 def summarize_groups(payload: SummarizeRequest) -> SummarizeResponse:
@@ -194,8 +269,25 @@ def main(context):
         message = body.get("message", "")
         if not message:
             return context.res.json({"error": "message is required"}, 400)
-        category = classify_message(message)
-        return context.res.json({"message": category})
+        try:
+            category = classify_message(message)
+            return context.res.json({"message": category})
+        except Exception as exc:
+            context.error(str(exc))
+            return context.res.json({"error": str(exc)}, 502)
+
+    if method == "POST" and path == "/classify-batch":
+        body = context.req.body_json or {}
+        try:
+            payload = ClassifyBatchRequest.model_validate(body)
+        except Exception as exc:
+            return context.res.json({"error": f"invalid request: {exc}"}, 400)
+        try:
+            result = classify_inputs_batch(payload)
+            return context.res.json(result.model_dump())
+        except Exception as exc:
+            context.error(str(exc))
+            return context.res.json({"error": str(exc)}, 502)
 
     if method == "POST" and path == "/summarize":
         body = context.req.body_json or {}
@@ -203,7 +295,11 @@ def main(context):
             payload = SummarizeRequest.model_validate(body)
         except Exception as exc:
             return context.res.json({"error": f"invalid request: {exc}"}, 400)
-        result = summarize_groups(payload)
-        return context.res.json(result.model_dump())
+        try:
+            result = summarize_groups(payload)
+            return context.res.json(result.model_dump())
+        except Exception as exc:
+            context.error(str(exc))
+            return context.res.json({"error": str(exc)}, 502)
 
     return context.res.json({"error": "Not found"}, 404)

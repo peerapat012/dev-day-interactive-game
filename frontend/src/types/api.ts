@@ -1,10 +1,36 @@
-export interface ClassifyRequest {
+/** One row pending classification (Appwrite document id + user text). */
+export interface ClassifyBatchItem {
+  id: string;
   input: string;
 }
 
-export interface ClassifyResponse {
+/** Client → Next.js POST /api/classify */
+export interface ClassifyBatchRequest {
+  items: ClassifyBatchItem[];
+}
+
+export interface ClassifyBatchResultItem {
+  id: string;
   input: string;
   group: string;
+}
+
+export interface ClassifyBatchResponse {
+  results: ClassifyBatchResultItem[];
+}
+
+/** FastAPI POST /classify-batch */
+export interface FastApiClassifyBatchRequest {
+  inputs: ClassifyBatchItem[];
+}
+
+export interface FastApiClassifyBatchResultItem {
+  id: string;
+  group: string;
+}
+
+export interface FastApiClassifyBatchResponse {
+  results: FastApiClassifyBatchResultItem[];
 }
 
 /** FastAPI /clarify request body */

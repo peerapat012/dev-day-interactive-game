@@ -82,6 +82,24 @@ export async function listEntriesByGroup(group: string): Promise<Entry[]> {
   );
 }
 
+/** Update an existing row (e.g. set group after batch classification). */
+export async function updateEntry(
+  rowId: string,
+  data: Partial<EntryDocument>,
+): Promise<Entry> {
+  await ensureGuestSession();
+  assertConfig();
+
+  const row = await getTablesDB().updateRow({
+    databaseId: APPWRITE.databaseId,
+    tableId: APPWRITE.collectionId,
+    rowId,
+    data,
+  });
+
+  return mapRow(row as unknown as Record<string, unknown>);
+}
+
 /** Delete entry by id (example CRUD). */
 export async function deleteEntry(rowId: string): Promise<void> {
   await ensureGuestSession();
