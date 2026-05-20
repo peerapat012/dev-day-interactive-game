@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:wipe": "node scripts/wipe-appwrite-database.mjs"
   },
   "dependencies": {
     "appwrite": "^25.0.0",

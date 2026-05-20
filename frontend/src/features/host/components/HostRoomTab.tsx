@@ -1,28 +1,35 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { buildGuestJoinUrl } from "@/lib/guestJoinUrl";
-import { clearRoomRows } from "@/services/appwrite/rooms";
+import { leaveHostRoom } from "@/lib/leaveHostRoom";
+import { clearRoomRows, closeRoomSession } from "@/services/appwrite/rooms";
 import { useEntriesStore } from "@/store/entriesStore";
 import { Button } from "@/shared/ui/Button";
 
 interface HostRoomTabProps {
   roomId: string;
+  roomRowId: string;
   creating: boolean;
   onCreateNewRoom: () => Promise<string>;
 }
 
 export function HostRoomTab({
   roomId,
+  roomRowId,
   creating,
   onCreateNewRoom,
 }: HostRoomTabProps) {
+  const router = useRouter();
   const setEntries = useEntriesStore((s) => s.setEntries);
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [clearError, setClearError] = useState<string | null>(null);
+  const [closing, setClosing] = useState(false);
+  const [closeError, setCloseError] = useState<string | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
   const [createdCode, setCreatedCode] = useState<string | null>(null);
 
@@ -73,6 +80,30 @@ export function HostRoomTab({
       setCreateError(
         err instanceof Error ? err.message : "Could not create room",
       );
+    }
+  }
+
+  async function handleCloseRoomSession() {
+    if (
+      !window.confirm(
+        "End this room for everyone? Guests will be cleared off this session, their old QR/link will stop working, and you will return to the home page.",
+      )
+    ) {
+      return;
+    }
+
+    setClosing(true);
+    setCloseError(null);
+    try {
+      await closeRoomSession(roomRowId);
+      leaveHostRoom();
+      router.replace("/");
+    } catch (err) {
+      setCloseError(
+        err instanceof Error ? err.message : "Could not close the room",
+      );
+    } finally {
+      setClosing(false);
     }
   }
 
@@ -139,7 +170,7 @@ export function HostRoomTab({
         <Button
           type="button"
           onClick={() => void handleCreateNewRoom()}
-          disabled={creating || clearing}
+          disabled={creating || clearing || closing}
           className="mt-3 w-full"
         >
           {creating ? "Creating…" : "Create new room"}
@@ -152,6 +183,25 @@ export function HostRoomTab({
         ) : null}
         {createError ? (
           <p className="mt-3 text-sm text-rose-400">{createError}</p>
+        ) : null}
+      </motion.div>
+
+      <motion.div className="rounded-2xl border border-amber-500/25 bg-amber-500/5 p-4">
+        <p className="text-sm text-zinc-300">
+          End the live session: connected guests are cleared locally, joins to this
+          QR stop working, and you return to the home page to host again later.
+        </p>
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={() => void handleCloseRoomSession()}
+          disabled={closing || clearing}
+          className="mt-3 w-full border-amber-500/35 text-amber-200 hover:text-amber-100"
+        >
+          {closing ? "Closing session…" : "Close room & end session"}
+        </Button>
+        {closeError ? (
+          <p className="mt-3 text-sm text-rose-400">{closeError}</p>
         ) : null}
       </motion.div>
 
@@ -178,7 +228,7 @@ export function HostRoomTab({
           type="button"
           variant="ghost"
           onClick={() => void handleClear()}
-          disabled={clearing}
+          disabled={clearing || closing}
           className="mt-3 w-full border-rose-500/30 text-rose-300"
         >
           {clearing ? "Clearing…" : "Clear room data"}

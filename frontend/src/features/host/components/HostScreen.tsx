@@ -35,11 +35,13 @@ const TAB_COPY: Record<HostTabId, { title: string; description: string }> = {
 function HostTabPanel({
   activeTab,
   roomId,
+  roomRowId,
   creating,
   createNewRoom,
 }: {
   activeTab: HostTabId;
   roomId: string;
+  roomRowId: string;
   creating: boolean;
   createNewRoom: () => Promise<string>;
 }) {
@@ -47,6 +49,7 @@ function HostTabPanel({
     return (
       <HostRoomTab
         roomId={roomId}
+        roomRowId={roomRowId}
         creating={creating}
         onCreateNewRoom={createNewRoom}
       />
@@ -58,7 +61,7 @@ function HostTabPanel({
 
 export function HostScreen() {
   const setGuestMode = usePlayerStore((s) => s.setGuestMode);
-  const { ready, error, roomId, creating, createNewRoom } = useHostRoom();
+  const { ready, error, roomId, roomRowId, creating, createNewRoom } = useHostRoom();
   const [activeTab, setActiveTab] = useState<HostTabId>("room");
   const copy = TAB_COPY[activeTab];
 
@@ -74,7 +77,7 @@ export function HostScreen() {
     );
   }
 
-  if (error || !roomId) {
+  if (error || !roomId || !roomRowId) {
     return (
       <div className="flex min-h-dvh items-center justify-center px-4 text-center text-sm text-rose-400">
         {error ?? "Could not open host room."}
@@ -92,6 +95,7 @@ export function HostScreen() {
       <HostTabPanel
         activeTab={activeTab}
         roomId={roomId}
+        roomRowId={roomRowId}
         creating={creating}
         createNewRoom={createNewRoom}
       />

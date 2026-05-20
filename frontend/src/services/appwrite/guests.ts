@@ -1,4 +1,11 @@
-import { ID, Permission, Query, Role, TablesDB } from "appwrite";
+import {
+  AppwriteException,
+  ID,
+  Permission,
+  Query,
+  Role,
+  TablesDB,
+} from "appwrite";
 import { APPWRITE } from "@/lib/constants";
 import { getAppwriteClient } from "@/services/appwrite/client";
 import { ensureGuestSession } from "@/services/appwrite/auth";
@@ -16,6 +23,13 @@ function assertConfig(): void {
   }
 }
 
+/** Thrown when the guests table has no row for this device (e.g. host wiped DB). */
+export const STALE_GUEST_SESSION = "STALE_GUEST_SESSION" as const;
+
+export function isStaleGuestSessionError(err: unknown): boolean {
+  return err instanceof Error && err.message === STALE_GUEST_SESSION;
+}
+
 function mapGuest(row: Record<string, unknown>): Guest {
   return {
     $id: row.$id as string,
@@ -25,6 +39,13 @@ function mapGuest(row: Record<string, unknown>): Guest {
     hasSubmitted: Boolean(row.hasSubmitted),
     createdAt: row.createdAt as string,
   };
+}
+
+function isGuestRowMissingError(e: unknown): boolean {
+  if (!(e instanceof AppwriteException)) return false;
+  if (e.code === 404) return true;
+  const msg = (e.message ?? "").toLowerCase();
+  return msg.includes("could not be found") || msg.includes("not found");
 }
 
 export async function getGuest(guestUuid: string): Promise<Guest | null> {
@@ -38,8 +59,11 @@ export async function getGuest(guestUuid: string): Promise<Guest | null> {
       rowId: guestUuid,
     });
     return mapGuest(row as unknown as Record<string, unknown>);
-  } catch {
-    return null;
+  } catch (e) {
+    if (isGuestRowMissingError(e)) {
+      return null;
+    }
+    throw e;
   }
 }
 
@@ -95,7 +119,7 @@ export async function guestHasSubmitted(
 ): Promise<boolean> {
   const guest = await getGuest(guestUuid);
   if (!guest) {
-    throw new Error("Guest session expired. Rejoin the room to play again.");
+    throw new Error(STALE_GUEST_SESSION);
   }
   if (!APPWRITE.collectionId) return guest.hasSubmitted;
 

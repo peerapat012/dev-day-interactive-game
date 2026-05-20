@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { ensureGuestSession } from "@/services/appwrite/auth";
+import { leaveHostRoom } from "@/lib/leaveHostRoom";
 import { createRoom, getRoomByCode } from "@/services/appwrite/rooms";
 import { useEntriesStore } from "@/store/entriesStore";
 import { useRoomStore } from "@/store/roomStore";
@@ -26,12 +27,18 @@ export function useHostRoom() {
         const { roomId: storedCode, roomRowId: storedRowId } =
           useRoomStore.getState();
 
-        if (storedCode && storedRowId) {
+        if (storedCode && !storedRowId.trim()) {
+          leaveHostRoom();
+        }
+
+        if (storedCode && storedRowId.trim()) {
           const existing = await getRoomByCode(storedCode);
-          if (existing && !cancelled) {
+          if (cancelled) return;
+          if (existing) {
             setReady(true);
             return;
           }
+          leaveHostRoom();
         }
 
         const room = await createRoom();

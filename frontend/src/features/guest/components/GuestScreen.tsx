@@ -2,9 +2,10 @@
 
 import { motion } from "framer-motion";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { GuestJoinForm } from "@/features/guest/components/GuestJoinForm";
 import { GuestMessagePanel } from "@/features/guest/components/GuestMessagePanel";
+import { useRoomClosedKick } from "@/features/guest/hooks/useRoomClosedKick";
 import { roomCodeFromSearchParams } from "@/lib/guestJoinUrl";
 import { usePlayerStore } from "@/store/playerStore";
 import { useRoomStore } from "@/store/roomStore";
@@ -19,6 +20,10 @@ export function GuestScreen() {
   const setHasSubmitted = useRoomStore((s) => s.setHasSubmitted);
   const [ready, setReady] = useState(false);
   const [joined, setJoined] = useState(false);
+
+  const onRoomClosedByHost = useCallback(() => setJoined(false), []);
+
+  useRoomClosedKick(joined, onRoomClosedByHost);
 
   const roomFromQr = useMemo(
     () => roomCodeFromSearchParams(searchParams),
@@ -63,6 +68,14 @@ export function GuestScreen() {
     setGuestId,
     setHasSubmitted,
   ]);
+
+  /** If the guest row was cleared server-side, drop back to join so QR / rejoin creates a new guest doc. */
+  useEffect(() => {
+    if (!ready) return;
+    if (joined && !guestId.trim() && guestMode && storedRoomId) {
+      setJoined(false);
+    }
+  }, [ready, joined, guestId, guestMode, storedRoomId]);
 
   if (!ready) {
     return (
@@ -128,5 +141,5 @@ export function GuestScreen() {
     );
   }
 
-  return <GuestMessagePanel />;
+  return <GuestMessagePanel onLeaveRoom={() => setJoined(false)} />;
 }

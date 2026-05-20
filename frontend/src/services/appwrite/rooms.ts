@@ -180,6 +180,21 @@ export async function saveRoomRound(
   });
 }
 
+/**
+ * End the session: deletes the room row (no extra Appwrite columns).
+ * Joins fail (`getRoomByCode` → null); guests are kicked on the next poll.
+ */
+export async function closeRoomSession(roomRowId: string): Promise<void> {
+  await ensureGuestSession();
+  assertConfig();
+
+  await getTablesDB().deleteRow({
+    databaseId: APPWRITE.databaseId,
+    tableId: APPWRITE.roomsTableId,
+    rowId: roomRowId,
+  });
+}
+
 export async function getRoomSnapshot(roomRowId: string): Promise<RoomSnapshot> {
   await ensureGuestSession();
   assertConfig();

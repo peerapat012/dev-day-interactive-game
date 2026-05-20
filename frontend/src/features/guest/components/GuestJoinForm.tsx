@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
+import { leaveGuestRoom } from "@/lib/leaveGuestRoom";
 import { normalizeRoomCode } from "@/lib/roomCode";
 import { ensureGuestSession, getAccount } from "@/services/appwrite/auth";
 import { createGuest } from "@/services/appwrite/guests";
@@ -65,7 +66,9 @@ export function GuestJoinForm({
 
       const room = await getRoomByCode(roomCode);
       if (!room) {
-        throw new Error("Room not found. Check the code with your host.");
+        throw new Error(
+          "Room not found or this session has ended. Ask your host for a new QR code.",
+        );
       }
 
       const guest = await createGuest(room.roomId, trimmedName);
@@ -87,6 +90,20 @@ export function GuestJoinForm({
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleClearDevice() {
+    if (
+      !window.confirm(
+        "Clear saved room and nickname on this device? You can scan the QR again to start fresh.",
+      )
+    ) {
+      return;
+    }
+    leaveGuestRoom();
+    setName("");
+    setRoomInput(initialRoomCode);
+    setError(null);
   }
 
   return (
@@ -176,6 +193,15 @@ export function GuestJoinForm({
             className="w-full py-4 text-base font-semibold"
           >
             {loading ? "Joining…" : "Join room"}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={handleClearDevice}
+            disabled={loading}
+            className="mt-3 w-full text-sm text-zinc-500 hover:text-rose-300"
+          >
+            Clear saved session on this device
           </Button>
         </motion.div>
       </motion.div>

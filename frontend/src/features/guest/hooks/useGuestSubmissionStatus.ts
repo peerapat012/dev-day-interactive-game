@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { guestHasSubmitted } from "@/services/appwrite/guests";
+import {
+  guestHasSubmitted,
+  isStaleGuestSessionError,
+} from "@/services/appwrite/guests";
 import { useEntriesStore } from "@/store/entriesStore";
 import { useRoomStore } from "@/store/roomStore";
 
@@ -22,6 +25,7 @@ export function useGuestSubmissionStatus() {
 
   useEffect(() => {
     if (!roomId || !guestId) {
+      setGuestInvalid(false);
       setChecking(false);
       return;
     }
@@ -35,10 +39,16 @@ export function useGuestSubmissionStatus() {
           setHasSubmitted(submitted);
         }
       })
-      .catch(() => {
+      .catch((err) => {
         if (!cancelled) {
-          setGuestInvalid(true);
-          setHasSubmitted(false);
+          if (isStaleGuestSessionError(err)) {
+            // Host cleared data or wiped guests: drop stale persisted guestUuid so QR rejoin hits the join form.
+            useRoomStore.getState().setGuestId("");
+            useRoomStore.getState().setHasSubmitted(false);
+            setGuestInvalid(false);
+          } else {
+            setGuestInvalid(false);
+          }
         }
       })
       .finally(() => {

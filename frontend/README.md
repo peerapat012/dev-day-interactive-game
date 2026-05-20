@@ -61,6 +61,18 @@ NEXT_PUBLIC_APPWRITE_COLLECTION_ID=
 
    (`COLLECTION_ID` is the table ID for TablesDB.)
 
+6. **`guests` and `rooms` tables** — Required for `/host` and `/guest` flows as in your deployed schema. Host **Close room** deletes the room row (no extra columns).
+
+### Wipe all database rows (fresh start)
+
+From `frontend/` with `APPWRITE_API_KEY` set in `.env.local` (API key must allow **Tables DB** read/delete on your tables):
+
+```bash
+CONFIRM_WIPE=yes npm run db:wipe
+```
+
+This deletes **every row** in the configured **entries**, **guests**, and **rooms** tables (same IDs as `.env.local`). Hosts/guests may still show old room codes in the browser until you clear site data or refresh after rejoin.
+
 ## Pages
 
 | Route      | Description |

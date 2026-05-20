@@ -9,8 +9,13 @@ import { useEntriesStore } from "@/store/entriesStore";
 import { usePlayerStore } from "@/store/playerStore";
 import { Button } from "@/shared/ui/Button";
 import { Input } from "@/shared/ui/Input";
+import { leaveGuestRoom } from "@/lib/leaveGuestRoom";
 
-export function GuestMessagePanel() {
+interface GuestMessagePanelProps {
+  onLeaveRoom?: () => void;
+}
+
+export function GuestMessagePanel({ onLeaveRoom }: GuestMessagePanelProps) {
   const displayName = usePlayerStore((s) => s.displayName);
   const [text, setText] = useState("");
   const { submit, isSubmitting, hasSubmitted } = useSubmitEntry();
@@ -26,6 +31,18 @@ export function GuestMessagePanel() {
     if (!useEntriesStore.getState().error) {
       setText("");
     }
+  }
+
+  function handleLeaveRoom() {
+    if (
+      !window.confirm(
+        "Leave this room? Your nickname and saved room on this device will be cleared. You can scan the QR again to rejoin.",
+      )
+    ) {
+      return;
+    }
+    leaveGuestRoom();
+    onLeaveRoom?.();
   }
 
   return (
@@ -56,6 +73,14 @@ export function GuestMessagePanel() {
           {hasSubmitted ? (
             <span className="text-xs text-emerald-400/90">Phrase sent</span>
           ) : null}
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={handleLeaveRoom}
+            className="ml-auto shrink-0 px-3 py-1.5 text-xs text-zinc-400 hover:text-rose-300"
+          >
+            Leave room
+          </Button>
         </div>
       </header>
 
@@ -76,6 +101,14 @@ export function GuestMessagePanel() {
             <p className="mt-2 text-sm text-amber-100/80">
               Rejoin using the host&apos;s QR code to send a new phrase.
             </p>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={handleLeaveRoom}
+              className="mt-4 w-full border-amber-500/40 text-amber-200"
+            >
+              Clear this device &amp; rejoin
+            </Button>
           </motion.div>
         ) : checking ? (
           <p className="text-center text-sm text-zinc-500">Checking submission…</p>
@@ -92,6 +125,14 @@ export function GuestMessagePanel() {
               Each guest can only submit once. You can still read everyone else&apos;s
               phrases above.
             </p>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={handleLeaveRoom}
+              className="mt-4 w-full text-zinc-400 hover:text-rose-300"
+            >
+              Leave room
+            </Button>
           </motion.div>
         ) : (
           <form
@@ -116,6 +157,14 @@ export function GuestMessagePanel() {
             <p className="text-center text-xs text-zinc-500">
               One phrase per guest — choose carefully.
             </p>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={handleLeaveRoom}
+              className="w-full text-xs text-zinc-500 hover:text-rose-300"
+            >
+              Leave room
+            </Button>
             {error ? (
               <p className="text-center text-sm text-rose-400">{error}</p>
             ) : null}
