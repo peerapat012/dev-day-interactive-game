@@ -2,18 +2,14 @@ import {
   invokeAppwriteFunction,
   useAppwriteLlmFunction,
 } from "@/services/ai/appwriteFunction";
+import { getLlmSummarizeUrl } from "@/lib/llmServerConfig";
+import { fetchLlm } from "@/lib/llmFetch";
 import { parseSummarizeResponse } from "@/services/ai/parseSummarizeResponse";
 import type {
   FastApiSummarizeRequest,
   SummarizeGroupPayload,
   SummarizeResultItem,
 } from "@/types/api";
-
-const DEFAULT_SUMMARIZE_URL = "http://127.0.0.1:8000/summarize";
-
-function getSummarizeUrl(): string {
-  return process.env.LLM_SUMMARIZE_URL ?? DEFAULT_SUMMARIZE_URL;
-}
 
 /**
  * Server-only: POST /summarize with { groups } → parsed summary cards.
@@ -43,22 +39,17 @@ export async function summarizeWithLlm(
 async function fetchSummarizeDirect(
   body: FastApiSummarizeRequest,
 ): Promise<unknown> {
-  const url = getSummarizeUrl();
-
-  let res: Response;
-  try {
-    res = await fetch(url, {
+  const url = getLlmSummarizeUrl();
+  const res = await fetchLlm(
+    url,
+    {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
       cache: "no-store",
-    });
-  } catch (err) {
-    const hint = err instanceof Error ? err.message : "network error";
-    throw new Error(
-      `Cannot reach LLM at ${url} (${hint}). Is FastAPI running? Try LLM_SUMMARIZE_URL=http://127.0.0.1:8000/summarize`,
-    );
-  }
+    },
+    "LLM summarize",
+  );
 
   const rawText = await res.text();
 

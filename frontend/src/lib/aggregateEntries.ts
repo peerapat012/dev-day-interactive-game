@@ -9,6 +9,15 @@ function hashString(value: string): number {
   return Math.abs(hash);
 }
 
+export function buildGroupBubbles(groups: GroupStat[]): BubbleItem[] {
+  return groups.map((group) => ({
+    id: `group-${group.group}`,
+    label: group.group,
+    count: group.count,
+    hue: hashString(group.group) % 360,
+  }));
+}
+
 export function buildRawBubbles(entries: Entry[]): BubbleItem[] {
   const counts = new Map<string, number>();
 
@@ -26,8 +35,11 @@ export function buildRawBubbles(entries: Entry[]): BubbleItem[] {
   }));
 }
 
+const PENDING_GROUP_ALIASES = new Set(["", "pending", "unclassified"]);
+
 export function isValidGroupName(group: string | null | undefined): boolean {
-  return Boolean(group?.trim());
+  const normalized = group?.trim().toLowerCase() ?? "";
+  return Boolean(normalized) && !PENDING_GROUP_ALIASES.has(normalized);
 }
 
 export function isClassifiedEntry(entry: Entry): boolean {

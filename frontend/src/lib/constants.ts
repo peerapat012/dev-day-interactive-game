@@ -3,6 +3,9 @@ export const APPWRITE = {
   projectId: process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID ?? "",
   databaseId: process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID ?? "",
   collectionId: process.env.NEXT_PUBLIC_APPWRITE_COLLECTION_ID ?? "",
+  guestsTableId:
+    process.env.NEXT_PUBLIC_APPWRITE_GUESTS_TABLE_ID ?? "guests",
+  roomsTableId: process.env.NEXT_PUBLIC_APPWRITE_ROOMS_TABLE_ID ?? "rooms",
 } as const;
 
 export const BUBBLE = {

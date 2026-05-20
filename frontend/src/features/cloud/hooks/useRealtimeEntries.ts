@@ -5,10 +5,12 @@ import { listEntries } from "@/services/appwrite/entries";
 import { subscribeToEntries } from "@/services/appwrite/realtime";
 import { ensureGuestSession } from "@/services/appwrite/auth";
 import { useEntriesStore } from "@/store/entriesStore";
+import { useRoomStore } from "@/store/roomStore";
 
 const POLL_MS = 12_000;
 
 export function useRealtimeEntries() {
+  const roomId = useRoomStore((s) => s.roomId);
   const setEntries = useEntriesStore((s) => s.setEntries);
   const upsertEntry = useEntriesStore((s) => s.upsertEntry);
   const removeEntry = useEntriesStore((s) => s.removeEntry);
@@ -16,12 +18,18 @@ export function useRealtimeEntries() {
   const setError = useEntriesStore((s) => s.setError);
 
   useEffect(() => {
+    if (!roomId) {
+      setEntries([]);
+      setHydrated(false);
+      return;
+    }
+
     let cancelled = false;
     let unsubscribeRealtime: (() => void) | undefined;
     let pollTimer: ReturnType<typeof setInterval> | undefined;
 
     async function refreshEntries() {
-      const entries = await listEntries();
+      const entries = await listEntries(roomId);
       if (!cancelled) setEntries(entries);
     }
 
@@ -43,7 +51,7 @@ export function useRealtimeEntries() {
 
         const { unsubscribe, connected } = await subscribeToEntries(
           (entry, events) => {
-            if (cancelled) return;
+            if (cancelled || entry.roomId !== roomId) return;
             const isDelete = events.some((e) => e.includes(".delete"));
             if (isDelete) {
               removeEntry(entry.$id);
@@ -72,5 +80,12 @@ export function useRealtimeEntries() {
       unsubscribeRealtime?.();
       if (pollTimer) clearInterval(pollTimer);
     };
-  }, [setEntries, upsertEntry, removeEntry, setHydrated, setError]);
+  }, [
+    roomId,
+    setEntries,
+    upsertEntry,
+    removeEntry,
+    setHydrated,
+    setError,
+  ]);
 }

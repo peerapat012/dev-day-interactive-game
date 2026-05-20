@@ -3,9 +3,16 @@
 import { useCallback } from "react";
 import { PENDING_GROUP } from "@/lib/constants";
 import { createEntry } from "@/services/appwrite/entries";
-import { getAccount } from "@/services/appwrite/auth";
+import {
+  guestHasSubmitted,
+  markGuestSubmitted,
+} from "@/services/appwrite/guests";
 import { useEntriesStore } from "@/store/entriesStore";
 import { usePlayerStore } from "@/store/playerStore";
+import { useRoomStore } from "@/store/roomStore";
+
+const ALREADY_SUBMITTED_MSG =
+  "You already sent your phrase. Each guest can only submit once.";
 
 export function useSubmitEntry() {
   const isSubmitting = useEntriesStore((s) => s.isSubmitting);
@@ -13,42 +20,74 @@ export function useSubmitEntry() {
   const setError = useEntriesStore((s) => s.setError);
   const upsertEntry = useEntriesStore((s) => s.upsertEntry);
   const displayName = usePlayerStore((s) => s.displayName);
+  const roomId = useRoomStore((s) => s.roomId);
+  const guestId = useRoomStore((s) => s.guestId);
+  const hasSubmitted = useRoomStore((s) => s.hasSubmitted);
+  const setHasSubmitted = useRoomStore((s) => s.setHasSubmitted);
 
   const submit = useCallback(
     async (rawInput: string) => {
       const input = rawInput.trim();
       if (!input || isSubmitting) return;
 
+      if (!roomId || !guestId) {
+        setError("Join a room before sending a phrase.");
+        return;
+      }
+
+      if (hasSubmitted) {
+        setError(ALREADY_SUBMITTED_MSG);
+        return;
+      }
+
       setSubmitting(true);
       setError(null);
 
       try {
-        let name = displayName.trim() || "guest";
-        if (!displayName.trim()) {
-          try {
-            const user = await getAccount().get();
-            name = user.name || user.$id.slice(0, 8);
-          } catch {
-            /* anonymous guest */
-          }
+        const already = await guestHasSubmitted(roomId, guestId);
+        if (already) {
+          setHasSubmitted(true);
+          setError(ALREADY_SUBMITTED_MSG);
+          return;
         }
 
         const entry = await createEntry({
-          name,
+          name: displayName.trim() || "guest",
           input,
           group: PENDING_GROUP,
+          roomId,
+          guestId,
           createdAt: new Date().toISOString(),
         });
 
+        await markGuestSubmitted(guestId);
+        setHasSubmitted(true);
         upsertEntry(entry);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Submit failed");
+        if (err instanceof Error) {
+          setError(err.message);
+          if (err.message.includes("session expired")) {
+            setHasSubmitted(true);
+          }
+        } else {
+          setError("Submit failed");
+        }
       } finally {
         setSubmitting(false);
       }
     },
-    [isSubmitting, setSubmitting, setError, upsertEntry, displayName],
+    [
+      isSubmitting,
+      hasSubmitted,
+      setSubmitting,
+      setError,
+      upsertEntry,
+      displayName,
+      roomId,
+      guestId,
+      setHasSubmitted,
+    ],
   );
 
-  return { submit, isSubmitting };
+  return { submit, isSubmitting, hasSubmitted };
 }

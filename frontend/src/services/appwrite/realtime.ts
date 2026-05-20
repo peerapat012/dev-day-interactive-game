@@ -29,7 +29,9 @@ function mapPayload(payload: Record<string, unknown>): Entry {
     $id: payload.$id as string,
     name: (payload.name as string) ?? "guest",
     input: (payload.input as string) ?? "",
-    group: (payload.group as string) ?? "uncategorized",
+    group: (payload.group as string) ?? "",
+    roomId: (payload.roomId as string) ?? "",
+    guestId: (payload.guestId as string) ?? "",
     createdAt: (payload.createdAt as string) ?? new Date().toISOString(),
   };
 }

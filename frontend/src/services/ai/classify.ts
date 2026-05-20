@@ -18,8 +18,15 @@ export async function classifyInputsBatch(
   });
 
   if (!res.ok) {
-    const err = await res.text();
-    throw new Error(err || "Classification failed");
+    const raw = await res.text();
+    let message = raw || "Classification failed";
+    try {
+      const parsed = JSON.parse(raw) as { error?: string };
+      if (parsed.error) message = parsed.error;
+    } catch {
+      /* use raw text */
+    }
+    throw new Error(message);
   }
 
   return res.json() as Promise<ClassifyBatchResponse>;

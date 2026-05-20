@@ -9,14 +9,14 @@ import {
 import { classifyAndBuildGroups } from "@/lib/classifyAndBuildGroups";
 import { TOP_GROUPS_COUNT } from "@/lib/constants";
 import { joinGroupInputs } from "@/lib/joinGroupInputs";
+import { saveRoomRound, startNewRound } from "@/services/appwrite/rooms";
 import { summarizeTopGroups } from "@/services/ai/summarize";
-import { updateRoomSnapshot } from "@/services/appwrite/rooms";
 import { useEntriesStore } from "@/store/entriesStore";
 import { useRoomStore } from "@/store/roomStore";
 import type { SummarizeResultItem } from "@/types/api";
 import type { GroupStat } from "@/types/entry";
 
-export type SummaryPhase = "idle" | "classifying" | "summarizing";
+export type SummaryPhase = "idle" | "classifying" | "summarizing" | "saving";
 
 function orderSummariesByGroups(
   groups: GroupStat[],
@@ -27,17 +27,21 @@ function orderSummariesByGroups(
     .filter((item): item is SummarizeResultItem => Boolean(item));
 }
 
-export function useTopGroupsSummary() {
+export function useHostRoomSummary() {
   const entries = useEntriesStore((s) => s.entries);
+  const setEntries = useEntriesStore((s) => s.setEntries);
   const upsertEntry = useEntriesStore((s) => s.upsertEntry);
   const isHydrated = useEntriesStore((s) => s.isHydrated);
   const roomId = useRoomStore((s) => s.roomId);
   const roomRowId = useRoomStore((s) => s.roomRowId);
-  const [displayGroups, setDisplayGroups] = useState<GroupStat[]>([]);
+
+  const [allGroups, setAllGroups] = useState<GroupStat[]>([]);
+  const [topGroups, setTopGroups] = useState<GroupStat[]>([]);
   const [summaries, setSummaries] = useState<SummarizeResultItem[]>([]);
   const [phase, setPhase] = useState<SummaryPhase>("idle");
   const [error, setError] = useState<string | null>(null);
-  const [hasSummarized, setHasSummarized] = useState(false);
+  const [hasGenerated, setHasGenerated] = useState(false);
+  const [hasSaved, setHasSaved] = useState(false);
 
   const roomEntries = useMemo(
     () => (roomId ? entries.filter((e) => e.roomId === roomId) : []),
@@ -49,29 +53,37 @@ export function useTopGroupsSummary() {
     [roomEntries],
   );
 
-  const classifiedCount = useMemo(
-    () => roomEntries.filter((e) => isClassifiedEntry(e)).length,
-    [roomEntries],
-  );
-
   const loading = phase !== "idle";
+
+  const resetUi = useCallback(() => {
+    setAllGroups([]);
+    setTopGroups([]);
+    setSummaries([]);
+    setHasGenerated(false);
+    setHasSaved(false);
+    setError(null);
+    setPhase("idle");
+  }, []);
 
   const runSummarize = useCallback(async () => {
     if (roomEntries.length === 0 || loading || !roomRowId) return;
 
     setPhase("classifying");
     setError(null);
+    setHasSaved(false);
 
     try {
-      const allGroups = await classifyAndBuildGroups(roomEntries, upsertEntry);
-      const groups = getTopGroups(allGroups, TOP_GROUPS_COUNT);
+      const classifiedGroups = await classifyAndBuildGroups(
+        roomEntries,
+        upsertEntry,
+      );
+      const groups = getTopGroups(classifiedGroups, TOP_GROUPS_COUNT);
 
       if (groups.length === 0) {
         throw new Error("No classified groups yet. Classify guest submissions first.");
       }
 
-      await updateRoomSnapshot(roomRowId, { groups: allGroups });
-
+      setAllGroups(classifiedGroups);
       setPhase("summarizing");
 
       const { summaries: results } = await summarizeTopGroups({
@@ -84,14 +96,9 @@ export function useTopGroupsSummary() {
       const validResults = results.filter((item) => isValidGroupName(item.group));
       const ordered = orderSummariesByGroups(groups, validResults);
 
-      await updateRoomSnapshot(roomRowId, {
-        groups: allGroups,
-        summaries: ordered,
-      });
-
-      setDisplayGroups(groups);
+      setTopGroups(groups);
       setSummaries(ordered);
-      setHasSummarized(true);
+      setHasGenerated(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Summary failed");
     } finally {
@@ -99,18 +106,56 @@ export function useTopGroupsSummary() {
     }
   }, [roomEntries, loading, roomRowId, upsertEntry]);
 
+  const saveSummary = useCallback(async () => {
+    if (!roomRowId || !hasGenerated || topGroups.length === 0) return;
+
+    setPhase("saving");
+    setError(null);
+
+    try {
+      await saveRoomRound(roomRowId, {
+        groups: allGroups,
+        summaries,
+      });
+      setHasSaved(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save summary");
+    } finally {
+      setPhase("idle");
+    }
+  }, [roomRowId, hasGenerated, allGroups, summaries, topGroups.length]);
+
+  const beginNewRound = useCallback(async () => {
+    if (!roomId || !roomRowId || !hasSaved) return;
+
+    setPhase("saving");
+    setError(null);
+
+    try {
+      await startNewRound(roomId, roomRowId);
+      setEntries([]);
+      resetUi();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to start new round");
+    } finally {
+      setPhase("idle");
+    }
+  }, [roomId, roomRowId, hasSaved, setEntries, resetUi]);
+
   return {
-    topGroups: hasSummarized ? displayGroups : [],
-    summaries: hasSummarized ? summaries : [],
+    topGroups: hasGenerated ? topGroups : [],
+    summaries: hasGenerated ? summaries : [],
     loading,
     phase,
     error,
     isHydrated,
-    hasSummarized,
+    hasGenerated,
+    hasSaved,
     pendingCount,
-    classifiedCount,
     entryCount: roomEntries.length,
     runSummarize,
+    saveSummary,
+    beginNewRound,
     roomId,
   };
 }

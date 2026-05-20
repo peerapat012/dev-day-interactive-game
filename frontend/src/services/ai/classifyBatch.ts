@@ -2,17 +2,13 @@ import {
   invokeAppwriteFunction,
   useAppwriteLlmFunction,
 } from "@/services/ai/appwriteFunction";
+import { getLlmClassifyBatchUrl } from "@/lib/llmServerConfig";
+import { fetchLlm } from "@/lib/llmFetch";
 import type {
   ClassifyBatchItem,
   FastApiClassifyBatchRequest,
   FastApiClassifyBatchResponse,
 } from "@/types/api";
-
-const DEFAULT_CLASSIFY_BATCH_URL = "http://localhost:8000/classify-batch";
-
-function getClassifyBatchUrl(): string {
-  return process.env.LLM_CLASSIFY_BATCH_URL ?? DEFAULT_CLASSIFY_BATCH_URL;
-}
 
 /**
  * Server-only: classify many inputs in one LLM call.
@@ -34,13 +30,17 @@ export async function classifyBatchWithLlm(
     )) as FastApiClassifyBatchResponse;
   }
 
-  const url = getClassifyBatchUrl();
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-    cache: "no-store",
-  });
+  const url = getLlmClassifyBatchUrl();
+  const res = await fetchLlm(
+    url,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      cache: "no-store",
+    },
+    "LLM classify-batch",
+  );
 
   if (!res.ok) {
     const detail = await res.text();

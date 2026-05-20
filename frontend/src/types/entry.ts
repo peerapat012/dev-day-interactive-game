@@ -2,6 +2,8 @@ export interface EntryDocument {
   name: string;
   input: string;
   group: string;
+  roomId: string;
+  guestId: string;
   createdAt: string;
 }
 

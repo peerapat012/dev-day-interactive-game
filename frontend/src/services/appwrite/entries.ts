@@ -22,11 +22,13 @@ function mapRow(row: Record<string, unknown>): Entry {
     name: row.name as string,
     input: row.input as string,
     group: row.group as string,
+    roomId: row.roomId as string,
+    guestId: row.guestId as string,
     createdAt: row.createdAt as string,
   };
 }
 
-/** Create a classified entry (guest session required). */
+/** Create a phrase entry in a room (guest session required). */
 export async function createEntry(data: EntryDocument): Promise<Entry> {
   await ensureGuestSession();
   assertConfig();
@@ -46,24 +48,8 @@ export async function createEntry(data: EntryDocument): Promise<Entry> {
   return mapRow(row as unknown as Record<string, unknown>);
 }
 
-/** List all entries (paginated). */
-export async function listEntries(limit = 500): Promise<Entry[]> {
-  await ensureGuestSession();
-  assertConfig();
-
-  const result = await getTablesDB().listRows({
-    databaseId: APPWRITE.databaseId,
-    tableId: APPWRITE.collectionId,
-    queries: [Query.orderDesc("createdAt"), Query.limit(limit)],
-  });
-
-  return result.rows.map((row) =>
-    mapRow(row as unknown as Record<string, unknown>),
-  );
-}
-
-/** Fetch entries for a normalized group. */
-export async function listEntriesByGroup(group: string): Promise<Entry[]> {
+/** List entries for one room (paginated). */
+export async function listEntries(roomId: string, limit = 500): Promise<Entry[]> {
   await ensureGuestSession();
   assertConfig();
 
@@ -71,6 +57,30 @@ export async function listEntriesByGroup(group: string): Promise<Entry[]> {
     databaseId: APPWRITE.databaseId,
     tableId: APPWRITE.collectionId,
     queries: [
+      Query.equal("roomId", roomId),
+      Query.orderDesc("createdAt"),
+      Query.limit(limit),
+    ],
+  });
+
+  return result.rows.map((row) =>
+    mapRow(row as unknown as Record<string, unknown>),
+  );
+}
+
+/** Fetch classified entries for a group within a room. */
+export async function listEntriesByGroup(
+  roomId: string,
+  group: string,
+): Promise<Entry[]> {
+  await ensureGuestSession();
+  assertConfig();
+
+  const result = await getTablesDB().listRows({
+    databaseId: APPWRITE.databaseId,
+    tableId: APPWRITE.collectionId,
+    queries: [
+      Query.equal("roomId", roomId),
       Query.equal("group", group),
       Query.orderDesc("createdAt"),
       Query.limit(500),
@@ -100,7 +110,7 @@ export async function updateEntry(
   return mapRow(row as unknown as Record<string, unknown>);
 }
 
-/** Delete entry by id (example CRUD). */
+/** Delete entry by id. */
 export async function deleteEntry(rowId: string): Promise<void> {
   await ensureGuestSession();
   assertConfig();

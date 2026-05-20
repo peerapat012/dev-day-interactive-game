@@ -70,9 +70,7 @@ export async function invokeAppwriteFunction(
   }
 }
 
-export function useAppwriteLlmFunction(): boolean {
-  return process.env.LLM_USE_APPWRITE_FUNCTION === "true";
-}
+export { useAppwriteLlmFunction } from "@/lib/llmServerConfig";
 
 function formatExecutionError(
   execution: ExecutionResponse,

@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Cloud Game</title>
+    <link href="https://cdn.jsdelivr.net/npm/fontsource-inter@4.5.0/index.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            text-align: center;
+            padding: 20px;
+            z-index: 10;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(90deg, #f093fb, #f5576c, #4facfe, #00f2fe);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradientShift 4s ease infinite;
+            font-weight: 900;
+            letter-spacing: -1px;
+        }
+
+        .header p {
+            color: rgba(255,255,255,0.6);
+            margin-top: 5px;
+            font-size: 0.95rem;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            padding: 10px 20px;
+            z-index: 10;
+            position: relative;
+        }
+
+        .stat {
+            background: rgba(255,255,255,0.08);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 8px 20px;
+            border-radius: 50px;
+            color: white;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stat-icon {
+            font-size: 1.1rem;
+        }
+
+        .stat-value {
+            font-weight: 700;
+            color: #4facfe;
+        }
+
+        .cloud-area {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            padding: 10px;
+        }
+
+        /* FIX: Removed opacity: 0 from base class to prevent reversion bug */
+        .word-item {
+            position: absolute;
+            cursor: default;
+            user-select: none;
+            white-space: nowrap;
+            font-weight: 800;
+            text-shadow: 0 2px 15px rgba(0,0,0,0.5);
+            opacity: 1; /* Default to visible */
+            pointer-events: none;
+            will-change: transform, opacity;
+        }
+
+        .word-item.active {
+            cursor: grab;
+        }
+
+        .word-item.active:active {
+            cursor: grabbing;
+        }
+
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0) rotate(-20deg); }
+            100% { opacity: 1; transform: scale(1) rotate(var(--rotation, 0deg)); }
+        }
+
+        .word-item.floating {
+            animation: floatAnim 4s ease-in-out infinite alternate;
+        }
+
+        @keyframes floatAnim {
+            0% { transform: translateY(0px) rotate(var(--rotation, 0deg)); }
+            100% { transform: translateY(-12px) rotate(var(--rotation, 0deg)); }
+        }
+
+        .input-area {
+            padding: 20px;
+            z-index: 10;
+            position: relative;
+            display: flex;
+            justify-content: center;
+        }
+
+        .input-container {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            max-width: 700px;
+            align-items: center;
+        }
+
+        .input-field {
+            flex: 1;
+            padding: 16px 24px;
+            border: 2px solid rgba(255,255,255,0.15);
+            border-radius: 50px;
+            background: rgba(255,255,255,0.08);
+            backdrop-filter: blur(10px);
+            color: white;
+            font-size: 1.1rem;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .input-field::placeholder {
+            color: rgba(255,255,255,0.35);
+        }
+
+        .input-field:focus {
+            border-color: #4facfe;
+            box-shadow: 0 0 30px rgba(79, 172, 254, 0.2);
+            background: rgba(255,255,255,0.12);
+        }
+
+        .send-btn {
+            padding: 16px 32px;
+            border: none;
+            border-radius: 50px;
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+            white-space: nowrap;
+        }
+
+        .send-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 25px rgba(79, 172, 254, 0.4);
+        }
+
+        .send-btn:active {
+            transform: scale(0.95);
+        }
+
+        .clear-btn {
+            padding: 16px 20px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 50px;
+            background: transparent;
+            color: rgba(255,255,255,0.6);
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .clear-btn:hover {
+            border-color: #f5576c;
+            color: #f5576c;
+            background: rgba(245, 87, 108, 0.1);
+        }
+
+        .sparkle {
+            position: absolute;
+            pointer-events: none;
+            animation: sparkleAnim 0.8s ease forwards;
+            z-index: 999;
+        }
+
+        @keyframes sparkleAnim {
+            0% { opacity: 1; transform: scale(0) rotate(0deg); }
+            50% { opacity: 1; transform: scale(1) rotate(180deg); }
+            100% { opacity: 0; transform: scale(0.5) rotate(360deg); }
+        }
+
+        .empty-state {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: rgba(255,255,255,0.25);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .empty-state .icon {
+            font-size: 5rem;
+            margin-bottom: 20px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        .empty-state p {
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .combo-display {
+            position: fixed;
+            top: 100px;
+            right: 30px;
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 20px;
+            font-weight: 800;
+            font-size: 1.2rem;
+            z-index: 100;
+            opacity: 0;
+            transform: scale(0);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none;
+        }
+
+        .combo-display.show {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .bg-particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 50%;
+            animation: drift linear infinite;
+        }
+
+        @keyframes drift {
+            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100px) rotate(720deg); opacity: 0; }
+        }
+
+        @media (max-width: 600px) {
+            .header h1 { font-size: 1.8rem; }
+            .stats-bar { gap: 10px; }
+            .stat { padding: 6px 12px; font-size: 0.75rem; }
+            .input-container { flex-direction: column; }
+            .input-field { width: 100%; }
+            .send-btn { width: 100%; }
+            .clear-btn { position: absolute; right: 10px; top: 15px; padding: 10px 14px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-particles" id="bgParticles"></div>
+
+    <div class="header">
+        <h1>✨ Word Cloud Game</h1>
+        <p>Type words or sentences and watch them stay forever!</p>
+    </div>
+
+    <div class="stats-bar">
+        <div class="stat">
+            <span class="stat-icon">📝</span>
+            <span>Entries: </span>
+            <span class="stat-value" id="wordCount">0</span>
+        </div>
+        <div class="stat">
+            <span class="stat-icon">🔥</span>
+            <span>Combo: </span>
+            <span class="stat-value" id="comboCount">0</span>
+        </div>
+    </div>
+
+    <div class="combo-display" id="comboDisplay"></div>
+
+    <div class="cloud-area" id="cloudArea">
+        <div class="empty-state" id="emptyState">
+            <div class="icon">💬</div>
+            <p>Type something below to start!</p>
+        </div>
+    </div>
+
+    <div class="input-area">
+        <div class="input-container">
+            <input type="text" class="input-field" id="wordInput" placeholder="Type a word or sentence..." autocomplete="off">
+            <button class="send-btn" id="sendBtn">Send ✨</button>
+            <button class="clear-btn" id="clearBtn" title="Clear all">🗑️</button>
+        </div>
+    </div>
+
+    <script>
+        const wordInput = document.getElementById('wordInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const cloudArea = document.getElementById('cloudArea');
+        const emptyState = document.getElementById('emptyState');
+        const wordCountEl = document.getElementById('wordCount');
+        const comboCountEl = document.getElementById('comboCount');
+        const comboDisplay = document.getElementById('comboDisplay');
+        const bgParticles = document.getElementById('bgParticles');
+
+        let totalEntries = 0;
+        let combo = 0;
+        let comboTimer = null;
+        let placedWords = [];
+        let isDragging = false;
+        let dragTarget = null;
+        let dragOffsetX = 0;
+        let dragOffsetY = 0;
+
+        const colors = [
+            '#f093fb', '#f5576c', '#4facfe', '#00f2fe', '#43e97b',
+            '#fa709a', '#fee140', '#a18cd1', '#fbc2eb', '#96e6a1',
+            '#ffecd2', '#fcb69f', '#ff9a9e', '#fecfef', '#a1c4fd',
+            '#c2e9fb', '#d4fc79', '#96e6a1', '#84fab0', '#8fd3f4',
+            '#f6d365', '#fda085', '#fbc2eb', '#a6c1ee', '#ffecd2'
+        ];
+
+        const comboMessages = [
+            '', '', 'Nice! 🔥', 'Great! ⭐', 'Amazing! 🌟',
+            'Incredible! 🚀', 'Unstoppable! 💫', 'Legendary! 👑', 'GODLIKE! 🏆'
+        ];
+
+        function createBgParticles() {
+            for (let i = 0; i < 25; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDuration = (Math.random() * 15 + 10) + 's';
+                particle.style.animationDelay = (Math.random() * 10) + 's';
+                particle.style.width = (Math.random() * 4 + 2) + 'px';
+                particle.style.height = particle.style.width;
+                bgParticles.appendChild(particle);
+            }
+        }
+        createBgParticles();
+
+        function getRandomColor() {
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        function calculateFontSize(text) {
+            const len = text.length;
+            if (len <= 3) return 65;
+            if (len <= 6) return 50;
+            if (len <= 12) return 38;
+            if (len <= 20) return 28;
+            return Math.max(14, 40 - (len * 0.8));
+        }
+
+        function findNonOverlappingPosition(itemWidth, itemHeight) {
+            const areaRect = cloudArea.getBoundingClientRect();
+            const padding = 15;
+            const maxAttempts = 150;
+            
+            const w = Math.min(itemWidth + 10, areaRect.width - padding * 2);
+            const h = Math.min(itemHeight + 10, areaRect.height - padding * 2);
+
+            for (let attempt = 0; attempt < maxAttempts; attempt++) {
+                const x = padding + Math.random() * (areaRect.width - w - padding * 2);
+                const y = padding + Math.random() * (areaRect.height - h - padding * 2);
+
+                let overlaps = false;
+                for (const placed of placedWords) {
+                    if (
+                        x < placed.x + placed.width + 10 &&
+                        x + w > placed.x + 10 &&
+                        y < placed.y + placed.height + 10 &&
+                        y + h > placed.y + 10
+                    ) {
+                        overlaps = true;
+                        break;
+                    }
+                }
+
+                if (!overlaps) {
+                    return { x, y };
+                }
+            }
+
+            const offsetX = (totalEntries % 10) * 5;
+            const offsetY = (totalEntries % 10) * 5;
+            return {
+                x: padding + offsetX,
+                y: padding + areaRect.height * 0.7 + offsetY
+            };
+        }
+
+        function createSparkles(x, y) {
+            for (let i = 0; i < 8; i++) {
+                const sparkle = document.createElement('div');
+                sparkle.className = 'sparkle';
+                sparkle.textContent = ['✨', '⭐', '💫', '🌟'][Math.floor(Math.random() * 4)];
+                sparkle.style.left = (x + (Math.random() - 0.5) * 100) + 'px';
+                sparkle.style.top = (y + (Math.random() - 0.5) * 100) + 'px';
+                sparkle.style.fontSize = (Math.random() * 20 + 15) + 'px';
+                cloudArea.appendChild(sparkle);
+                setTimeout(() => sparkle.remove(), 800);
+            }
+        }
+
+        function updateCombo() {
+            combo++;
+            clearTimeout(comboTimer);
+            comboTimer = setTimeout(() => {
+                combo = 0;
+                comboCountEl.textContent = '0';
+                comboDisplay.classList.remove('show');
+            }, 2500);
+
+            comboCountEl.textContent = combo;
+
+            if (combo >= 2) {
+                const msgIndex = Math.min(combo, comboMessages.length - 1);
+                comboDisplay.textContent = comboMessages[msgIndex] || comboMessages[comboMessages.length - 1];
+                comboDisplay.classList.add('show');
+                setTimeout(() => comboDisplay.classList.remove('show'), 1500);
+            }
+        }
+
+        function addEntry(text) {
+            if (!text.trim()) return;
+
+            const entryText = text.trim();
+            
+            const wordEl = document.createElement('div');
+            wordEl.className = 'word-item';
+            wordEl.textContent = entryText;
+
+            const fontSize = calculateFontSize(entryText);
+            wordEl.style.fontSize = fontSize + 'px';
+            wordEl.style.color = getRandomColor();
+            
+            const rotation = (Math.random() - 0.5) * 25;
+            wordEl.style.setProperty('--rotation', rotation + 'deg');
+            wordEl.style.transform = `rotate(${rotation}deg)`;
+
+            // FIX: Explicitly set opacity to 0 before starting animation
+            wordEl.style.opacity = '0';
+            
+            // Start pop-in animation
+            wordEl.style.animation = 'popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards';
+
+            cloudArea.appendChild(wordEl);
+            const wordRect = wordEl.getBoundingClientRect();
+            const position = findNonOverlappingPosition(wordRect.width, wordRect.height);
+
+            wordEl.style.left = position.x + 'px';
+            wordEl.style.top = position.y + 'px';
+            wordEl.style.zIndex = totalEntries + 1;
+
+            const entryData = {
+                x: position.x,
+                y: position.y,
+                width: wordRect.width,
+                height: wordRect.height,
+                element: wordEl,
+                rotation: rotation
+            };
+            placedWords.push(entryData);
+
+            // FIX: Ensure opacity is set to 1 when switching animations to prevent disappearance
+            setTimeout(() => {
+                wordEl.style.opacity = '1'; 
+                wordEl.style.animation = `floatAnim ${3 + Math.random() * 2}s ease-in-out ${Math.random() * 1}s infinite alternate`;
+                wordEl.classList.add('active');
+                wordEl.style.cursor = 'grab';
+            }, 600);
+
+            createSparkles(position.x + wordRect.width / 2, position.y + wordRect.height / 2);
+
+            totalEntries++;
+            wordCountEl.textContent = totalEntries;
+            updateCombo();
+
+            if (totalEntries > 0) {
+                emptyState.style.display = 'none';
+            }
+        }
+
+        cloudArea.addEventListener('mousedown', (e) => {
+            const target = e.target.closest('.word-item.active');
+            if (target) {
+                isDragging = true;
+                dragTarget = target;
+                dragTarget.style.animation = 'none'; // Stop floating while dragging
+                dragTarget.style.cursor = 'grabbing';
+                dragTarget.style.zIndex = 10000;
+                
+                const rect = dragTarget.getBoundingClientRect();
+                dragOffsetX = e.clientX - rect.left;
+                dragOffsetY = e.clientY - rect.top;
+                
+                e.preventDefault();
+            }
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (isDragging && dragTarget) {
+                const areaRect = cloudArea.getBoundingClientRect();
+                const newX = e.clientX - areaRect.left - dragOffsetX;
+                const newY = e.clientY - areaRect.top - dragOffsetY;
+                
+                dragTarget.style.left = newX + 'px';
+                dragTarget.style.top = newY + 'px';
+                
+                const entry = placedWords.find(p => p.element === dragTarget);
+                if (entry) {
+                    entry.x = newX;
+                    entry.y = newY;
+                }
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            if (isDragging && dragTarget) {
+                isDragging = false;
+                dragTarget.style.cursor = 'grab';
+                dragTarget.style.zIndex = 500;
+                // Restart floating animation
+                dragTarget.style.animation = `floatAnim ${3 + Math.random() * 2}s ease-in-out ${Math.random() * 1}s infinite alternate`;
+                dragTarget = null;
+            }
+        });
+
+        // Touch support
+        cloudArea.addEventListener('touchstart', (e) => {
+            const target = e.target.closest('.word-item.active');
+            if (target) {
+                isDragging = true;
+                dragTarget = target;
+                dragTarget.style.animation = 'none';
+                
+                const rect = dragTarget.getBoundingClientRect();
+                const touch = e.touches[0];
+                dragOffsetX = touch.clientX - rect.left;
+                dragOffsetY = touch.clientY - rect.top;
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        window.addEventListener('touchmove', (e) => {
+            if (isDragging && dragTarget) {
+                const areaRect = cloudArea.getBoundingClientRect();
+                const touch = e.touches[0];
+                const newX = touch.clientX - areaRect.left - dragOffsetX;
+                const newY = touch.clientY - areaRect.top - dragOffsetY;
+                
+                dragTarget.style.left = newX + 'px';
+                dragTarget.style.top = newY + 'px';
+                
+                const entry = placedWords.find(p => p.element === dragTarget);
+                if (entry) {
+                    entry.x = newX;
+                    entry.y = newY;
+                }
+            }
+        }, { passive: false });
+
+        window.addEventListener('touchend', () => {
+            if (isDragging && dragTarget) {
+                isDragging = false;
+                dragTarget.style.animation = `floatAnim ${3 + Math.random() * 2}s ease-in-out ${Math.random() * 1}s infinite alternate`;
+                dragTarget = null;
+            }
+        });
+
+        sendBtn.addEventListener('click', () => {
+            addEntry(wordInput.value);
+            wordInput.value = '';
+            wordInput.focus();
+        });
+
+        wordInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                addEntry(wordInput.value);
+                wordInput.value = '';
+            }
+        });
+
+        clearBtn.addEventListener('click', () => {
+            placedWords.forEach(p => {
+                p.element.classList.remove('active');
+                p.element.style.animation = 'popOut 0.4s ease forwards';
+            });
+            setTimeout(() => {
+                placedWords = [];
+                totalEntries = 0;
+                wordCountEl.textContent = '0';
+                cloudArea.querySelectorAll('.word-item').forEach(el => el.remove());
+                emptyState.style.display = 'block';
+            }, 400);
+        });
+
+        wordInput.focus();
+
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                placedWords.forEach(p => {
+                    const areaRect = cloudArea.getBoundingClientRect();
+                    if (p.x + p.width > areaRect.width) {
+                        p.x = Math.max(10, areaRect.width - p.width - 10);
+                        p.element.style.left = p.x + 'px';
+                    }
+                    if (p.y + p.height > areaRect.height) {
+                        p.y = Math.max(10, areaRect.height - p.height - 10);
+                        p.element.style.top = p.y + 'px';
+                    }
+                });
+            }, 300);
+        });
+    </script>
+</body>
+</html>
+
