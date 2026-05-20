@@ -1,7 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { normalizeRoomCode } from "@/lib/roomCode";
 import { ensureGuestSession, getAccount } from "@/services/appwrite/auth";
 import { createGuest } from "@/services/appwrite/guests";
 import { getRoomByCode } from "@/services/appwrite/rooms";
@@ -12,29 +13,49 @@ import { Input } from "@/shared/ui/Input";
 
 const MIN_NAME = 2;
 const MAX_NAME = 20;
+const MIN_ROOM_CODE = 4;
+const MAX_ROOM_CODE = 12;
 
-interface GuestNameFormProps {
-  roomCode: string;
+interface GuestJoinFormProps {
+  /** Prefill from `?room=` on QR / guest link — user can still edit before joining. */
+  initialRoomCode?: string;
+  fromQr?: boolean;
   onJoined: () => void;
 }
 
-export function GuestNameForm({ roomCode, onJoined }: GuestNameFormProps) {
+export function GuestJoinForm({
+  initialRoomCode = "",
+  fromQr = false,
+  onJoined,
+}: GuestJoinFormProps) {
   const storedName = usePlayerStore((s) => s.displayName);
   const setDisplayName = usePlayerStore((s) => s.setDisplayName);
   const setGuestMode = usePlayerStore((s) => s.setGuestMode);
   const setRoom = useRoomStore((s) => s.setRoom);
   const setGuestId = useRoomStore((s) => s.setGuestId);
   const setHasSubmitted = useRoomStore((s) => s.setHasSubmitted);
+
   const [name, setName] = useState(storedName);
+  const [roomInput, setRoomInput] = useState(initialRoomCode);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const trimmed = name.trim();
-  const isValid =
-    trimmed.length >= MIN_NAME && trimmed.length <= MAX_NAME;
+  useEffect(() => {
+    if (initialRoomCode) {
+      setRoomInput(initialRoomCode);
+    }
+  }, [initialRoomCode]);
+
+  const trimmedName = name.trim();
+  const roomCode = normalizeRoomCode(roomInput);
+  const nameValid =
+    trimmedName.length >= MIN_NAME && trimmedName.length <= MAX_NAME;
+  const roomValid =
+    roomCode.length >= MIN_ROOM_CODE && roomCode.length <= MAX_ROOM_CODE;
+  const canJoin = nameValid && roomValid;
 
   async function handleJoin() {
-    if (!isValid || loading) return;
+    if (!canJoin || loading) return;
 
     setLoading(true);
     setError(null);
@@ -44,18 +65,18 @@ export function GuestNameForm({ roomCode, onJoined }: GuestNameFormProps) {
 
       const room = await getRoomByCode(roomCode);
       if (!room) {
-        throw new Error("Room not found. Check the QR code or ask the host.");
+        throw new Error("Room not found. Check the code with your host.");
       }
 
-      const guest = await createGuest(room.roomId, trimmed);
+      const guest = await createGuest(room.roomId, trimmedName);
 
       try {
-        await getAccount().updateName({ name: trimmed });
+        await getAccount().updateName({ name: trimmedName });
       } catch {
         /* name still saved locally and in guests table */
       }
 
-      setDisplayName(trimmed);
+      setDisplayName(trimmedName);
       setGuestMode(true);
       setRoom(room.roomId, room.$id);
       setGuestId(guest.guestUuid);
@@ -85,9 +106,42 @@ export function GuestNameForm({ roomCode, onJoined }: GuestNameFormProps) {
           whileHover={{ scale: 1.01 }}
           transition={{ type: "spring", stiffness: 400, damping: 30 }}
         >
-          <p className="mb-4 text-center font-mono text-sm tracking-widest text-violet-300">
-            Room {roomCode}
+          {fromQr && roomCode ? (
+            <p className="mb-4 rounded-2xl border border-violet-500/25 bg-violet-500/10 px-3 py-2 text-center text-sm text-violet-200">
+              Scanned room{" "}
+              <span className="font-mono font-bold tracking-widest">
+                {roomCode}
+              </span>
+            </p>
+          ) : null}
+
+          <label
+            htmlFor="guest-room"
+            className="mb-2 block text-sm font-medium text-zinc-300"
+          >
+            Room code
+          </label>
+          <Input
+            id="guest-room"
+            value={roomInput}
+            onChange={(e) => setRoomInput(e.target.value.toUpperCase())}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") void handleJoin();
+            }}
+            placeholder="e.g. ABC123"
+            maxLength={MAX_ROOM_CODE}
+            autoComplete="off"
+            autoCapitalize="characters"
+            autoCorrect="off"
+            spellCheck={false}
+            inputMode="text"
+            autoFocus={!initialRoomCode}
+            className="mb-1 text-center font-mono text-lg font-semibold tracking-widest"
+          />
+          <p className="mb-5 text-center text-xs text-zinc-500">
+            {MIN_ROOM_CODE}–{MAX_ROOM_CODE} letters or numbers
           </p>
+
           <label
             htmlFor="guest-name"
             className="mb-2 block text-sm font-medium text-zinc-300"
@@ -104,7 +158,7 @@ export function GuestNameForm({ roomCode, onJoined }: GuestNameFormProps) {
             placeholder="e.g. Alex"
             maxLength={MAX_NAME}
             autoComplete="nickname"
-            autoFocus
+            autoFocus={Boolean(initialRoomCode)}
             className="mb-1 text-center text-lg font-semibold"
           />
           <p className="mb-6 text-center text-xs text-zinc-500">
@@ -117,11 +171,11 @@ export function GuestNameForm({ roomCode, onJoined }: GuestNameFormProps) {
 
           <Button
             type="button"
-            disabled={!isValid || loading}
+            disabled={!canJoin || loading}
             onClick={() => void handleJoin()}
             className="w-full py-4 text-base font-semibold"
           >
-            {loading ? "Joining…" : "Join lobby"}
+            {loading ? "Joining…" : "Join room"}
           </Button>
         </motion.div>
       </motion.div>

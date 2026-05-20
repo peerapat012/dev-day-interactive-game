@@ -1,5 +1,6 @@
-import { LobbyScreen } from "@/features/lobby/components/LobbyScreen";
+import { redirect } from "next/navigation";
+import { HOME_PATH } from "@/lib/homePaths";
 
 export default function LobbyPage() {
-  return <LobbyScreen />;
+  redirect(HOME_PATH);
 }

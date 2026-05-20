@@ -3,14 +3,17 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { isGuestPath } from "@/lib/guestPaths";
-import { isHostPath } from "@/lib/hostPaths";
+import { isHomePath } from "@/lib/homePaths";
+import { HOST_PATH, isHostPath } from "@/lib/hostPaths";
+import { isLegacyGamePath } from "@/lib/gameNav";
 import { usePlayerStore } from "@/store/playerStore";
 
-const PUBLIC_PATHS = ["/lobby", "/guest", "/host"];
+const PUBLIC_PATHS = ["/", "/lobby", "/guest", "/host"];
 
 function isPublicPath(pathname: string): boolean {
-  return PUBLIC_PATHS.some(
-    (p) => pathname === p || pathname.startsWith(`${p}/`),
+  return (
+    isHomePath(pathname) ||
+    PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))
   );
 }
 
@@ -34,15 +37,27 @@ export function PlayerGate({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!ready) return;
 
-    // Guest flow locks to /guest, but /host is always reachable (e.g. same device as presenter).
-    if (guestMode && !isGuestPath(pathname) && !isHostPath(pathname)) {
-      router.replace("/guest");
+    if (isLegacyGamePath(pathname)) {
+      router.replace(HOST_PATH);
+      return;
+    }
+
+    // Guest flow locks to /guest, but /host and home are still reachable.
+    if (
+      guestMode &&
+      !isGuestPath(pathname) &&
+      !isHostPath(pathname) &&
+      !isHomePath(pathname)
+    ) {
+      const search =
+        typeof window !== "undefined" ? window.location.search : "";
+      router.replace(search ? `/guest${search}` : "/guest");
       return;
     }
 
     const isPublic = isPublicPath(pathname);
     if (!isPublic && !displayName.trim()) {
-      router.replace(guestMode ? "/guest" : "/lobby");
+      router.replace(guestMode ? "/guest" : "/");
     }
   }, [ready, pathname, displayName, guestMode, router]);
 
@@ -54,7 +69,16 @@ export function PlayerGate({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (guestMode && !isGuestPath(pathname) && !isHostPath(pathname)) {
+  if (isLegacyGamePath(pathname)) {
+    return null;
+  }
+
+  if (
+    guestMode &&
+    !isGuestPath(pathname) &&
+    !isHostPath(pathname) &&
+    !isHomePath(pathname)
+  ) {
     return null;
   }
 

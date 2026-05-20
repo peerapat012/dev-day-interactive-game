@@ -3,9 +3,9 @@
 import { motion } from "framer-motion";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { GuestJoinForm } from "@/features/guest/components/GuestJoinForm";
 import { GuestMessagePanel } from "@/features/guest/components/GuestMessagePanel";
-import { GuestNameForm } from "@/features/guest/components/GuestNameForm";
-import { normalizeRoomCode } from "@/lib/roomCode";
+import { roomCodeFromSearchParams } from "@/lib/guestJoinUrl";
 import { usePlayerStore } from "@/store/playerStore";
 import { useRoomStore } from "@/store/roomStore";
 
@@ -15,15 +15,19 @@ export function GuestScreen() {
   const displayName = usePlayerStore((s) => s.displayName);
   const storedRoomId = useRoomStore((s) => s.roomId);
   const guestId = useRoomStore((s) => s.guestId);
+  const setGuestId = useRoomStore((s) => s.setGuestId);
+  const setHasSubmitted = useRoomStore((s) => s.setHasSubmitted);
   const [ready, setReady] = useState(false);
   const [joined, setJoined] = useState(false);
 
-  const roomFromUrl = useMemo(
-    () => normalizeRoomCode(searchParams.get("room") ?? ""),
+  const roomFromQr = useMemo(
+    () => roomCodeFromSearchParams(searchParams),
     [searchParams],
   );
 
-  const roomCode = roomFromUrl || storedRoomId;
+  const resumeSameRoom =
+    Boolean(storedRoomId) &&
+    (!roomFromQr || roomFromQr === storedRoomId);
 
   useEffect(() => {
     const unsub = usePlayerStore.persist.onFinishHydration(() => {
@@ -37,10 +41,28 @@ export function GuestScreen() {
 
   useEffect(() => {
     if (!ready) return;
-    if (guestMode && displayName.trim() && guestId && storedRoomId) {
+
+    if (roomFromQr && storedRoomId && roomFromQr !== storedRoomId) {
+      setJoined(false);
+      setGuestId("");
+      setHasSubmitted(false);
+      return;
+    }
+
+    if (guestMode && displayName.trim() && guestId && storedRoomId && resumeSameRoom) {
       setJoined(true);
     }
-  }, [ready, guestMode, displayName, guestId, storedRoomId]);
+  }, [
+    ready,
+    guestMode,
+    displayName,
+    guestId,
+    storedRoomId,
+    roomFromQr,
+    resumeSameRoom,
+    setGuestId,
+    setHasSubmitted,
+  ]);
 
   if (!ready) {
     return (
@@ -54,30 +76,27 @@ export function GuestScreen() {
     );
   }
 
-  if (!roomCode && !joined) {
-    return (
-      <div className="flex min-h-dvh flex-col items-center justify-center px-6 text-center">
-        <p className="text-lg font-medium text-zinc-200">Missing room code</p>
-        <p className="mt-2 text-sm text-zinc-500">
-          Scan the host QR code or open the guest link shared by the host.
-        </p>
-      </div>
-    );
-  }
-
   if (!joined) {
     return (
       <div className="relative flex min-h-dvh flex-col overflow-hidden">
-        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <motion.div
+          className="pointer-events-none absolute inset-0 overflow-hidden"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
           <motion.div
             className="absolute -left-32 top-20 h-64 w-64 rounded-full bg-violet-600/20 blur-3xl"
             animate={{ scale: [1, 1.05, 1] }}
             transition={{ duration: 8, repeat: Infinity }}
           />
           <div className="absolute -right-24 bottom-24 h-72 w-72 rounded-full bg-fuchsia-600/15 blur-3xl" />
-        </div>
+        </motion.div>
 
-        <div className="relative z-10 px-4 pb-[env(safe-area-inset-bottom)] pt-[max(2rem,env(safe-area-inset-top))] text-center">
+        <motion.div
+          className="relative z-10 px-4 pb-[env(safe-area-inset-bottom)] pt-[max(2rem,env(safe-area-inset-top))] text-center"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-violet-400">
             Word Cloud Game
           </p>
@@ -85,11 +104,26 @@ export function GuestScreen() {
             Join as guest
           </h1>
           <p className="mx-auto mt-3 max-w-sm text-zinc-400">
-            Enter your nickname to join this room.
+            {roomFromQr ? (
+              <>
+                Room{" "}
+                <span className="font-mono font-semibold text-violet-300">
+                  {roomFromQr}
+                </span>{" "}
+                from QR — confirm the code and enter your nickname.
+              </>
+            ) : (
+              "Enter the room code from the host (or scan their QR) and your nickname."
+            )}
           </p>
-        </div>
+        </motion.div>
 
-        <GuestNameForm roomCode={roomCode} onJoined={() => setJoined(true)} />
+        <GuestJoinForm
+          key={roomFromQr || "manual"}
+          initialRoomCode={roomFromQr}
+          fromQr={Boolean(roomFromQr)}
+          onJoined={() => setJoined(true)}
+        />
       </div>
     );
   }

@@ -1,13 +1,11 @@
-import { PageShell } from "@/shared/components/PageShell";
-import { CloudPageClient } from "@/features/cloud/components/CloudPageClient";
+import type { Metadata } from "next";
+import { HomeScreen } from "@/features/home/components/HomeScreen";
+
+export const metadata: Metadata = {
+  title: "Word Cloud Game",
+  description: "Host a session or join as a guest",
+};
 
 export default function HomePage() {
-  return (
-    <PageShell
-      title="Live raw cloud"
-      description="Submit phrases to the live cloud. Classification runs when you open Summary and press Summarize."
-    >
-      <CloudPageClient />
-    </PageShell>
-  );
+  return <HomeScreen />;
 }

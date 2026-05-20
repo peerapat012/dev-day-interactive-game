@@ -1,5 +1,6 @@
-import { SummaryPresentation } from "@/features/summary/components/SummaryPresentation";
+import { redirect } from "next/navigation";
+import { HOST_PATH } from "@/lib/hostPaths";
 
 export default function SummaryPage() {
-  return <SummaryPresentation />;
+  redirect(HOST_PATH);
 }

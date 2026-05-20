@@ -46,8 +46,8 @@ const ICON_BY_HREF: Record<
   (typeof GAME_NAV)[number]["href"],
   typeof CloudIcon
 > = {
-  "/": CloudIcon,
-  "/summary": SummaryIcon,
+  "/host": CloudIcon,
+  "/guest": SummaryIcon,
 };
 
 export function MobileTabBar() {
@@ -62,8 +62,7 @@ export function MobileTabBar() {
       <ul className="mx-auto flex max-w-lg items-stretch justify-around px-2 pt-2">
         {GAME_NAV.map((item) => {
           const active =
-            pathname === item.href ||
-            (item.href !== "/" && pathname.startsWith(item.href));
+            pathname === item.href || pathname.startsWith(`${item.href}/`);
           const Icon = ICON_BY_HREF[item.href] ?? CloudIcon;
 
           return (

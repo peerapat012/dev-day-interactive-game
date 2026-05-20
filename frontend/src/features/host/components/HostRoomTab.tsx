@@ -9,14 +9,22 @@ import { Button } from "@/shared/ui/Button";
 
 interface HostRoomTabProps {
   roomId: string;
+  creating: boolean;
+  onCreateNewRoom: () => Promise<string>;
 }
 
-export function HostRoomTab({ roomId }: HostRoomTabProps) {
+export function HostRoomTab({
+  roomId,
+  creating,
+  onCreateNewRoom,
+}: HostRoomTabProps) {
   const setEntries = useEntriesStore((s) => s.setEntries);
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [clearError, setClearError] = useState<string | null>(null);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [createdCode, setCreatedCode] = useState<string | null>(null);
 
   const guestUrl = useMemo(() => buildGuestJoinUrl(roomId), [roomId]);
 
@@ -43,6 +51,28 @@ export function HostRoomTab({ roomId }: HostRoomTabProps) {
       setTimeout(() => setCopiedCode(false), 2000);
     } catch {
       setCopiedCode(false);
+    }
+  }
+
+  async function handleCreateNewRoom() {
+    if (
+      !window.confirm(
+        "Create a new room with a new code? Current guest link and QR will stop working for this session.",
+      )
+    ) {
+      return;
+    }
+
+    setCreateError(null);
+    setCreatedCode(null);
+    try {
+      const newCode = await onCreateNewRoom();
+      setCreatedCode(newCode);
+      setTimeout(() => setCreatedCode(null), 4000);
+    } catch (err) {
+      setCreateError(
+        err instanceof Error ? err.message : "Could not create room",
+      );
     }
   }
 
@@ -101,7 +131,31 @@ export function HostRoomTab({ roomId }: HostRoomTabProps) {
         </Button>
       </div>
 
-      <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-4">
+      <motion.div className="rounded-2xl border border-violet-500/20 bg-violet-500/5 p-4">
+        <p className="text-sm text-zinc-300">
+          Need a fresh room code for a new session? Guests will use the new QR
+          and link below.
+        </p>
+        <Button
+          type="button"
+          onClick={() => void handleCreateNewRoom()}
+          disabled={creating || clearing}
+          className="mt-3 w-full"
+        >
+          {creating ? "Creating…" : "Create new room"}
+        </Button>
+        {createdCode ? (
+          <p className="mt-3 text-center text-sm text-emerald-300">
+            New room code:{" "}
+            <span className="font-mono font-bold">{createdCode}</span>
+          </p>
+        ) : null}
+        {createError ? (
+          <p className="mt-3 text-sm text-rose-400">{createError}</p>
+        ) : null}
+      </motion.div>
+
+      <motion.div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-4">
         <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
           Guest link
         </p>
@@ -113,9 +167,9 @@ export function HostRoomTab({ roomId }: HostRoomTabProps) {
         >
           {copiedLink ? "Link copied!" : "Copy guest link"}
         </Button>
-      </div>
+      </motion.div>
 
-      <div className="rounded-2xl border border-rose-500/20 bg-rose-500/5 p-4">
+      <motion.div className="rounded-2xl border border-rose-500/20 bg-rose-500/5 p-4">
         <p className="text-sm text-zinc-400">
           Reset this room: remove all guests, phrases, groups, and summaries from
           the database.
@@ -132,7 +186,7 @@ export function HostRoomTab({ roomId }: HostRoomTabProps) {
         {clearError ? (
           <p className="mt-3 text-sm text-rose-400">{clearError}</p>
         ) : null}
-      </div>
+      </motion.div>
     </motion.div>
   );
 }

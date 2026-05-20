@@ -6,7 +6,7 @@ import { HostInputsTab } from "@/features/host/components/HostInputsTab";
 import { HostRoomTab } from "@/features/host/components/HostRoomTab";
 import { HostShell } from "@/features/host/components/HostShell";
 import { HostSummaryTab } from "@/features/host/components/HostSummaryTab";
-import { useEnsureHostRoom } from "@/features/host/hooks/useEnsureHostRoom";
+import { useHostRoom } from "@/features/host/hooks/useHostRoom";
 import type { HostTabId } from "@/features/host/components/HostTabBar";
 import { usePlayerStore } from "@/store/playerStore";
 
@@ -35,11 +35,22 @@ const TAB_COPY: Record<HostTabId, { title: string; description: string }> = {
 function HostTabPanel({
   activeTab,
   roomId,
+  creating,
+  createNewRoom,
 }: {
   activeTab: HostTabId;
   roomId: string;
+  creating: boolean;
+  createNewRoom: () => Promise<string>;
 }) {
-  if (activeTab === "room") return <HostRoomTab roomId={roomId} />;
+  if (activeTab === "room")
+    return (
+      <HostRoomTab
+        roomId={roomId}
+        creating={creating}
+        onCreateNewRoom={createNewRoom}
+      />
+    );
   if (activeTab === "inputs") return <HostInputsTab roomId={roomId} />;
   if (activeTab === "groups") return <HostGroupsTab />;
   return <HostSummaryTab />;
@@ -47,7 +58,7 @@ function HostTabPanel({
 
 export function HostScreen() {
   const setGuestMode = usePlayerStore((s) => s.setGuestMode);
-  const { ready, error, roomId } = useEnsureHostRoom();
+  const { ready, error, roomId, creating, createNewRoom } = useHostRoom();
   const [activeTab, setActiveTab] = useState<HostTabId>("room");
   const copy = TAB_COPY[activeTab];
 
@@ -78,7 +89,12 @@ export function HostScreen() {
       title={copy.title}
       description={copy.description}
     >
-      <HostTabPanel activeTab={activeTab} roomId={roomId} />
+      <HostTabPanel
+        activeTab={activeTab}
+        roomId={roomId}
+        creating={creating}
+        createNewRoom={createNewRoom}
+      />
     </HostShell>
   );
 }
