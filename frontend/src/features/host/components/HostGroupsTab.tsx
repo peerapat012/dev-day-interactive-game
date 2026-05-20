@@ -3,9 +3,10 @@
 import { motion } from "framer-motion";
 import { useMemo } from "react";
 import { useClassifyGroups } from "@/features/game/hooks/useClassifyGroups";
-import { buildGroupBubbles } from "@/lib/aggregateEntries";
-import { BubbleField } from "@/shared/components/bubble/BubbleField";
+import { buildFloatingItemsFromGroups } from "@/lib/buildFloatingTextItems";
+import { FloatingTextField } from "@/shared/components/floating-text/FloatingTextField";
 import { Button } from "@/shared/ui/Button";
+import { useEntriesStore } from "@/store/entriesStore";
 
 export function HostGroupsTab() {
   const {
@@ -20,7 +21,8 @@ export function HostGroupsTab() {
     roomId,
   } = useClassifyGroups();
 
-  const bubbles = useMemo(() => buildGroupBubbles(groups), [groups]);
+  const groupItems = useMemo(() => buildFloatingItemsFromGroups(groups), [groups]);
+
   const hasGroups = groups.length > 0;
 
   return (
@@ -93,24 +95,11 @@ export function HostGroupsTab() {
       ) : null}
 
       {!loading && isHydrated && hasGroups ? (
-        <>
-          <ul className="flex flex-wrap gap-2">
-            {groups.map((group, index) => (
-              <li
-                key={group.group}
-                className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-zinc-300"
-              >
-                <span className="font-semibold text-violet-300">#{index + 1}</span>
-                <span className="font-medium capitalize">{group.group}</span>
-                <span className="text-zinc-500">· {group.count}</span>
-              </li>
-            ))}
-          </ul>
-          <BubbleField
-            items={bubbles}
-            className="min-h-[min(55dvh,560px)] flex-1"
-          />
-        </>
+        <FloatingTextField
+          items={groupItems}
+          className="min-h-[min(55dvh,560px)] flex-1"
+          emptyMessage="No groups yet."
+        />
       ) : null}
 
       {!loading && isHydrated && entryCount > 0 && !hasGroups && !error ? (

@@ -261,7 +261,10 @@ export async function startNewRound(roomId: string, roomRowId: string): Promise<
   });
 }
 
-/** Full wipe including guest rows (legacy clear). */
+/**
+ * Same-room reset for host: wipes phrases + room snapshots + saved-round history,
+ * resets all guests `hasSubmitted` so they can send again without scanning QR again.
+ */
 export async function clearRoomRows(roomId: string): Promise<void> {
   await ensureGuestSession();
   assertConfig();
@@ -272,7 +275,7 @@ export async function clearRoomRows(roomId: string): Promise<void> {
     ]);
   }
 
-  await deleteAllInTable(APPWRITE.guestsTableId, [Query.equal("roomId", roomId)]);
+  await resetGuestsSubmissionForRoom(roomId);
 
   const room = await getRoomByCode(roomId);
   if (room) {

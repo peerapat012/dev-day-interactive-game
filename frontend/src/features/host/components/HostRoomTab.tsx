@@ -79,7 +79,7 @@ export function HostRoomTab({
   async function handleClear() {
     if (
       !window.confirm(
-        "Clear all guest names, phrases, groups, and summaries for this room?",
+        "Clear all phrases and saved summaries for this room? Guests keep the same link and can send a new phrase.",
       )
     ) {
       return;
@@ -171,8 +171,8 @@ export function HostRoomTab({
 
       <motion.div className="rounded-2xl border border-rose-500/20 bg-rose-500/5 p-4">
         <p className="text-sm text-zinc-400">
-          Reset this room: remove all guests, phrases, groups, and summaries from
-          the database.
+          Removes all phrases, groups, summaries, and saved rounds for this room. Guest
+          nicknames stay; everyone can submit a new phrase again with the same link.
         </p>
         <Button
           type="button"

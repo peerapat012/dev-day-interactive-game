@@ -30,7 +30,10 @@ export function useGuestSubmissionStatus() {
 
     void guestHasSubmitted(roomId, guestId)
       .then((submitted) => {
-        if (!cancelled) setHasSubmitted(submitted);
+        if (!cancelled) {
+          setGuestInvalid(false);
+          setHasSubmitted(submitted);
+        }
       })
       .catch(() => {
         if (!cancelled) {
