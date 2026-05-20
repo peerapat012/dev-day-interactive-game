@@ -4,10 +4,18 @@ import { useEffect } from "react";
 import { listEntries } from "@/services/appwrite/entries";
 import { subscribeToEntries } from "@/services/appwrite/realtime";
 import { ensureGuestSession } from "@/services/appwrite/auth";
+import { ENTRIES_CHANGED_EVENT } from "@/lib/entriesSync";
 import { useEntriesStore } from "@/store/entriesStore";
 import { useRoomStore } from "@/store/roomStore";
 
-const POLL_MS = 12_000;
+/** Fast polling so floating text stays live when WebSocket fails (common in dev). */
+const LIVE_POLL_MS = 2_000;
+
+function isDeleteEvent(events: string[]): boolean {
+  return events.some(
+    (e) => e.includes(".delete") || e.endsWith(".rows.delete"),
+  );
+}
 
 export function useRealtimeEntries() {
   const roomId = useRoomStore((s) => s.roomId);
@@ -35,9 +43,10 @@ export function useRealtimeEntries() {
 
     function startPolling() {
       if (pollTimer) return;
+      void refreshEntries().catch(() => undefined);
       pollTimer = setInterval(() => {
         void refreshEntries().catch(() => undefined);
-      }, POLL_MS);
+      }, LIVE_POLL_MS);
     }
 
     async function bootstrap() {
@@ -50,10 +59,10 @@ export function useRealtimeEntries() {
         setError(null);
 
         const { unsubscribe, connected } = await subscribeToEntries(
+          roomId,
           (entry, events) => {
-            if (cancelled || entry.roomId !== roomId) return;
-            const isDelete = events.some((e) => e.includes(".delete"));
-            if (isDelete) {
+            if (cancelled) return;
+            if (isDeleteEvent(events)) {
               removeEntry(entry.$id);
               return;
             }
@@ -63,15 +72,34 @@ export function useRealtimeEntries() {
         unsubscribeRealtime = unsubscribe;
 
         if (!connected) {
-          startPolling();
+          console.info(
+            "[entries] Realtime unavailable — refreshing every %ds",
+            LIVE_POLL_MS / 1000,
+          );
         }
+
+        startPolling();
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : "Failed to load entries");
           setHydrated(true);
+          startPolling();
         }
       }
     }
+
+    const onEntriesChanged = (e: Event) => {
+      const detail = (e as CustomEvent<{ roomId?: string }>).detail;
+      if (!detail?.roomId || detail.roomId !== roomId) return;
+      void refreshEntries().catch(() => undefined);
+    };
+
+    const onVisible = () => {
+      if (!document.hidden) void refreshEntries().catch(() => undefined);
+    };
+
+    window.addEventListener(ENTRIES_CHANGED_EVENT, onEntriesChanged);
+    document.addEventListener("visibilitychange", onVisible);
 
     void bootstrap();
 
@@ -79,6 +107,8 @@ export function useRealtimeEntries() {
       cancelled = true;
       unsubscribeRealtime?.();
       if (pollTimer) clearInterval(pollTimer);
+      window.removeEventListener(ENTRIES_CHANGED_EVENT, onEntriesChanged);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, [
     roomId,

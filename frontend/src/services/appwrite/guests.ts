@@ -134,7 +134,7 @@ export async function guestHasSubmitted(
   });
 
   if (result.total > 0) return true;
-  return false;
+  return guest.hasSubmitted;
 }
 
 export async function resetGuestsSubmissionForRoom(roomId: string): Promise<void> {

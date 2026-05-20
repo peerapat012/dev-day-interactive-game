@@ -2,6 +2,7 @@
 
 import { useCallback } from "react";
 import { PENDING_GROUP } from "@/lib/constants";
+import { notifyEntriesChanged } from "@/lib/entriesSync";
 import { createEntry } from "@/services/appwrite/entries";
 import {
   guestHasSubmitted,
@@ -63,6 +64,7 @@ export function useSubmitEntry() {
         await markGuestSubmitted(guestId);
         setHasSubmitted(true);
         upsertEntry(entry);
+        notifyEntriesChanged(roomId);
       } catch (err) {
         if (err instanceof Error) {
           setError(err.message);

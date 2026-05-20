@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   guestHasSubmitted,
   isStaleGuestSessionError,
@@ -8,7 +8,9 @@ import {
 import { useEntriesStore } from "@/store/entriesStore";
 import { useRoomStore } from "@/store/roomStore";
 
-/** Sync guest hasSubmitted from Appwrite (e.g. after page refresh). */
+const POLL_MS = 4_000;
+
+/** Sync guest hasSubmitted from Appwrite (refresh, host clear/new round, polling). */
 export function useGuestSubmissionStatus() {
   const roomId = useRoomStore((s) => s.roomId);
   const guestId = useRoomStore((s) => s.guestId);
@@ -23,6 +25,31 @@ export function useGuestSubmissionStatus() {
     [entries, roomId],
   );
 
+  const syncFromServer = useCallback(async () => {
+    if (!roomId || !guestId) {
+      setGuestInvalid(false);
+      setChecking(false);
+      return;
+    }
+
+    setChecking(true);
+    try {
+      const submitted = await guestHasSubmitted(roomId, guestId);
+      setGuestInvalid(false);
+      setHasSubmitted(submitted);
+    } catch (err) {
+      if (isStaleGuestSessionError(err)) {
+        useRoomStore.getState().setGuestId("");
+        useRoomStore.getState().setHasSubmitted(false);
+        setGuestInvalid(false);
+      } else {
+        setGuestInvalid(false);
+      }
+    } finally {
+      setChecking(false);
+    }
+  }, [roomId, guestId, setHasSubmitted]);
+
   useEffect(() => {
     if (!roomId || !guestId) {
       setGuestInvalid(false);
@@ -30,35 +57,32 @@ export function useGuestSubmissionStatus() {
       return;
     }
 
-    let cancelled = false;
+    void syncFromServer();
+  }, [roomId, guestId, roomEntryCount, syncFromServer]);
 
-    void guestHasSubmitted(roomId, guestId)
-      .then((submitted) => {
-        if (!cancelled) {
-          setGuestInvalid(false);
-          setHasSubmitted(submitted);
-        }
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          if (isStaleGuestSessionError(err)) {
-            // Host cleared data or wiped guests: drop stale persisted guestUuid so QR rejoin hits the join form.
-            useRoomStore.getState().setGuestId("");
-            useRoomStore.getState().setHasSubmitted(false);
-            setGuestInvalid(false);
-          } else {
-            setGuestInvalid(false);
-          }
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setChecking(false);
-      });
+  /** Host bulk-deletes often skip realtime; re-check submission on a timer. */
+  useEffect(() => {
+    if (!roomId || !guestId) return;
+
+    const id = window.setInterval(() => void syncFromServer(), POLL_MS);
+
+    const onVisible = () => {
+      if (!document.hidden) void syncFromServer();
+    };
+    document.addEventListener("visibilitychange", onVisible);
 
     return () => {
-      cancelled = true;
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [roomId, guestId, roomEntryCount, setHasSubmitted]);
+  }, [roomId, guestId, syncFromServer]);
+
+  /** Local feed cleared — unlock UI until server poll confirms. */
+  useEffect(() => {
+    if (roomId && guestId && roomEntryCount === 0 && hasSubmitted) {
+      setHasSubmitted(false);
+    }
+  }, [roomId, guestId, roomEntryCount, hasSubmitted, setHasSubmitted]);
 
   return { hasSubmitted, checking, guestInvalid };
 }

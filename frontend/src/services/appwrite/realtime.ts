@@ -1,4 +1,4 @@
-import { Channel, Realtime, type RealtimeSubscription } from "appwrite";
+import { Channel, Query, Realtime, type RealtimeSubscription } from "appwrite";
 import { APPWRITE } from "@/lib/constants";
 import { getAppwriteClient } from "@/services/appwrite/client";
 import { ensureGuestSession } from "@/services/appwrite/auth";
@@ -6,22 +6,23 @@ import type { Entry } from "@/types/entry";
 
 export type EntryRealtimeHandler = (entry: Entry, event: string[]) => void;
 
-let realtimeClient: Realtime | null = null;
-let activeSubscription: RealtimeSubscription | null = null;
-let subscribePromise: Promise<RealtimeSubscription | null> | null = null;
-const listeners = new Set<EntryRealtimeHandler>();
+let realtimeService: Realtime | null = null;
+let wsErrorLogged = false;
 
-function getRealtime(): Realtime {
-  if (!realtimeClient) {
-    realtimeClient = new Realtime(getAppwriteClient());
+function getRealtimeService(): Realtime {
+  if (!realtimeService) {
+    realtimeService = new Realtime(getAppwriteClient());
+    realtimeService.onError((err, code) => {
+      if (!wsErrorLogged) {
+        console.warn(
+          "[realtime] WebSocket error — live updates use polling:",
+          err?.message ?? code,
+        );
+        wsErrorLogged = true;
+      }
+    });
   }
-  return realtimeClient;
-}
-
-function getEntryChannels(): string[] {
-  const { databaseId, collectionId } = APPWRITE;
-  const channel = Channel.tablesdb(databaseId).table(collectionId).row();
-  return [channel.toString(), `tablesdb.${databaseId}.tables.${collectionId}.rows`];
+  return realtimeService;
 }
 
 function mapPayload(payload: Record<string, unknown>): Entry {
@@ -36,88 +37,73 @@ function mapPayload(payload: Record<string, unknown>): Entry {
   };
 }
 
-function notifyListeners(entry: Entry, events: string[]) {
-  for (const listener of listeners) {
-    listener(entry, events);
-  }
+function parseEntryPayload(
+  payload: Record<string, unknown> | undefined,
+): Entry | null {
+  if (!payload || typeof payload.$id !== "string") return null;
+  return mapPayload(payload);
 }
 
-async function openSubscription(): Promise<RealtimeSubscription | null> {
-  if (!APPWRITE.databaseId || !APPWRITE.collectionId) {
-    return null;
-  }
-
-  await ensureGuestSession();
-
-  const realtime = getRealtime();
-  const channels = getEntryChannels();
-
-  try {
-    const subscription = await realtime.subscribe(channels, (response) => {
-      const payload = response.payload as Record<string, unknown> | undefined;
-      if (!payload?.$id) return;
-      notifyListeners(mapPayload(payload), response.events);
-    });
-    return subscription;
-  } catch (err) {
-    console.warn("[realtime] subscribe failed:", err);
-    return null;
-  }
-}
-
-async function ensureSharedSubscription(): Promise<boolean> {
-  if (activeSubscription) return true;
-  if (!subscribePromise) {
-    subscribePromise = openSubscription().finally(() => {
-      subscribePromise = null;
-    });
-  }
-  const sub = await subscribePromise;
-  if (sub) {
-    activeSubscription = sub;
-    return true;
-  }
-  return false;
+function isDeleteEvent(events: string[]): boolean {
+  return events.some(
+    (e) => e.includes(".delete") || e.endsWith(".rows.delete"),
+  );
 }
 
 export type SubscribeResult = {
   unsubscribe: () => void;
-  /** True when Appwrite WebSocket subscription is active */
+  /** True when Appwrite WebSocket subscription was created */
   connected: boolean;
 };
 
 /**
- * Subscribe to table row events (singleton — safe with React Strict Mode).
+ * Subscribe to entry row events for one room (filtered server-side when supported).
  */
 export async function subscribeToEntries(
+  roomId: string,
   onEvent: EntryRealtimeHandler,
 ): Promise<SubscribeResult> {
-  listeners.add(onEvent);
-
-  const connected = await ensureSharedSubscription();
-  if (!connected && listeners.size === 1) {
-    console.warn(
-      "[realtime] WebSocket unavailable — enable Realtime in Appwrite Console or use polling",
-    );
+  if (!APPWRITE.databaseId || !APPWRITE.collectionId || !roomId.trim()) {
+    return { connected: false, unsubscribe: () => undefined };
   }
 
-  return {
-    connected,
-    unsubscribe: () => {
-      listeners.delete(onEvent);
-      if (listeners.size === 0 && activeSubscription) {
-        void activeSubscription.close();
-        activeSubscription = null;
-      }
-    },
-  };
+  await ensureGuestSession();
+
+  const channel = Channel.tablesdb(APPWRITE.databaseId)
+    .table(APPWRITE.collectionId)
+    .row();
+
+  try {
+    const realtime = getRealtimeService();
+    const subscription: RealtimeSubscription = await realtime.subscribe(
+      [channel],
+      (response) => {
+        const entry = parseEntryPayload(
+          response.payload as Record<string, unknown> | undefined,
+        );
+        if (!entry || entry.roomId !== roomId) return;
+        onEvent(entry, response.events ?? []);
+      },
+      [Query.equal("roomId", roomId)],
+    );
+
+    return {
+      connected: true,
+      unsubscribe: () => {
+        void subscription.unsubscribe();
+      },
+    };
+  } catch (err) {
+    console.warn("[realtime] subscribe failed:", err);
+    return { connected: false, unsubscribe: () => undefined };
+  }
 }
 
-/** Tear down shared WebSocket (e.g. full app unmount). */
-export function closeEntriesRealtime(): void {
-  listeners.clear();
-  if (activeSubscription) {
-    void activeSubscription.close();
-    activeSubscription = null;
+/** Full teardown (e.g. logout). Prefer per-hook `unsubscribe()` during normal navigation. */
+export async function closeEntriesRealtime(): Promise<void> {
+  if (realtimeService) {
+    await realtimeService.disconnect();
+    realtimeService = null;
+    wsErrorLogged = false;
   }
 }
