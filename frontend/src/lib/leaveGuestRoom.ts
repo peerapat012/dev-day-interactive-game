@@ -1,4 +1,4 @@
-import { clearGuestJoinRoomDraft } from "@/lib/guestJoinDraft";
+import { bumpJoinFormEpoch } from "@/lib/guestJoinDraft";
 import { useEntriesStore } from "@/store/entriesStore";
 import { usePlayerStore } from "@/store/playerStore";
 import { useRoomStore } from "@/store/roomStore";
@@ -14,7 +14,8 @@ export const WORD_CLOUD_STORAGE_KEYS = {
  * removes persisted slices from localStorage. Does not touch Appwrite.
  */
 export function leaveGuestRoom(): void {
-  clearGuestJoinRoomDraft();
+  bumpJoinFormEpoch();
+
   useEntriesStore.setState({
     entries: [],
     error: null,
@@ -24,6 +25,6 @@ export function leaveGuestRoom(): void {
   useRoomStore.getState().clearRoom();
   usePlayerStore.getState().clearPlayer();
 
-  useRoomStore.persist.clearStorage();
-  usePlayerStore.persist.clearStorage();
+  void useRoomStore.persist.clearStorage();
+  void usePlayerStore.persist.clearStorage();
 }

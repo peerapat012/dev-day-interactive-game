@@ -1,32 +1,37 @@
-const DRAFT_KEY = "word-cloud-join-room-draft";
+/** Bump when guest must see a blank room field (host closed room, leave, clear device). */
+const RESET_EPOCH_KEY = "word-cloud-join-form-epoch";
 
-export function readGuestJoinRoomDraft(): string {
-  if (typeof window === "undefined") return "";
+export function readJoinFormEpoch(): number {
+  if (typeof window === "undefined") return 0;
   try {
-    return window.sessionStorage.getItem(DRAFT_KEY) ?? "";
+    const raw = window.sessionStorage.getItem(RESET_EPOCH_KEY);
+    const n = raw ? Number.parseInt(raw, 10) : 0;
+    return Number.isFinite(n) ? n : 0;
   } catch {
-    return "";
+    return 0;
   }
 }
 
-export function writeGuestJoinRoomDraft(value: string): void {
-  if (typeof window === "undefined") return;
+export function bumpJoinFormEpoch(): number {
+  if (typeof window === "undefined") return 0;
   try {
-    if (!value.trim()) {
-      window.sessionStorage.removeItem(DRAFT_KEY);
-      return;
-    }
-    window.sessionStorage.setItem(DRAFT_KEY, value);
+    const next = readJoinFormEpoch() + 1;
+    window.sessionStorage.setItem(RESET_EPOCH_KEY, String(next));
+    return next;
   } catch {
-    /* private mode / quota */
+    return 0;
   }
+}
+
+/** @deprecated Room draft caused stale codes to reappear; epoch reset replaces this. */
+export function readGuestJoinRoomDraft(): string {
+  return "";
+}
+
+export function writeGuestJoinRoomDraft(_value: string): void {
+  /* no-op — do not persist typed room codes */
 }
 
 export function clearGuestJoinRoomDraft(): void {
-  if (typeof window === "undefined") return;
-  try {
-    window.sessionStorage.removeItem(DRAFT_KEY);
-  } catch {
-    /* ignore */
-  }
+  /* no-op */
 }

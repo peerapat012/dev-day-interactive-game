@@ -1,13 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useEffect, useId, useRef, useState } from "react";
+import { useId, useState } from "react";
 import { clearGuestRoomSession } from "@/lib/clearGuestRoomSession";
-import {
-  clearGuestJoinRoomDraft,
-  readGuestJoinRoomDraft,
-  writeGuestJoinRoomDraft,
-} from "@/lib/guestJoinDraft";
 import { leaveGuestRoom } from "@/lib/leaveGuestRoom";
 import { normalizeRoomCode } from "@/lib/roomCode";
 import { ensureGuestSession, getAccount } from "@/services/appwrite/auth";
@@ -26,22 +21,23 @@ const MAX_ROOM_CODE = 12;
 interface GuestJoinFormProps {
   /** Prefill from `?room=` on QR / guest link — user can still edit before joining. */
   initialRoomCode?: string;
+  /** Changes when session was cleared — remounts inputs so mobile autofill cannot restore old codes. */
+  formEpoch?: number;
   fromQr?: boolean;
   onJoined: () => void;
-}
-
-function initialRoomInput(qrCode: string): string {
-  if (qrCode) return qrCode;
-  return readGuestJoinRoomDraft();
+  /** Called after leave/clear so parent can remount inputs (mobile autofill). */
+  onSessionCleared?: () => void;
 }
 
 export function GuestJoinForm({
   initialRoomCode = "",
+  formEpoch = 0,
   fromQr = false,
   onJoined,
+  onSessionCleared,
 }: GuestJoinFormProps) {
   const roomFieldId = useId();
-  const userEditedRoom = useRef(false);
+  const qrCode = normalizeRoomCode(initialRoomCode);
 
   const storedName = usePlayerStore((s) => s.displayName);
   const setDisplayName = usePlayerStore((s) => s.setDisplayName);
@@ -50,35 +46,10 @@ export function GuestJoinForm({
   const setGuestId = useRoomStore((s) => s.setGuestId);
   const setHasSubmitted = useRoomStore((s) => s.setHasSubmitted);
 
-  const qrCode = normalizeRoomCode(initialRoomCode);
-
   const [name, setName] = useState(storedName);
-  const [roomInput, setRoomInput] = useState(() => initialRoomInput(qrCode));
+  const [roomInput, setRoomInput] = useState(() => (qrCode ? qrCode : ""));
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (!qrCode || userEditedRoom.current) return;
-    setRoomInput(qrCode);
-    writeGuestJoinRoomDraft(qrCode);
-    const stored = normalizeRoomCode(useRoomStore.getState().roomId);
-    if (stored && stored !== qrCode) {
-      clearGuestRoomSession();
-    }
-  }, [qrCode]);
-
-  function handleRoomInputChange(raw: string) {
-    userEditedRoom.current = true;
-    const next = raw.toUpperCase();
-    setRoomInput(next);
-    writeGuestJoinRoomDraft(next);
-
-    const typed = normalizeRoomCode(next);
-    const stored = normalizeRoomCode(useRoomStore.getState().roomId);
-    if (stored && typed && typed !== stored) {
-      clearGuestRoomSession();
-    }
-  }
 
   const trimmedName = name.trim();
   const roomCode = normalizeRoomCode(roomInput);
@@ -87,6 +58,17 @@ export function GuestJoinForm({
   const roomValid =
     roomCode.length >= MIN_ROOM_CODE && roomCode.length <= MAX_ROOM_CODE;
   const canJoin = nameValid && roomValid;
+
+  function handleRoomInputChange(raw: string) {
+    const next = raw.toUpperCase();
+    setRoomInput(next);
+
+    const typed = normalizeRoomCode(next);
+    const stored = normalizeRoomCode(useRoomStore.getState().roomId);
+    if (stored && typed && typed !== stored) {
+      clearGuestRoomSession();
+    }
+  }
 
   async function handleJoin() {
     if (!canJoin || loading) return;
@@ -117,7 +99,6 @@ export function GuestJoinForm({
         /* name still saved locally and in guests table */
       }
 
-      clearGuestJoinRoomDraft();
       setDisplayName(trimmedName);
       setGuestMode(true);
       setRoom(room.roomId, room.$id);
@@ -140,12 +121,13 @@ export function GuestJoinForm({
       return;
     }
     leaveGuestRoom();
-    userEditedRoom.current = false;
-    clearGuestJoinRoomDraft();
     setName("");
-    setRoomInput(qrCode);
+    setRoomInput("");
     setError(null);
+    onSessionCleared?.();
   }
+
+  const roomInputKey = `room-${formEpoch}-${qrCode || "manual"}`;
 
   return (
     <motion.div
@@ -180,8 +162,9 @@ export function GuestJoinForm({
             Room code
           </label>
           <Input
+            key={roomInputKey}
             id={roomFieldId}
-            name={roomFieldId}
+            name={roomInputKey}
             value={roomInput}
             onChange={(e) => handleRoomInputChange(e.target.value)}
             onKeyDown={(e) => {
@@ -189,7 +172,7 @@ export function GuestJoinForm({
             }}
             placeholder="e.g. ABC123"
             maxLength={MAX_ROOM_CODE}
-            autoComplete="one-time-code"
+            autoComplete="off"
             autoCapitalize="characters"
             autoCorrect="off"
             spellCheck={false}
@@ -210,6 +193,7 @@ export function GuestJoinForm({
             Your nickname
           </label>
           <Input
+            key={`name-${formEpoch}`}
             id="guest-name"
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -218,7 +202,7 @@ export function GuestJoinForm({
             }}
             placeholder="e.g. Alex"
             maxLength={MAX_NAME}
-            autoComplete="nickname"
+            autoComplete="off"
             autoFocus={Boolean(qrCode)}
             className="mb-1 text-center text-lg font-semibold"
           />

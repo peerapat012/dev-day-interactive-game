@@ -7,10 +7,7 @@ import { GuestJoinForm } from "@/features/guest/components/GuestJoinForm";
 import { GuestMessagePanel } from "@/features/guest/components/GuestMessagePanel";
 import { useRoomClosedKick } from "@/features/guest/hooks/useRoomClosedKick";
 import { clearGuestRoomSession } from "@/lib/clearGuestRoomSession";
-import {
-  clearGuestJoinRoomDraft,
-  readGuestJoinRoomDraft,
-} from "@/lib/guestJoinDraft";
+import { bumpJoinFormEpoch, readJoinFormEpoch } from "@/lib/guestJoinDraft";
 import { roomCodeFromSearchParams } from "@/lib/guestJoinUrl";
 import { getRoomByCode } from "@/services/appwrite/rooms";
 import { normalizeRoomCode } from "@/lib/roomCode";
@@ -26,8 +23,17 @@ export function GuestScreen() {
   const guestId = useRoomStore((s) => s.guestId);
   const [storesReady, setStoresReady] = useState(false);
   const [joined, setJoined] = useState(false);
+  const [joinFormEpoch, setJoinFormEpoch] = useState(() => readJoinFormEpoch());
 
-  const onRoomClosedByHost = useCallback(() => setJoined(false), []);
+  const resetJoinForm = useCallback(() => {
+    bumpJoinFormEpoch();
+    setJoinFormEpoch(readJoinFormEpoch());
+  }, []);
+
+  const onRoomClosedByHost = useCallback(() => {
+    resetJoinForm();
+    setJoined(false);
+  }, [resetJoinForm]);
 
   useRoomClosedKick(joined, onRoomClosedByHost);
 
@@ -41,8 +47,7 @@ export function GuestScreen() {
   useEffect(() => onGuestStoresHydrated(() => setStoresReady(true)), []);
 
   /**
-   * Manual join: if the saved room was closed by the host, wipe persist so the form
-   * does not resurrect the old code after a refresh or remount.
+   * Manual join: if the saved room was closed by the host, wipe persist and reset the form.
    */
   useEffect(() => {
     if (!storesReady || joined || qrRoomResolved) return;
@@ -54,16 +59,13 @@ export function GuestScreen() {
     void getRoomByCode(stored).then((room) => {
       if (cancelled || room) return;
       clearGuestRoomSession();
-      const draft = normalizeRoomCode(readGuestJoinRoomDraft());
-      if (!draft || draft === stored) {
-        clearGuestJoinRoomDraft();
-      }
+      resetJoinForm();
     });
 
     return () => {
       cancelled = true;
     };
-  }, [storesReady, joined, qrRoomResolved, storedRoomId]);
+  }, [storesReady, joined, qrRoomResolved, storedRoomId, resetJoinForm]);
 
   /** QR points at a different room than persisted session — drop stale room before join/resume. */
   useEffect(() => {
@@ -71,9 +73,10 @@ export function GuestScreen() {
     const stored = normalizeRoomCode(storedRoomId);
     if (stored && stored !== roomFromQr) {
       clearGuestRoomSession();
+      resetJoinForm();
       setJoined(false);
     }
-  }, [storesReady, qrRoomResolved, roomFromQr, storedRoomId]);
+  }, [storesReady, qrRoomResolved, roomFromQr, storedRoomId, resetJoinForm]);
 
   /** Only skip the join form when QR matches the saved session (not for manual entry). */
   const resumeFromQr =
@@ -168,14 +171,23 @@ export function GuestScreen() {
         </motion.div>
 
         <GuestJoinForm
-          key={qrRoomResolved ? roomFromQr : "manual-join"}
+          key={qrRoomResolved ? `qr-${roomFromQr}-${joinFormEpoch}` : `manual-${joinFormEpoch}`}
           initialRoomCode={roomFromQr}
+          formEpoch={joinFormEpoch}
           fromQr={qrRoomResolved}
           onJoined={() => setJoined(true)}
+          onSessionCleared={resetJoinForm}
         />
       </div>
     );
   }
 
-  return <GuestMessagePanel onLeaveRoom={() => setJoined(false)} />;
+  return (
+    <GuestMessagePanel
+      onLeaveRoom={() => {
+        resetJoinForm();
+        setJoined(false);
+      }}
+    />
+  );
 }
