@@ -43,7 +43,7 @@ export function FloatingTextField({
       cancelAnimationFrame(raf);
       observer.disconnect();
     };
-  }, [items.length]);
+  }, [items]);
 
   const layout = useFloatingTextLayout(items, size.w, size.h);
 
@@ -60,7 +60,7 @@ export function FloatingTextField({
   return (
     <div
       ref={ref}
-      className={`relative min-h-[320px] flex-1 overflow-hidden rounded-3xl border border-white/10 ${className}`}
+      className={`relative min-h-[320px] flex-1 overflow-x-hidden overflow-y-auto rounded-3xl border border-white/10 ${className}`}
     >
       <div
         className="pointer-events-none absolute inset-0 bg-gradient-to-br from-violet-950/90 via-indigo-950/85 to-slate-950/95"
@@ -90,6 +90,7 @@ export function FloatingTextField({
           fontSize={pill.fontSize}
           count={pill.count}
           dominanceRank={pill.dominanceRank}
+          zIndex={pill.zIndex}
           index={index}
         />
       ))}

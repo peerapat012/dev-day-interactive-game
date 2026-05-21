@@ -28,4 +28,5 @@ export interface FloatingTextLayout {
   count?: number;
   fontSize: number;
   dominanceRank: number;
+  zIndex: number;
 }

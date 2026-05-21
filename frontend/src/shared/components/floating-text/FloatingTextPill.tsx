@@ -2,6 +2,7 @@
 
 import { memo } from "react";
 import { motion } from "framer-motion";
+import { GROUP_PILL_PADDING_EM } from "@/lib/floatingGroupScale";
 import type { FloatingTextVariant } from "@/types/floatingText";
 
 export interface FloatingTextPillProps {
@@ -19,6 +20,7 @@ export interface FloatingTextPillProps {
   count?: number;
   dominanceRank?: number;
   index?: number;
+  zIndex?: number;
 }
 
 function FloatingTextPillComponent({
@@ -36,27 +38,28 @@ function FloatingTextPillComponent({
   count = 0,
   dominanceRank = 0,
   index = 0,
+  zIndex = 1,
 }: FloatingTextPillProps) {
   const isGroup = variant === "group";
   const isTopGroup = isGroup && dominanceRank === 1;
 
   return (
     <motion.div
-      layout
-      initial={{ scale: 0.6, opacity: 0, rotate: rotation - 8 }}
+      initial={{ scale: 0.85, opacity: 0, rotate: rotation - 4 }}
       animate={{ scale: 1, opacity: 1, rotate: rotation }}
       transition={{
         type: "spring",
-        stiffness: 280,
-        damping: 22,
-        delay: Math.min(index * 0.04, 0.35),
+        stiffness: 320,
+        damping: 28,
+        delay: Math.min(index * 0.03, 0.2),
       }}
       className="pointer-events-none absolute flex items-center justify-center"
       style={{
         left: x,
         top: y,
         width,
-        minHeight: height,
+        height,
+        zIndex,
       }}
       aria-label={
         isGroup && count > 0
@@ -73,7 +76,10 @@ function FloatingTextPillComponent({
             : "border-white/25 bg-white/[0.08]"
         }`}
         style={{
-          padding: isGroup ? "0.65em 1.1em" : "0.5em 1em",
+          padding: isGroup
+            ? `${GROUP_PILL_PADDING_EM.y}em ${GROUP_PILL_PADDING_EM.x}em`
+            : "0.5em 1em",
+          boxSizing: "border-box",
           boxShadow: isTopGroup
             ? `0 12px 40px hsla(${hue}, 70%, 50%, 0.35), inset 0 1px 0 rgba(255,255,255,0.18)`
             : `0 8px 32px hsla(${hue}, 65%, 45%, 0.2), inset 0 1px 0 rgba(255,255,255,0.12)`,
