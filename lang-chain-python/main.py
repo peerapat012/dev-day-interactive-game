@@ -10,75 +10,70 @@ from pydantic import BaseModel
 
 SYSTEM_CLASSIFY_PROMPT = """You are a semantic classifier for a realtime interactive clustering game.
 
-Your job:
+Assign each user sentence one short semantic category (1-2 words). Return ONLY the label as plain text (no JSON, no quotes).
 
-1. Understand the meaning of a user sentence
-2. Clarify ambiguous intent if needed
-3. Generate a short semantic category
-4. Keep categories broad and reusable
-5. Return ONLY the category label as plain text (no JSON, no quotes, no extra words)
+# Specificity rules
 
-# Rules
+* Pick the most specific category that still fits several similar inputs.
+* NEVER use ultra-broad buckets when a narrower domain fits: avoid "Technology", "General", "Other", "Misc", "Things".
+* Tech examples:
+  - React, Vue, Angular, Django, Flask, Spring → "Frameworks"
+  - Python, Java, JavaScript, Go, Rust, C++ → "Programming Languages"
+  - APIs, databases, DevOps, cloud, Docker → "Backend" or "DevOps" (pick best fit)
+  - HTML, CSS, UI, design systems → "Frontend"
+  - "coding", "software engineering" (generic) → "Programming"
+* Spoken / human languages (NOT programming): English, Spanish, French, Thai, Japanese, "learning English" → "Spoken Languages"
+* NEVER use bare "Languages" — always "Programming Languages" or "Spoken Languages"
+* Food, sports, animals, travel, emotions: use clear domain labels (Food, Sports, Animals, etc.)
 
-* Categories must be SHORT
-* Prefer 1-2 words
-* Normalize similar meanings into same category
+# Balance
 
-Examples:
+BAD (too broad): Technology, Entertainment, Lifestyle
+BAD (too narrow): Messi Fans, Pepperoni Pizza Lovers
+GOOD: Frameworks, Programming Languages, Spoken Languages, Programming, Food, Sports
 
-* pizza, burger, fries → "Food"
-* football, basketball, Messi → "Sports"
-* coding, React, JavaScript → "Programming"
-* cat, dog, bird → "Animals"
+# Examples
 
-# Important
-
-DO NOT create overly specific categories.
-
-BAD:
-
-* "Pepperoni Pizza Lovers"
-* "Messi Fans"
-* "Frontend JavaScript Frameworks"
-
-GOOD:
-
-* "Food"
-* "Sports"
-* "Programming"
-
-# Clarification Rules
-
-If the sentence is unclear, vague, or too short:
-
-* infer likely meaning
-* generate reasonable keywords
-* avoid asking questions unless impossible to infer
-
-# Output Format
-
-Return exactly one category label, nothing else.
-
-Examples:
 - "i love pizza" → Food
-- "i am sad today" → Emotions
-- "learning React" → Programming
+- "react hooks" → Frameworks
+- "python asyncio" → Programming Languages
+- "golang channels" → Programming Languages
+- "learning English" → Spoken Languages
+- "django rest api" → Frameworks
+- "learning machine learning" → Programming
 
-# Final Rule
-
-Always prioritize semantic meaning over exact words.
+Prioritize semantic meaning over exact words.
 """
 
 SYSTEM_CLASSIFY_BATCH_PROMPT = """You are a semantic classifier for a realtime interactive clustering game.
 
-You receive a JSON object with many user sentences. Assign each sentence exactly one short semantic category.
+You receive a JSON object with many user sentences. Assign each sentence exactly one short semantic category (1-2 words).
 
-# Rules
+# Specificity rules (critical)
 
-* Categories must be SHORT (1-2 words)
-* Prefer broad reusable categories (Food, Sports, Programming, Animals, etc.)
-* Normalize similar meanings into the same category
-* DO NOT create overly specific categories
+* Use the most specific category that still fits similar inputs — NOT ultra-broad labels.
+* NEVER default tech items to "Technology", "Tech", "General", "Other", or "Misc".
+* Split software topics when possible:
+  - Named libraries/frameworks (React, Django, Next.js, TensorFlow) → "Frameworks"
+  - Programming languages (Python, Java, Go, Rust, SQL) → "Programming Languages"
+  - Spoken/human languages (English, Spanish, French, Thai, Japanese) → "Spoken Languages"
+  - NEVER use bare "Languages" — it mixes two different meanings
+  - Generic coding / software / CS → "Programming"
+  - Frontend / UI / CSS / design → "Frontend"
+  - APIs, servers, databases, cloud, Docker, Kubernetes → "Backend" or "DevOps"
+* Non-tech: Food, Sports, Animals, Travel, Music, Emotions, etc. — use clear domain names.
+
+# Diversity rule (critical)
+
+* When the batch has 3 or more inputs, use **at least 3 different group labels** whenever the content supports it.
+* Do NOT collapse unrelated items into one bucket (e.g. react + python + django must NOT all become "Technology").
+* Example batch: "react", "python", "django" → Frameworks, Languages, Frameworks (or Languages for python only) — at least 2 distinct labels, ideally 3 if inputs differ.
+
+# Other rules
+
+* Categories: SHORT (1-3 words), Title Case preferred (e.g. "Frameworks", "Programming Languages", "Spoken Languages")
+* Same meaning → same label; different sub-domains → different labels
+* Avoid overly narrow labels (no "Messi Fans", "Pepperoni Pizza")
 * Return valid JSON only — no markdown, no explanation
 
 # Input format
@@ -86,7 +81,8 @@ You receive a JSON object with many user sentences. Assign each sentence exactly
 {
   "inputs": [
     { "id": "abc123", "input": "i love pizza" },
-    { "id": "def456", "input": "messi is the goat" }
+    { "id": "def456", "input": "messi is the goat" },
+    { "id": "ghi789", "input": "react hooks" }
   ]
 }
 
@@ -95,14 +91,14 @@ You receive a JSON object with many user sentences. Assign each sentence exactly
 {
   "results": [
     { "id": "abc123", "group": "Food" },
-    { "id": "def456", "group": "Sports" }
+    { "id": "def456", "group": "Sports" },
+    { "id": "ghi789", "group": "Frameworks" }
   ]
 }
 
 # Important
 
-* Return one result per input id
-* Preserve every id from the request
+* Return one result per input id; preserve every id
 * Use the "group" field for the category label only
 """
 

@@ -5,9 +5,11 @@ import { useState } from "react";
 import { useSummaryHistory } from "@/features/summary/hooks/useSummaryHistory";
 import { formatSavedAt } from "@/lib/formatSavedAt";
 import { getGroupContributors, getTopGroups } from "@/lib/aggregateEntries";
+import { buildContributorTags } from "@/lib/contributorTags";
 import { TOP_GROUPS_COUNT } from "@/lib/constants";
 import { Modal } from "@/shared/ui/Modal";
 import { Button } from "@/shared/ui/Button";
+import { TagCloud } from "@/shared/ui/TagCloud";
 import type { SavedRoundSnapshot } from "@/types/room";
 
 interface SummaryHistoryModalProps {
@@ -134,7 +136,6 @@ function HistoryRoundDetail({
   onBack: () => void;
 }) {
   const topGroups = getTopGroups(snapshot.groups, TOP_GROUPS_COUNT);
-  const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
 
   return (
     <div className="flex flex-col gap-4 pb-2">
@@ -158,19 +159,14 @@ function HistoryRoundDetail({
         </ul>
       ) : null}
 
-      {snapshot.summaries.length > 0 ? (
-        <p className="text-xs text-zinc-500">
-          Tap a group card to see who contributed.
-        </p>
-      ) : null}
-
       <ul className="flex flex-col gap-3">
         {snapshot.summaries.map((card, index) => {
           const group =
             snapshot.groups.find((g) => g.group === card.group) ??
             topGroups.find((g) => g.group === card.group);
-          const isExpanded = expandedGroup === card.group;
-          const contributors = group ? getGroupContributors(group) : [];
+          const contributorTags = group
+            ? buildContributorTags(getGroupContributors(group))
+            : [];
 
           return (
             <motion.li
@@ -178,56 +174,21 @@ function HistoryRoundDetail({
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
+              className="rounded-2xl border border-white/10 bg-zinc-900/80 p-4"
             >
-              <button
-                type="button"
-                onClick={() =>
-                  setExpandedGroup((prev) =>
-                    prev === card.group ? null : card.group,
-                  )
-                }
-                aria-expanded={isExpanded}
-                className={`flex w-full flex-col rounded-2xl border p-4 text-left transition-colors ${
-                  isExpanded
-                    ? "border-violet-400/40 bg-violet-500/10"
-                    : "border-white/10 bg-zinc-900/80 active:bg-zinc-900"
-                }`}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="text-sm font-semibold capitalize text-violet-200">
-                    {card.group}
-                  </h3>
-                  <span className="shrink-0 text-xs text-zinc-500">
-                    {isExpanded ? "Hide guests" : "Show guests"}
-                  </span>
-                </div>
-                <p className="mt-2 text-sm leading-relaxed text-zinc-200">
-                  {card.summary}
+              <h3 className="text-sm font-semibold capitalize text-violet-200">
+                {card.group}
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-zinc-200">
+                {card.summary}
+              </p>
+              {group ? (
+                <p className="mt-2 text-xs text-zinc-500">
+                  {group.count} contribution{group.count === 1 ? "" : "s"}
                 </p>
-                {group ? (
-                  <p className="mt-2 text-xs text-zinc-500">
-                    {group.count} contribution{group.count === 1 ? "" : "s"}
-                  </p>
-                ) : null}
+              ) : null}
 
-                {isExpanded && contributors.length > 0 ? (
-                  <ul className="mt-4 flex flex-col gap-2 border-t border-white/10 pt-4">
-                    {contributors.map((c, contributorIndex) => (
-                      <li
-                        key={`${c.name}-${contributorIndex}`}
-                        className="rounded-xl border border-white/10 bg-zinc-950/50 px-3 py-2"
-                      >
-                        <p className="text-sm font-medium text-zinc-100">
-                          {c.name}
-                        </p>
-                        <p className="mt-0.5 text-xs leading-relaxed text-zinc-400">
-                          {c.input}
-                        </p>
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
-              </button>
+              <TagCloud tags={contributorTags} label="Guests" />
             </motion.li>
           );
         })}

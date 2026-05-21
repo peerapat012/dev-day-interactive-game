@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import { classifyBatchWithLlm } from "@/services/ai/classifyBatch";
 import { mockClassifyBatch } from "@/services/ai/mock";
-import { normalizeGroupName } from "@/lib/normalizeGroupName";
 import type {
   ClassifyBatchRequest,
   ClassifyBatchResponse,
 } from "@/types/api";
+
+/** Pass through LLM group labels as-is (only trim whitespace). */
+function rawGroupLabel(group: string | undefined): string {
+  return group?.trim() ?? "";
+}
 
 const USE_MOCK = process.env.LLM_USE_MOCK === "true";
 
@@ -36,14 +40,14 @@ export async function POST(request: Request) {
       : (await classifyBatchWithLlm(items)).results;
 
     const groupById = new Map(
-      llmResults.map((row) => [row.id, normalizeGroupName(row.group)]),
+      llmResults.map((row) => [row.id, rawGroupLabel(row.group)]),
     );
 
     const response: ClassifyBatchResponse = {
       results: items.map((item) => ({
         id: item.id,
         input: item.input,
-        group: groupById.get(item.id) ?? normalizeGroupName(""),
+        group: groupById.get(item.id) ?? "",
       })),
     };
 
