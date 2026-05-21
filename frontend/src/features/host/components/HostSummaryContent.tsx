@@ -1,6 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useState } from "react";
+import { SummaryHistoryModal } from "@/features/summary/components/SummaryHistoryModal";
 import { useHostRoomSummary } from "@/features/summary/hooks/useHostRoomSummary";
 import { Button } from "@/shared/ui/Button";
 
@@ -21,6 +23,7 @@ function summaryGridClass(count: number): string {
 }
 
 export function HostSummaryContent() {
+  const [historyOpen, setHistoryOpen] = useState(false);
   const {
     topGroups,
     summaries,
@@ -36,6 +39,7 @@ export function HostSummaryContent() {
     saveSummary,
     beginNewRound,
     roomId,
+    roomRowId,
   } = useHostRoomSummary();
 
   const groupCount = topGroups.length;
@@ -106,7 +110,23 @@ export function HostSummaryContent() {
                 : "Save summary"}
           </Button>
         ) : null}
+
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={() => setHistoryOpen(true)}
+          disabled={!roomRowId}
+          className="w-full shrink-0 px-6 py-3 sm:w-auto"
+        >
+          Summary history
+        </Button>
       </motion.div>
+
+      <SummaryHistoryModal
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        roomRowId={roomRowId}
+      />
 
       {!isHydrated ? (
         <StatusPanel>Loading summary data…</StatusPanel>

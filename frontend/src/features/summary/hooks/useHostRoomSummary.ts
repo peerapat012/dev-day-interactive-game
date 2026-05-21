@@ -157,5 +157,6 @@ export function useHostRoomSummary() {
     saveSummary,
     beginNewRound,
     roomId,
+    roomRowId,
   };
 }
