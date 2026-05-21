@@ -1,4 +1,9 @@
-import type { BubbleItem, Entry, GroupStat } from "@/types/entry";
+import type {
+  BubbleItem,
+  Entry,
+  GroupContributor,
+  GroupStat,
+} from "@/types/entry";
 
 function hashString(value: string): number {
   let hash = 0;
@@ -46,6 +51,22 @@ export function isClassifiedEntry(entry: Entry): boolean {
   return isValidGroupName(entry.group);
 }
 
+function contributorFromEntry(entry: Entry): GroupContributor {
+  const name = entry.name?.trim() || "Guest";
+  return { name, input: entry.input.trim() || "…" };
+}
+
+/** Names + phrases for a group (falls back to inputs-only for older saved rounds). */
+export function getGroupContributors(group: GroupStat): GroupContributor[] {
+  if (group.contributors?.length) {
+    return group.contributors;
+  }
+  return group.inputs.map((input) => ({
+    name: "Guest",
+    input: input.trim() || "…",
+  }));
+}
+
 export function buildGroupStats(entries: Entry[]): GroupStat[] {
   const map = new Map<string, GroupStat>();
 
@@ -53,16 +74,20 @@ export function buildGroupStats(entries: Entry[]): GroupStat[] {
     if (!isClassifiedEntry(entry)) continue;
 
     const group = entry.group.trim();
+    const contributor = contributorFromEntry(entry);
 
     const existing = map.get(group);
     if (existing) {
       existing.count += 1;
       existing.inputs.push(entry.input);
+      existing.contributors = existing.contributors ?? [];
+      existing.contributors.push(contributor);
     } else {
       map.set(group, {
         group,
         count: 1,
         inputs: [entry.input],
+        contributors: [contributor],
       });
     }
   }

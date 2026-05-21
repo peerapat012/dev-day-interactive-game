@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { onRoomStoreHydrated } from "@/lib/persistHydration";
 import { ensureGuestSession } from "@/services/appwrite/auth";
 import { leaveHostRoom } from "@/lib/leaveHostRoom";
 import { createRoom, getRoomByCode } from "@/services/appwrite/rooms";
@@ -12,11 +13,16 @@ export function useHostRoom() {
   const roomRowId = useRoomStore((s) => s.roomRowId);
   const setRoom = useRoomStore((s) => s.setRoom);
   const setEntries = useEntriesStore((s) => s.setEntries);
+  const [storeHydrated, setStoreHydrated] = useState(false);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
 
+  useEffect(() => onRoomStoreHydrated(() => setStoreHydrated(true)), []);
+
   useEffect(() => {
+    if (!storeHydrated) return;
+
     let cancelled = false;
 
     async function init() {
@@ -34,10 +40,21 @@ export function useHostRoom() {
         if (storedCode && storedRowId.trim()) {
           const existing = await getRoomByCode(storedCode);
           if (cancelled) return;
-          if (existing) {
+
+          if (existing && existing.$id === storedRowId) {
             setReady(true);
             return;
           }
+
+          if (existing && existing.$id !== storedRowId) {
+            leaveHostRoom();
+            if (cancelled) return;
+            setRoom(existing.roomId, existing.$id);
+            setEntries([]);
+            setReady(true);
+            return;
+          }
+
           leaveHostRoom();
         }
 
@@ -60,7 +77,7 @@ export function useHostRoom() {
     return () => {
       cancelled = true;
     };
-  }, [setRoom, setEntries]);
+  }, [storeHydrated, setRoom, setEntries]);
 
   const createNewRoom = useCallback(async () => {
     setCreating(true);
