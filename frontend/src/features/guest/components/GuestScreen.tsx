@@ -7,7 +7,12 @@ import { GuestJoinForm } from "@/features/guest/components/GuestJoinForm";
 import { GuestMessagePanel } from "@/features/guest/components/GuestMessagePanel";
 import { useRoomClosedKick } from "@/features/guest/hooks/useRoomClosedKick";
 import { clearGuestRoomSession } from "@/lib/clearGuestRoomSession";
+import {
+  clearGuestJoinRoomDraft,
+  readGuestJoinRoomDraft,
+} from "@/lib/guestJoinDraft";
 import { roomCodeFromSearchParams } from "@/lib/guestJoinUrl";
+import { getRoomByCode } from "@/services/appwrite/rooms";
 import { normalizeRoomCode } from "@/lib/roomCode";
 import { onGuestStoresHydrated } from "@/lib/persistHydration";
 import { usePlayerStore } from "@/store/playerStore";
@@ -34,6 +39,31 @@ export function GuestScreen() {
   const qrRoomResolved = roomFromQr.length > 0;
 
   useEffect(() => onGuestStoresHydrated(() => setStoresReady(true)), []);
+
+  /**
+   * Manual join: if the saved room was closed by the host, wipe persist so the form
+   * does not resurrect the old code after a refresh or remount.
+   */
+  useEffect(() => {
+    if (!storesReady || joined || qrRoomResolved) return;
+
+    const stored = normalizeRoomCode(storedRoomId);
+    if (!stored) return;
+
+    let cancelled = false;
+    void getRoomByCode(stored).then((room) => {
+      if (cancelled || room) return;
+      clearGuestRoomSession();
+      const draft = normalizeRoomCode(readGuestJoinRoomDraft());
+      if (!draft || draft === stored) {
+        clearGuestJoinRoomDraft();
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [storesReady, joined, qrRoomResolved, storedRoomId]);
 
   /** QR points at a different room than persisted session — drop stale room before join/resume. */
   useEffect(() => {
@@ -138,7 +168,7 @@ export function GuestScreen() {
         </motion.div>
 
         <GuestJoinForm
-          key={roomFromQr || "manual"}
+          key={qrRoomResolved ? roomFromQr : "manual-join"}
           initialRoomCode={roomFromQr}
           fromQr={qrRoomResolved}
           onJoined={() => setJoined(true)}

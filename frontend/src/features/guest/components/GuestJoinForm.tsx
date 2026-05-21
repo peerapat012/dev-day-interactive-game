@@ -1,8 +1,13 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { clearGuestRoomSession } from "@/lib/clearGuestRoomSession";
+import {
+  clearGuestJoinRoomDraft,
+  readGuestJoinRoomDraft,
+  writeGuestJoinRoomDraft,
+} from "@/lib/guestJoinDraft";
 import { leaveGuestRoom } from "@/lib/leaveGuestRoom";
 import { normalizeRoomCode } from "@/lib/roomCode";
 import { ensureGuestSession, getAccount } from "@/services/appwrite/auth";
@@ -25,34 +30,55 @@ interface GuestJoinFormProps {
   onJoined: () => void;
 }
 
+function initialRoomInput(qrCode: string): string {
+  if (qrCode) return qrCode;
+  return readGuestJoinRoomDraft();
+}
+
 export function GuestJoinForm({
   initialRoomCode = "",
   fromQr = false,
   onJoined,
 }: GuestJoinFormProps) {
+  const roomFieldId = useId();
+  const userEditedRoom = useRef(false);
+
   const storedName = usePlayerStore((s) => s.displayName);
   const setDisplayName = usePlayerStore((s) => s.setDisplayName);
   const setGuestMode = usePlayerStore((s) => s.setGuestMode);
   const setRoom = useRoomStore((s) => s.setRoom);
   const setGuestId = useRoomStore((s) => s.setGuestId);
   const setHasSubmitted = useRoomStore((s) => s.setHasSubmitted);
-  const storedRoomId = useRoomStore((s) => s.roomId);
 
   const qrCode = normalizeRoomCode(initialRoomCode);
-  const storedCode = normalizeRoomCode(storedRoomId);
 
   const [name, setName] = useState(storedName);
-  const [roomInput, setRoomInput] = useState(() => qrCode || storedCode);
+  const [roomInput, setRoomInput] = useState(() => initialRoomInput(qrCode));
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!qrCode) return;
+    if (!qrCode || userEditedRoom.current) return;
     setRoomInput(qrCode);
-    if (storedCode && storedCode !== qrCode) {
+    writeGuestJoinRoomDraft(qrCode);
+    const stored = normalizeRoomCode(useRoomStore.getState().roomId);
+    if (stored && stored !== qrCode) {
       clearGuestRoomSession();
     }
-  }, [qrCode, storedCode]);
+  }, [qrCode]);
+
+  function handleRoomInputChange(raw: string) {
+    userEditedRoom.current = true;
+    const next = raw.toUpperCase();
+    setRoomInput(next);
+    writeGuestJoinRoomDraft(next);
+
+    const typed = normalizeRoomCode(next);
+    const stored = normalizeRoomCode(useRoomStore.getState().roomId);
+    if (stored && typed && typed !== stored) {
+      clearGuestRoomSession();
+    }
+  }
 
   const trimmedName = name.trim();
   const roomCode = normalizeRoomCode(roomInput);
@@ -71,7 +97,8 @@ export function GuestJoinForm({
     try {
       await ensureGuestSession();
 
-      if (storedCode && storedCode !== roomCode) {
+      const stored = normalizeRoomCode(useRoomStore.getState().roomId);
+      if (stored && stored !== roomCode) {
         clearGuestRoomSession();
       }
 
@@ -90,6 +117,7 @@ export function GuestJoinForm({
         /* name still saved locally and in guests table */
       }
 
+      clearGuestJoinRoomDraft();
       setDisplayName(trimmedName);
       setGuestMode(true);
       setRoom(room.roomId, room.$id);
@@ -112,6 +140,8 @@ export function GuestJoinForm({
       return;
     }
     leaveGuestRoom();
+    userEditedRoom.current = false;
+    clearGuestJoinRoomDraft();
     setName("");
     setRoomInput(qrCode);
     setError(null);
@@ -144,25 +174,28 @@ export function GuestJoinForm({
           ) : null}
 
           <label
-            htmlFor="guest-room"
+            htmlFor={roomFieldId}
             className="mb-2 block text-sm font-medium text-zinc-300"
           >
             Room code
           </label>
           <Input
-            id="guest-room"
+            id={roomFieldId}
+            name={roomFieldId}
             value={roomInput}
-            onChange={(e) => setRoomInput(e.target.value.toUpperCase())}
+            onChange={(e) => handleRoomInputChange(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") void handleJoin();
             }}
             placeholder="e.g. ABC123"
             maxLength={MAX_ROOM_CODE}
-            autoComplete="off"
+            autoComplete="one-time-code"
             autoCapitalize="characters"
             autoCorrect="off"
             spellCheck={false}
             inputMode="text"
+            data-lpignore="true"
+            data-1p-ignore="true"
             autoFocus={!qrCode}
             className="mb-1 text-center font-mono text-lg font-semibold tracking-widest"
           />
