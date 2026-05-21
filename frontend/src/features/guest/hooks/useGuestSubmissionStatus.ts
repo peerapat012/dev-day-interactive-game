@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   guestHasSubmitted,
   isStaleGuestSessionError,
@@ -16,58 +16,63 @@ export function useGuestSubmissionStatus() {
   const guestId = useRoomStore((s) => s.guestId);
   const hasSubmitted = useRoomStore((s) => s.hasSubmitted);
   const setHasSubmitted = useRoomStore((s) => s.setHasSubmitted);
-  const entries = useEntriesStore((s) => s.entries);
+  const roomEntryCount = useEntriesStore((s) =>
+    s.entries.filter((e) => e.roomId === roomId).length,
+  );
   const [checking, setChecking] = useState(true);
   const [guestInvalid, setGuestInvalid] = useState(false);
+  const initialSyncDone = useRef(false);
 
-  const roomEntryCount = useMemo(
-    () => (roomId ? entries.filter((e) => e.roomId === roomId).length : 0),
-    [entries, roomId],
+  const syncFromServer = useCallback(
+    async (opts?: { showChecking?: boolean }) => {
+      if (!roomId || !guestId) {
+        setGuestInvalid(false);
+        setChecking(false);
+        return;
+      }
+
+      if (opts?.showChecking) setChecking(true);
+
+      try {
+        const submitted = await guestHasSubmitted(roomId, guestId);
+        setGuestInvalid(false);
+        setHasSubmitted(submitted);
+      } catch (err) {
+        if (isStaleGuestSessionError(err)) {
+          useRoomStore.getState().setGuestId("");
+          useRoomStore.getState().setHasSubmitted(false);
+          setGuestInvalid(false);
+        } else {
+          setGuestInvalid(false);
+        }
+      } finally {
+        setChecking(false);
+        initialSyncDone.current = true;
+      }
+    },
+    [roomId, guestId, setHasSubmitted],
   );
 
-  const syncFromServer = useCallback(async () => {
-    if (!roomId || !guestId) {
-      setGuestInvalid(false);
-      setChecking(false);
-      return;
-    }
-
-    setChecking(true);
-    try {
-      const submitted = await guestHasSubmitted(roomId, guestId);
-      setGuestInvalid(false);
-      setHasSubmitted(submitted);
-    } catch (err) {
-      if (isStaleGuestSessionError(err)) {
-        useRoomStore.getState().setGuestId("");
-        useRoomStore.getState().setHasSubmitted(false);
-        setGuestInvalid(false);
-      } else {
-        setGuestInvalid(false);
-      }
-    } finally {
-      setChecking(false);
-    }
-  }, [roomId, guestId, setHasSubmitted]);
-
   useEffect(() => {
+    initialSyncDone.current = false;
     if (!roomId || !guestId) {
       setGuestInvalid(false);
       setChecking(false);
       return;
     }
+    void syncFromServer({ showChecking: true });
+  }, [roomId, guestId, syncFromServer]);
 
-    void syncFromServer();
-  }, [roomId, guestId, roomEntryCount, syncFromServer]);
-
-  /** Host bulk-deletes often skip realtime; re-check submission on a timer. */
   useEffect(() => {
     if (!roomId || !guestId) return;
 
-    const id = window.setInterval(() => void syncFromServer(), POLL_MS);
+    const id = window.setInterval(
+      () => void syncFromServer({ showChecking: false }),
+      POLL_MS,
+    );
 
     const onVisible = () => {
-      if (!document.hidden) void syncFromServer();
+      if (!document.hidden) void syncFromServer({ showChecking: false });
     };
     document.addEventListener("visibilitychange", onVisible);
 
@@ -77,12 +82,18 @@ export function useGuestSubmissionStatus() {
     };
   }, [roomId, guestId, syncFromServer]);
 
-  /** Local feed cleared — unlock UI until server poll confirms. */
+  /** After host clears entries, unlock locally until server confirms. */
   useEffect(() => {
     if (roomId && guestId && roomEntryCount === 0 && hasSubmitted) {
       setHasSubmitted(false);
     }
   }, [roomId, guestId, roomEntryCount, hasSubmitted, setHasSubmitted]);
+
+  /** Entry list changed — refresh submission flag without flashing the footer. */
+  useEffect(() => {
+    if (!initialSyncDone.current || !roomId || !guestId) return;
+    void syncFromServer({ showChecking: false });
+  }, [roomEntryCount, roomId, guestId, syncFromServer]);
 
   return { hasSubmitted, checking, guestInvalid };
 }

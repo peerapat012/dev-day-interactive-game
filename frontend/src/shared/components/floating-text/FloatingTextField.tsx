@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { FloatingTextPill } from "@/shared/components/floating-text/FloatingTextPill";
 import { useFloatingTextLayout } from "@/shared/hooks/useFloatingTextLayout";
@@ -10,6 +9,14 @@ interface FloatingTextFieldProps {
   items: FloatingTextItem[];
   className?: string;
   emptyMessage?: string;
+}
+
+function measureContainer(el: HTMLElement): { w: number; h: number } {
+  const rect = el.getBoundingClientRect();
+  return {
+    w: Math.max(rect.width, el.clientWidth, 320),
+    h: Math.max(rect.height, el.clientHeight, 280),
+  };
 }
 
 export function FloatingTextField({
@@ -24,39 +31,36 @@ export function FloatingTextField({
     const el = ref.current;
     if (!el) return;
 
-    const observer = new ResizeObserver((entries) => {
-      const entry = entries[0];
-      if (!entry) return;
-      setSize({
-        w: entry.contentRect.width,
-        h: entry.contentRect.height,
-      });
-    });
+    const apply = () => setSize(measureContainer(el));
 
+    apply();
+    const raf = requestAnimationFrame(apply);
+
+    const observer = new ResizeObserver(() => apply());
     observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      observer.disconnect();
+    };
+  }, [items.length]);
 
   const layout = useFloatingTextLayout(items, size.w, size.h);
 
   if (!items.length) {
     return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
+      <div
         className={`flex min-h-[320px] flex-1 items-center justify-center rounded-3xl border border-dashed border-white/10 bg-gradient-to-br from-violet-950/40 via-indigo-950/50 to-zinc-950/80 px-6 text-center text-sm text-zinc-500 ${className}`}
       >
         {emptyMessage}
-      </motion.div>
+      </div>
     );
   }
 
   return (
-    <motion.div
+    <div
       ref={ref}
       className={`relative min-h-[320px] flex-1 overflow-hidden rounded-3xl border border-white/10 ${className}`}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
     >
       <div
         className="pointer-events-none absolute inset-0 bg-gradient-to-br from-violet-950/90 via-indigo-950/85 to-slate-950/95"
@@ -89,6 +93,6 @@ export function FloatingTextField({
           index={index}
         />
       ))}
-    </motion.div>
+    </div>
   );
 }

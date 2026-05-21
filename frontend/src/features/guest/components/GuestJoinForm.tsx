@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
+import { clearGuestRoomSession } from "@/lib/clearGuestRoomSession";
 import { leaveGuestRoom } from "@/lib/leaveGuestRoom";
 import { normalizeRoomCode } from "@/lib/roomCode";
 import { ensureGuestSession, getAccount } from "@/services/appwrite/auth";
@@ -35,17 +36,23 @@ export function GuestJoinForm({
   const setRoom = useRoomStore((s) => s.setRoom);
   const setGuestId = useRoomStore((s) => s.setGuestId);
   const setHasSubmitted = useRoomStore((s) => s.setHasSubmitted);
+  const storedRoomId = useRoomStore((s) => s.roomId);
+
+  const qrCode = normalizeRoomCode(initialRoomCode);
+  const storedCode = normalizeRoomCode(storedRoomId);
 
   const [name, setName] = useState(storedName);
-  const [roomInput, setRoomInput] = useState(initialRoomCode);
+  const [roomInput, setRoomInput] = useState(() => qrCode || storedCode);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (initialRoomCode) {
-      setRoomInput(initialRoomCode);
+    if (!qrCode) return;
+    setRoomInput(qrCode);
+    if (storedCode && storedCode !== qrCode) {
+      clearGuestRoomSession();
     }
-  }, [initialRoomCode]);
+  }, [qrCode, storedCode]);
 
   const trimmedName = name.trim();
   const roomCode = normalizeRoomCode(roomInput);
@@ -64,10 +71,14 @@ export function GuestJoinForm({
     try {
       await ensureGuestSession();
 
+      if (storedCode && storedCode !== roomCode) {
+        clearGuestRoomSession();
+      }
+
       const room = await getRoomByCode(roomCode);
       if (!room) {
         throw new Error(
-          "Room not found or this session has ended. Ask your host for a new QR code.",
+          "Room not found or this session has ended. Ask your host for a new room code.",
         );
       }
 
@@ -95,14 +106,14 @@ export function GuestJoinForm({
   function handleClearDevice() {
     if (
       !window.confirm(
-        "Clear saved room and nickname on this device? You can scan the QR again to start fresh.",
+        "Clear saved room and nickname on this device? You can join again with a fresh room code.",
       )
     ) {
       return;
     }
     leaveGuestRoom();
     setName("");
-    setRoomInput(initialRoomCode);
+    setRoomInput(qrCode);
     setError(null);
   }
 
@@ -152,7 +163,7 @@ export function GuestJoinForm({
             autoCorrect="off"
             spellCheck={false}
             inputMode="text"
-            autoFocus={!initialRoomCode}
+            autoFocus={!qrCode}
             className="mb-1 text-center font-mono text-lg font-semibold tracking-widest"
           />
           <p className="mb-5 text-center text-xs text-zinc-500">
@@ -175,7 +186,7 @@ export function GuestJoinForm({
             placeholder="e.g. Alex"
             maxLength={MAX_NAME}
             autoComplete="nickname"
-            autoFocus={Boolean(initialRoomCode)}
+            autoFocus={Boolean(qrCode)}
             className="mb-1 text-center text-lg font-semibold"
           />
           <p className="mb-6 text-center text-xs text-zinc-500">

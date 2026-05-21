@@ -6,7 +6,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { GuestJoinForm } from "@/features/guest/components/GuestJoinForm";
 import { GuestMessagePanel } from "@/features/guest/components/GuestMessagePanel";
 import { useRoomClosedKick } from "@/features/guest/hooks/useRoomClosedKick";
+import { clearGuestRoomSession } from "@/lib/clearGuestRoomSession";
 import { roomCodeFromSearchParams } from "@/lib/guestJoinUrl";
+import { normalizeRoomCode } from "@/lib/roomCode";
+import { onGuestStoresHydrated } from "@/lib/persistHydration";
 import { usePlayerStore } from "@/store/playerStore";
 import { useRoomStore } from "@/store/roomStore";
 
@@ -16,9 +19,7 @@ export function GuestScreen() {
   const displayName = usePlayerStore((s) => s.displayName);
   const storedRoomId = useRoomStore((s) => s.roomId);
   const guestId = useRoomStore((s) => s.guestId);
-  const setGuestId = useRoomStore((s) => s.setGuestId);
-  const setHasSubmitted = useRoomStore((s) => s.setHasSubmitted);
-  const [ready, setReady] = useState(false);
+  const [storesReady, setStoresReady] = useState(false);
   const [joined, setJoined] = useState(false);
 
   const onRoomClosedByHost = useCallback(() => setJoined(false), []);
@@ -30,54 +31,59 @@ export function GuestScreen() {
     [searchParams],
   );
 
-  const resumeSameRoom =
-    Boolean(storedRoomId) &&
-    (!roomFromQr || roomFromQr === storedRoomId);
+  const qrRoomResolved = roomFromQr.length > 0;
 
+  useEffect(() => onGuestStoresHydrated(() => setStoresReady(true)), []);
+
+  /** QR points at a different room than persisted session — drop stale room before join/resume. */
   useEffect(() => {
-    const unsub = usePlayerStore.persist.onFinishHydration(() => {
-      setReady(true);
-    });
-    if (usePlayerStore.persist.hasHydrated()) {
-      setReady(true);
-    }
-    return unsub;
-  }, []);
-
-  useEffect(() => {
-    if (!ready) return;
-
-    if (roomFromQr && storedRoomId && roomFromQr !== storedRoomId) {
+    if (!storesReady || !qrRoomResolved) return;
+    const stored = normalizeRoomCode(storedRoomId);
+    if (stored && stored !== roomFromQr) {
+      clearGuestRoomSession();
       setJoined(false);
-      setGuestId("");
-      setHasSubmitted(false);
-      return;
     }
+  }, [storesReady, qrRoomResolved, roomFromQr, storedRoomId]);
 
-    if (guestMode && displayName.trim() && guestId && storedRoomId && resumeSameRoom) {
+  /** Only skip the join form when QR matches the saved session (not for manual entry). */
+  const resumeFromQr =
+    qrRoomResolved &&
+    Boolean(storedRoomId) &&
+    roomFromQr === normalizeRoomCode(storedRoomId);
+
+  useEffect(() => {
+    if (!storesReady) return;
+
+    if (
+      resumeFromQr &&
+      guestMode &&
+      displayName.trim() &&
+      guestId &&
+      storedRoomId
+    ) {
       setJoined(true);
+    } else if (qrRoomResolved && storedRoomId && !resumeFromQr) {
+      setJoined(false);
     }
   }, [
-    ready,
+    storesReady,
     guestMode,
     displayName,
     guestId,
     storedRoomId,
     roomFromQr,
-    resumeSameRoom,
-    setGuestId,
-    setHasSubmitted,
+    qrRoomResolved,
+    resumeFromQr,
   ]);
 
-  /** If the guest row was cleared server-side, drop back to join so QR / rejoin creates a new guest doc. */
   useEffect(() => {
-    if (!ready) return;
+    if (!storesReady) return;
     if (joined && !guestId.trim() && guestMode && storedRoomId) {
       setJoined(false);
     }
-  }, [ready, joined, guestId, guestMode, storedRoomId]);
+  }, [storesReady, joined, guestId, guestMode, storedRoomId]);
 
-  if (!ready) {
+  if (!storesReady) {
     return (
       <motion.div
         className="flex min-h-dvh items-center justify-center text-sm text-zinc-500"
@@ -134,7 +140,7 @@ export function GuestScreen() {
         <GuestJoinForm
           key={roomFromQr || "manual"}
           initialRoomCode={roomFromQr}
-          fromQr={Boolean(roomFromQr)}
+          fromQr={qrRoomResolved}
           onJoined={() => setJoined(true)}
         />
       </div>

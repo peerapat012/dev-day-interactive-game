@@ -8,7 +8,6 @@ import { ENTRIES_CHANGED_EVENT } from "@/lib/entriesSync";
 import { useEntriesStore } from "@/store/entriesStore";
 import { useRoomStore } from "@/store/roomStore";
 
-/** Fast polling so floating text stays live when WebSocket fails (common in dev). */
 const LIVE_POLL_MS = 2_000;
 
 function isDeleteEvent(events: string[]): boolean {
@@ -19,7 +18,7 @@ function isDeleteEvent(events: string[]): boolean {
 
 export function useRealtimeEntries() {
   const roomId = useRoomStore((s) => s.roomId);
-  const setEntries = useEntriesStore((s) => s.setEntries);
+  const setEntriesForRoom = useEntriesStore((s) => s.setEntriesForRoom);
   const upsertEntry = useEntriesStore((s) => s.upsertEntry);
   const removeEntry = useEntriesStore((s) => s.removeEntry);
   const setHydrated = useEntriesStore((s) => s.setHydrated);
@@ -27,7 +26,7 @@ export function useRealtimeEntries() {
 
   useEffect(() => {
     if (!roomId) {
-      setEntries([]);
+      useEntriesStore.getState().setEntries([]);
       setHydrated(false);
       return;
     }
@@ -38,7 +37,7 @@ export function useRealtimeEntries() {
 
     async function refreshEntries() {
       const entries = await listEntries(roomId);
-      if (!cancelled) setEntries(entries);
+      if (!cancelled) setEntriesForRoom(roomId, entries);
     }
 
     function startPolling() {
@@ -112,7 +111,7 @@ export function useRealtimeEntries() {
     };
   }, [
     roomId,
-    setEntries,
+    setEntriesForRoom,
     upsertEntry,
     removeEntry,
     setHydrated,

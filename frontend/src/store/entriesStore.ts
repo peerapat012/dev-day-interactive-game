@@ -7,6 +7,8 @@ interface EntriesState {
   isSubmitting: boolean;
   error: string | null;
   setEntries: (entries: Entry[]) => void;
+  /** Replace entries for one room; keep other rooms' rows if any. */
+  setEntriesForRoom: (roomId: string, entries: Entry[]) => void;
   upsertEntry: (entry: Entry) => void;
   removeEntry: (id: string) => void;
   setHydrated: (value: boolean) => void;
@@ -20,6 +22,13 @@ export const useEntriesStore = create<EntriesState>((set) => ({
   isSubmitting: false,
   error: null,
   setEntries: (entries) => set({ entries }),
+  setEntriesForRoom: (roomId, entries) =>
+    set((state) => ({
+      entries: [
+        ...entries,
+        ...state.entries.filter((e) => e.roomId !== roomId),
+      ],
+    })),
   upsertEntry: (entry) =>
     set((state) => {
       const index = state.entries.findIndex((e) => e.$id === entry.$id);

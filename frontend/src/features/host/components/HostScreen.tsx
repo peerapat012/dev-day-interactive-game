@@ -45,18 +45,27 @@ function HostTabPanel({
   creating: boolean;
   createNewRoom: () => Promise<string>;
 }) {
-  if (activeTab === "room")
-    return (
-      <HostRoomTab
-        roomId={roomId}
-        roomRowId={roomRowId}
-        creating={creating}
-        onCreateNewRoom={createNewRoom}
-      />
-    );
-  if (activeTab === "inputs") return <HostInputsTab roomId={roomId} />;
-  if (activeTab === "groups") return <HostGroupsTab />;
-  return <HostSummaryTab />;
+  return (
+    <>
+      <div className={activeTab === "room" ? "flex min-h-0 flex-1 flex-col" : "hidden"}>
+        <HostRoomTab
+          roomId={roomId}
+          roomRowId={roomRowId}
+          creating={creating}
+          onCreateNewRoom={createNewRoom}
+        />
+      </div>
+      <div className={activeTab === "inputs" ? "flex min-h-0 flex-1 flex-col" : "hidden"}>
+        <HostInputsTab roomId={roomId} />
+      </div>
+      <div className={activeTab === "groups" ? "flex min-h-0 flex-1 flex-col" : "hidden"}>
+        <HostGroupsTab />
+      </div>
+      <div className={activeTab === "summary" ? "flex min-h-0 flex-1 flex-col" : "hidden"}>
+        <HostSummaryTab />
+      </div>
+    </>
+  );
 }
 
 export function HostScreen() {
