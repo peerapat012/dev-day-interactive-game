@@ -21,12 +21,12 @@ const MAX_ROOM_CODE = 12;
 interface GuestJoinFormProps {
   /** Prefill from `?room=` on QR / guest link — user can still edit before joining. */
   initialRoomCode?: string;
-  /** Changes when session was cleared — remounts inputs so mobile autofill cannot restore old codes. */
+  /** Changes when session was cleared — remounts inputs. */
   formEpoch?: number;
   fromQr?: boolean;
-  onJoined: () => void;
-  /** Called after leave/clear so parent can remount inputs (mobile autofill). */
-  onSessionCleared?: () => void;
+  /** Called with the room code the guest actually joined. */
+  onJoined: (joinedRoomCode: string) => void;
+  onSessionCleared?: () => void | Promise<void>;
 }
 
 export function GuestJoinForm({
@@ -37,17 +37,16 @@ export function GuestJoinForm({
   onSessionCleared,
 }: GuestJoinFormProps) {
   const roomFieldId = useId();
-  const qrCode = normalizeRoomCode(initialRoomCode);
+  const urlPrefill = normalizeRoomCode(initialRoomCode);
 
-  const storedName = usePlayerStore((s) => s.displayName);
   const setDisplayName = usePlayerStore((s) => s.setDisplayName);
   const setGuestMode = usePlayerStore((s) => s.setGuestMode);
   const setRoom = useRoomStore((s) => s.setRoom);
   const setGuestId = useRoomStore((s) => s.setGuestId);
   const setHasSubmitted = useRoomStore((s) => s.setHasSubmitted);
 
-  const [name, setName] = useState(storedName);
-  const [roomInput, setRoomInput] = useState(() => (qrCode ? qrCode : ""));
+  const [name, setName] = useState("");
+  const [roomInput, setRoomInput] = useState(() => (urlPrefill ? urlPrefill : ""));
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -104,7 +103,7 @@ export function GuestJoinForm({
       setRoom(room.roomId, room.$id);
       setGuestId(guest.guestUuid);
       setHasSubmitted(guest.hasSubmitted);
-      onJoined();
+      onJoined(roomCode);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not join");
     } finally {
@@ -112,7 +111,7 @@ export function GuestJoinForm({
     }
   }
 
-  function handleClearDevice() {
+  async function handleClearDevice() {
     if (
       !window.confirm(
         "Clear saved room and nickname on this device? You can join again with a fresh room code.",
@@ -120,14 +119,14 @@ export function GuestJoinForm({
     ) {
       return;
     }
-    leaveGuestRoom();
+    await leaveGuestRoom();
     setName("");
     setRoomInput("");
     setError(null);
-    onSessionCleared?.();
+    await onSessionCleared?.();
   }
 
-  const roomInputKey = `room-${formEpoch}-${qrCode || "manual"}`;
+  const roomInputKey = `room-${formEpoch}-${urlPrefill || "manual"}`;
 
   return (
     <motion.div
@@ -146,11 +145,11 @@ export function GuestJoinForm({
           whileHover={{ scale: 1.01 }}
           transition={{ type: "spring", stiffness: 400, damping: 30 }}
         >
-          {fromQr && roomCode ? (
+          {fromQr && urlPrefill ? (
             <p className="mb-4 rounded-2xl border border-violet-500/25 bg-violet-500/10 px-3 py-2 text-center text-sm text-violet-200">
               Scanned room{" "}
               <span className="font-mono font-bold tracking-widest">
-                {roomCode}
+                {urlPrefill}
               </span>
             </p>
           ) : null}
@@ -179,7 +178,7 @@ export function GuestJoinForm({
             inputMode="text"
             data-lpignore="true"
             data-1p-ignore="true"
-            autoFocus={!qrCode}
+            autoFocus={!urlPrefill}
             className="mb-1 text-center font-mono text-lg font-semibold tracking-widest"
           />
           <p className="mb-5 text-center text-xs text-zinc-500">
@@ -203,7 +202,7 @@ export function GuestJoinForm({
             placeholder="e.g. Alex"
             maxLength={MAX_NAME}
             autoComplete="off"
-            autoFocus={Boolean(qrCode)}
+            autoFocus={Boolean(urlPrefill)}
             className="mb-1 text-center text-lg font-semibold"
           />
           <p className="mb-6 text-center text-xs text-zinc-500">
@@ -225,7 +224,7 @@ export function GuestJoinForm({
           <Button
             type="button"
             variant="ghost"
-            onClick={handleClearDevice}
+            onClick={() => void handleClearDevice()}
             disabled={loading}
             className="mt-3 w-full text-sm text-zinc-500 hover:text-rose-300"
           >

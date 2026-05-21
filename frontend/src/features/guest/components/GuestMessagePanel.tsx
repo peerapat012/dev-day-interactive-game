@@ -41,8 +41,7 @@ export function GuestMessagePanel({ onLeaveRoom }: GuestMessagePanelProps) {
     ) {
       return;
     }
-    leaveGuestRoom();
-    onLeaveRoom?.();
+    void leaveGuestRoom().then(() => onLeaveRoom?.());
   }
 
   return (

@@ -12,8 +12,9 @@ export const WORD_CLOUD_STORAGE_KEYS = {
 /**
  * Leave the guest room on this browser: resets room + nickname + guest mode and
  * removes persisted slices from localStorage. Does not touch Appwrite.
+ * Does not change the URL — use resetGuestJoinSession when the join form must remount.
  */
-export function leaveGuestRoom(): void {
+export async function leaveGuestRoom(): Promise<void> {
   bumpJoinFormEpoch();
 
   useEntriesStore.setState({
@@ -25,6 +26,6 @@ export function leaveGuestRoom(): void {
   useRoomStore.getState().clearRoom();
   usePlayerStore.getState().clearPlayer();
 
-  void useRoomStore.persist.clearStorage();
-  void usePlayerStore.persist.clearStorage();
+  await useRoomStore.persist.clearStorage();
+  await usePlayerStore.persist.clearStorage();
 }

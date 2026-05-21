@@ -32,8 +32,7 @@ export function useRoomClosedKick(active: boolean, onKicked: () => void) {
         if (cancelled || warnedRef.current) return;
         if (!room) {
           warnedRef.current = true;
-          leaveGuestRoom();
-          onKickedRef.current();
+          void leaveGuestRoom().then(() => onKickedRef.current());
           window.alert(
             "The host ended this session. This device was cleared — join again with a fresh QR from the host.",
           );

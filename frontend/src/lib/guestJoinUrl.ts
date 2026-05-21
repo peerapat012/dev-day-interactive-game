@@ -10,9 +10,15 @@ export function roomCodeFromSearchParams(
   );
 }
 
-export function buildGuestJoinUrl(roomId: string, origin?: string): string {
+/** In-app guest path with optional `?room=` (no origin). */
+export function guestPathWithRoom(roomId: string): string {
   const code = normalizeRoomCode(roomId);
+  if (!code) return GUEST_PATH;
+  return `${GUEST_PATH}?room=${encodeURIComponent(code)}`;
+}
+
+export function buildGuestJoinUrl(roomId: string, origin?: string): string {
   const base =
     origin ?? (typeof window !== "undefined" ? window.location.origin : "");
-  return `${base}${GUEST_PATH}?room=${encodeURIComponent(code)}`;
+  return `${base}${guestPathWithRoom(roomId)}`;
 }
