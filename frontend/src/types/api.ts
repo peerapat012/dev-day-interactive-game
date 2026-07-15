@@ -62,6 +62,7 @@ export interface FastApiSummarizeRequest {
 /** FastAPI /summarize response item */
 export interface FastApiSummarizeItem {
   group: string;
+  topic: string;
   summarize: string;
 }
 
@@ -72,11 +73,33 @@ export interface FastApiSummarizeResponse {
 
 /** UI summary card */
 export interface SummarizeResultItem {
+  /** Stable classification key used to match persisted groups. */
   group: string;
+  /** Display name: Thai when natural, otherwise English. */
+  topic?: string;
+  /** Thai topic description. */
   summary: string;
 }
 
 /** Client ← Next.js /api/summarize */
 export interface SummarizeBatchResponse {
+  summaries: SummarizeResultItem[];
+}
+
+/** Client → Next.js POST /api/host-summary/generate */
+export interface HostSummaryGenerateRequest {
+  items: ClassifyBatchItem[];
+}
+
+/** Classification data returned only so the client can persist the room snapshot. */
+export interface HostSummaryEntryGroup {
+  id: string;
+  group: string;
+}
+
+/** Client ← Next.js POST /api/host-summary/generate */
+export interface HostSummaryGenerateResponse {
+  entryGroups: HostSummaryEntryGroup[];
+  groups: import("@/types/entry").GroupStat[];
   summaries: SummarizeResultItem[];
 }

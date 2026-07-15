@@ -1,5 +1,6 @@
 import { ID, Permission, Query, Role, TablesDB } from "appwrite";
 import { APPWRITE } from "@/lib/constants";
+import { deriveIsSummaryFromSummarizeJson } from "@/lib/hostSummaryState";
 import { generateRoomCode } from "@/lib/roomCode";
 import { getAppwriteClient } from "@/services/appwrite/client";
 import { ensureGuestSession } from "@/services/appwrite/auth";
@@ -20,13 +21,89 @@ function assertConfig(): void {
   }
 }
 
+/** True when Appwrite rejects an unknown `isSummary` attribute. */
+function isUnknownIsSummaryAttributeError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /isSummary/i.test(message) && /unknown|invalid|not found|attribute/i.test(message);
+}
+
+function withoutIsSummaryField<T extends { isSummary?: boolean }>(
+  data: T,
+): Omit<T, "isSummary"> {
+  const next = { ...data };
+  delete next.isSummary;
+  return next;
+}
+
+async function createRoomRow(
+  data: RoomDocument,
+): Promise<Record<string, unknown>> {
+  try {
+    return (await getTablesDB().createRow({
+      databaseId: APPWRITE.databaseId,
+      tableId: APPWRITE.roomsTableId,
+      rowId: ID.unique(),
+      data,
+      permissions: [
+        Permission.read(Role.any()),
+        Permission.update(Role.users()),
+        Permission.delete(Role.users()),
+      ],
+    })) as unknown as Record<string, unknown>;
+  } catch (error) {
+    if (!isUnknownIsSummaryAttributeError(error)) throw error;
+    return (await getTablesDB().createRow({
+      databaseId: APPWRITE.databaseId,
+      tableId: APPWRITE.roomsTableId,
+      rowId: ID.unique(),
+      data: withoutIsSummaryField(data),
+      permissions: [
+        Permission.read(Role.any()),
+        Permission.update(Role.users()),
+        Permission.delete(Role.users()),
+      ],
+    })) as unknown as Record<string, unknown>;
+  }
+}
+
+async function updateRoomRow(
+  roomRowId: string,
+  patch: Partial<RoomDocument>,
+): Promise<Record<string, unknown>> {
+  try {
+    return (await getTablesDB().updateRow({
+      databaseId: APPWRITE.databaseId,
+      tableId: APPWRITE.roomsTableId,
+      rowId: roomRowId,
+      data: patch,
+    })) as unknown as Record<string, unknown>;
+  } catch (error) {
+    if (!("isSummary" in patch) || !isUnknownIsSummaryAttributeError(error)) {
+      throw error;
+    }
+    return (await getTablesDB().updateRow({
+      databaseId: APPWRITE.databaseId,
+      tableId: APPWRITE.roomsTableId,
+      rowId: roomRowId,
+      data: withoutIsSummaryField(patch),
+    })) as unknown as Record<string, unknown>;
+  }
+}
+
 function mapRoom(row: Record<string, unknown>): Room {
+  const summarizeJson = (row.summarizeJson as string) ?? "[]";
+  const isSummary =
+    typeof row.isSummary === "boolean"
+      ? row.isSummary
+      : deriveIsSummaryFromSummarizeJson(summarizeJson);
+
   return {
     $id: row.$id as string,
     roomId: row.roomId as string,
     groupsJson: (row.groupsJson as string) ?? "[]",
-    summarizeJson: (row.summarizeJson as string) ?? "[]",
+    summarizeJson,
     savedSnapshotsJson: (row.savedSnapshotsJson as string) ?? "[]",
+    isSummary,
     lastSavedAt: (row.lastSavedAt as string) || undefined,
     createdAt: row.createdAt as string,
     updatedAt: row.updatedAt as string,
@@ -54,7 +131,11 @@ function parseSnapshot(room: Room): RoomSnapshot {
   } catch {
     summaries = [];
   }
-  return { groups, summaries };
+  return {
+    groups,
+    summaries,
+    isSummary: room.isSummary || summaries.length > 0,
+  };
 }
 
 export async function getRoomByCode(roomId: string): Promise<Room | null> {
@@ -89,23 +170,13 @@ export async function createRoom(): Promise<Room> {
     groupsJson: "[]",
     summarizeJson: "[]",
     savedSnapshotsJson: "[]",
+    isSummary: false,
     createdAt: now,
     updatedAt: now,
   };
 
-  const row = await getTablesDB().createRow({
-    databaseId: APPWRITE.databaseId,
-    tableId: APPWRITE.roomsTableId,
-    rowId: ID.unique(),
-    data,
-    permissions: [
-      Permission.read(Role.any()),
-      Permission.update(Role.users()),
-      Permission.delete(Role.users()),
-    ],
-  });
-
-  return mapRoom(row as unknown as Record<string, unknown>);
+  const row = await createRoomRow(data);
+  return mapRoom(row);
 }
 
 export async function updateRoomSnapshot(
@@ -115,6 +186,7 @@ export async function updateRoomSnapshot(
     summaries: SummarizeResultItem[];
     savedSnapshots: SavedRoundSnapshot[];
     lastSavedAt: string | null;
+    isSummary: boolean;
   }>,
 ): Promise<Room> {
   await ensureGuestSession();
@@ -128,6 +200,7 @@ export async function updateRoomSnapshot(
   }
   if (snapshot.summaries) {
     patch.summarizeJson = JSON.stringify(snapshot.summaries);
+    patch.isSummary = snapshot.summaries.length > 0;
   }
   if (snapshot.savedSnapshots) {
     patch.savedSnapshotsJson = JSON.stringify(snapshot.savedSnapshots);
@@ -135,15 +208,12 @@ export async function updateRoomSnapshot(
   if (snapshot.lastSavedAt !== undefined) {
     patch.lastSavedAt = snapshot.lastSavedAt ?? undefined;
   }
+  if (snapshot.isSummary !== undefined) {
+    patch.isSummary = snapshot.isSummary;
+  }
 
-  const row = await getTablesDB().updateRow({
-    databaseId: APPWRITE.databaseId,
-    tableId: APPWRITE.roomsTableId,
-    rowId: roomRowId,
-    data: patch,
-  });
-
-  return mapRoom(row as unknown as Record<string, unknown>);
+  const row = await updateRoomRow(roomRowId, patch);
+  return mapRoom(row);
 }
 
 /** Persist summary + groups to DB and append to saved history. */
@@ -273,6 +343,7 @@ export async function startNewRound(roomId: string, roomRowId: string): Promise<
   await updateRoomSnapshot(roomRowId, {
     groups: [],
     summaries: [],
+    isSummary: false,
   });
 }
 
@@ -299,6 +370,7 @@ export async function clearRoomRows(roomId: string): Promise<void> {
       summaries: [],
       savedSnapshots: [],
       lastSavedAt: null,
+      isSummary: false,
     });
   }
 }

@@ -1,4 +1,4 @@
-import { bumpJoinFormEpoch } from "@/lib/guestJoinDraft";
+import { bumpJoinFormEpoch } from "@/lib/guestJoinEpoch";
 import { useEntriesStore } from "@/store/entriesStore";
 import { usePlayerStore } from "@/store/playerStore";
 import { useRoomStore } from "@/store/roomStore";

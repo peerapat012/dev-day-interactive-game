@@ -112,7 +112,9 @@ Your job:
 * Generate a short natural summary describing what users in this group are especially interested in
 * Summarize EACH group independently
 * Never merge groups together
-* Preserve original group names
+* Preserve each original group name exactly in the "group" field
+* Add a display name in the "topic" field: use Thai when there is a natural Thai term; use English only when no suitable Thai term exists
+* Write every "summary" description in Thai
 * Return valid JSON only
 * Keep summary concise for dashboard UI
 * One summary per group
@@ -137,9 +139,9 @@ Input format:
 
 OUTPUT FORMAT:
 { "summaries": [
-        { "group": "group_name", "summary": "This group is heavily focused on scalable frontend architecture, realtime systems, and modern web development using Next.js." },
-        { "group": "group_name", "summary": "Interest in this group centers around dog behavior, pet care, and training techniques for puppies." },
-        { "group": "group_name", "summary": "This group mainly discusses Asian cuisine, especially ramen, spicy food, and simple home cooking ideas." }
+        { "group": "technology", "topic": "เทคโนโลยี", "summary": "กลุ่มนี้สนใจสถาปัตยกรรมฟรอนต์เอนด์ที่รองรับการขยายตัว ระบบเรียลไทม์ และการพัฒนาเว็บสมัยใหม่ด้วย Next.js" },
+        { "group": "animal", "topic": "สัตว์เลี้ยง", "summary": "ประเด็นหลักเกี่ยวข้องกับพฤติกรรมสุนัข การดูแลสัตว์เลี้ยง และเทคนิคการฝึกลูกสุนัข" },
+        { "group": "food", "topic": "อาหาร", "summary": "กลุ่มนี้ให้ความสนใจกับอาหารเอเชีย โดยเฉพาะราเมง อาหารรสเผ็ด และเมนูทำง่ายที่บ้าน" }
         ...
     ]
 }
@@ -147,6 +149,9 @@ OUTPUT FORMAT:
 Rules:
 
 * Return ONLY 1-2 concise sentences
+* Keep "group" unchanged so the caller can match the result to its input
+* Always include "topic" and "summary"
+* "summary" must contain Thai-language prose
 * Focus on dominant interests and recurring themes
 * Do not list every item
 * Do not explain the process
@@ -158,13 +163,13 @@ Rules:
 * Output must be short enough for a dashboard card UI
 
 Good example:
-"This group is mainly focused on frontend development, especially Next.js architecture, scalable folder structures, and realtime interactive UI systems."
+"กลุ่มนี้เน้นการพัฒนาฟรอนต์เอนด์ โดยเฉพาะสถาปัตยกรรม Next.js โครงสร้างโปรเจกต์ที่ขยายได้ และระบบโต้ตอบแบบเรียลไทม์"
 
 Another example:
-"Interest in this group centers around animals and pets, particularly dogs, cat behavior, and pet care topics."
+"หัวข้อหลักคือสัตว์และสัตว์เลี้ยง โดยเฉพาะสุนัข พฤติกรรมแมว และแนวทางการดูแลสัตว์"
 
 Bad example:
-"The users talked about many things including coding, frontend, backend, JavaScript, React, architecture, and deployment."
+"The users talked about coding, frontend, backend, JavaScript, React, architecture, and deployment."
 
 Return valid JSON only.
 

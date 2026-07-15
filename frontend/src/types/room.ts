@@ -24,6 +24,12 @@ export interface RoomDocument {
   groupsJson: string;
   summarizeJson: string;
   savedSnapshotsJson: string;
+  /**
+   * True when the room has an active saved summary (`summarizeJson` non-empty).
+   * Prefer a real Appwrite boolean attribute on the rooms table. If the column
+   * is missing, writers omit the field and readers derive it from summarizeJson.
+   */
+  isSummary: boolean;
   lastSavedAt?: string;
   createdAt: string;
   updatedAt: string;
@@ -36,4 +42,5 @@ export interface Room extends RoomDocument {
 export interface RoomSnapshot {
   groups: GroupStat[];
   summaries: SummarizeResultItem[];
+  isSummary: boolean;
 }

@@ -6,16 +6,15 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { GuestJoinForm } from "@/features/guest/components/GuestJoinForm";
 import { GuestMessagePanel } from "@/features/guest/components/GuestMessagePanel";
 import { useRoomClosedKick } from "@/features/guest/hooks/useRoomClosedKick";
-import { clearGuestRoomSession } from "@/lib/clearGuestRoomSession";
-import { bumpJoinFormEpoch, readJoinFormEpoch } from "@/lib/guestJoinDraft";
+import { readJoinFormEpoch } from "@/lib/guestJoinEpoch";
 import {
   guestPathWithRoom,
   roomCodeFromSearchParams,
 } from "@/lib/guestJoinUrl";
 import { resetGuestJoinSession } from "@/lib/guestJoinReset";
-import { getRoomByCode } from "@/services/appwrite/rooms";
 import { normalizeRoomCode } from "@/lib/roomCode";
 import { onGuestStoresHydrated } from "@/lib/persistHydration";
+import { getRoomByCode } from "@/services/appwrite/rooms";
 import { usePlayerStore } from "@/store/playerStore";
 import { useRoomStore } from "@/store/roomStore";
 
@@ -40,14 +39,21 @@ export function GuestScreen() {
     void resetJoinForm();
   }, [resetJoinForm]);
 
-  useRoomClosedKick(joined, onRoomClosedByHost);
-
   const roomFromUrl = useMemo(
     () => roomCodeFromSearchParams(searchParams),
     [searchParams],
   );
 
   const qrRoomResolved = roomFromUrl.length > 0;
+  const sessionIsLive =
+    guestMode && Boolean(displayName.trim()) && Boolean(guestId) && Boolean(storedRoomId);
+  const resumeFromQr =
+    qrRoomResolved &&
+    Boolean(storedRoomId) &&
+    roomFromUrl === normalizeRoomCode(storedRoomId);
+  const canShowLobby = storesReady && sessionIsLive && (joined || resumeFromQr);
+
+  useRoomClosedKick(canShowLobby, onRoomClosedByHost);
 
   useEffect(() => onGuestStoresHydrated(() => setStoresReady(true)), []);
 
@@ -55,7 +61,7 @@ export function GuestScreen() {
    * Manual join: if the saved room was closed by the host, wipe persist and reset the form.
    */
   useEffect(() => {
-    if (!storesReady || joined || qrRoomResolved) return;
+    if (!storesReady || canShowLobby || qrRoomResolved) return;
 
     const stored = normalizeRoomCode(storedRoomId);
     if (!stored) return;
@@ -63,59 +69,25 @@ export function GuestScreen() {
     let cancelled = false;
     void getRoomByCode(stored).then((room) => {
       if (cancelled || room) return;
-      clearGuestRoomSession();
       void resetJoinForm();
     });
 
     return () => {
       cancelled = true;
     };
-  }, [storesReady, joined, qrRoomResolved, storedRoomId, resetJoinForm]);
+  }, [canShowLobby, qrRoomResolved, resetJoinForm, storedRoomId, storesReady]);
 
-  /** QR URL differs from persisted session — drop stale room but keep `?room=` for the scan. */
+  /** QR URL differs from persisted session โ€” drop stale room but keep `?room=` for the scan. */
   useEffect(() => {
-    if (!storesReady || !qrRoomResolved || joined) return;
+    if (!storesReady || !qrRoomResolved || canShowLobby) return;
+
     const stored = normalizeRoomCode(storedRoomId);
     if (stored && stored !== roomFromUrl) {
-      clearGuestRoomSession();
-      setJoinFormEpoch(bumpJoinFormEpoch());
+      queueMicrotask(() => {
+        void resetJoinForm();
+      });
     }
-  }, [storesReady, joined, qrRoomResolved, roomFromUrl, storedRoomId]);
-
-  /** Only auto-enter lobby when QR URL matches the saved session (never while already joined). */
-  const resumeFromQr =
-    qrRoomResolved &&
-    Boolean(storedRoomId) &&
-    roomFromUrl === normalizeRoomCode(storedRoomId);
-
-  useEffect(() => {
-    if (!storesReady || joined) return;
-
-    if (
-      resumeFromQr &&
-      guestMode &&
-      displayName.trim() &&
-      guestId &&
-      storedRoomId
-    ) {
-      setJoined(true);
-    }
-  }, [
-    storesReady,
-    joined,
-    guestMode,
-    displayName,
-    guestId,
-    storedRoomId,
-    resumeFromQr,
-  ]);
-
-  useEffect(() => {
-    if (!storesReady) return;
-    if (joined && !guestId.trim() && guestMode && storedRoomId) {
-      setJoined(false);
-    }
-  }, [storesReady, joined, guestId, guestMode, storedRoomId]);
+  }, [canShowLobby, qrRoomResolved, resetJoinForm, roomFromUrl, storedRoomId, storesReady]);
 
   if (!storesReady) {
     return (
@@ -124,12 +96,12 @@ export function GuestScreen() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
       >
-        Loading…
+        Loadingโ€ฆ
       </motion.div>
     );
   }
 
-  if (!joined) {
+  if (!canShowLobby) {
     return (
       <div className="relative flex min-h-dvh flex-col overflow-hidden">
         <motion.div
@@ -163,7 +135,7 @@ export function GuestScreen() {
                 <span className="font-mono font-semibold text-violet-300">
                   {roomFromUrl}
                 </span>{" "}
-                from QR — confirm the code and enter your nickname.
+                from QR โ€” confirm the code and enter your nickname.
               </>
             ) : (
               "Enter the room code from the host (or scan their QR) and your nickname."
@@ -172,14 +144,18 @@ export function GuestScreen() {
         </motion.div>
 
         <GuestJoinForm
-          key={qrRoomResolved ? `qr-${roomFromUrl}-${joinFormEpoch}` : `manual-${joinFormEpoch}`}
+          key={
+            qrRoomResolved
+              ? `qr-${roomFromUrl}-${joinFormEpoch}`
+              : `manual-${joinFormEpoch}`
+          }
           initialRoomCode={roomFromUrl}
           formEpoch={joinFormEpoch}
           fromQr={qrRoomResolved}
           onJoined={(joinedRoomCode) => {
-            const joined = normalizeRoomCode(joinedRoomCode);
-            if (joined && joined !== roomFromUrl) {
-              router.replace(guestPathWithRoom(joined));
+            const joinedCode = normalizeRoomCode(joinedRoomCode);
+            if (joinedCode && joinedCode !== roomFromUrl) {
+              router.replace(guestPathWithRoom(joinedCode));
             }
             setJoined(true);
           }}

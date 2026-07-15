@@ -4,9 +4,9 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 import { useSummaryHistory } from "@/features/summary/hooks/useSummaryHistory";
 import { formatSavedAt } from "@/lib/formatSavedAt";
-import { getGroupContributors, getTopGroups } from "@/lib/aggregateEntries";
+import { getGroupContributors } from "@/lib/aggregateEntries";
 import { buildContributorTags } from "@/lib/contributorTags";
-import { TOP_GROUPS_COUNT } from "@/lib/constants";
+import { getSummaryTopicLabel } from "@/lib/hostSummaryState";
 import { Modal } from "@/shared/ui/Modal";
 import { Button } from "@/shared/ui/Button";
 import { TagCloud } from "@/shared/ui/TagCloud";
@@ -88,8 +88,8 @@ function HistoryList({
   if (rounds.length === 0) {
     return (
       <p className="py-8 text-center text-sm text-zinc-500">
-        No saved summaries yet. Generate a summary, then tap{" "}
-        <strong className="text-violet-300">Save summary</strong> to add it here.
+        No saved summaries yet. Refresh the active summary to move the current
+        version into history.
       </p>
     );
   }
@@ -97,7 +97,6 @@ function HistoryList({
   return (
     <ul className="flex flex-col gap-2 pb-2">
       {rounds.map((round, index) => {
-        const top = getTopGroups(round.groups, TOP_GROUPS_COUNT);
         const summaryCount = round.summaries.length;
         const roundNumber = rounds.length - index;
 
@@ -115,10 +114,7 @@ function HistoryList({
                 {formatSavedAt(round.savedAt)}
               </span>
               <span className="text-xs text-zinc-500">
-                {top.length} group{top.length === 1 ? "" : "s"}
-                {summaryCount > 0
-                  ? ` · ${summaryCount} summar${summaryCount === 1 ? "y" : "ies"}`
-                  : ""}
+                {summaryCount} summar{summaryCount === 1 ? "y" : "ies"}
               </span>
             </button>
           </li>
@@ -135,8 +131,6 @@ function HistoryRoundDetail({
   snapshot: SavedRoundSnapshot;
   onBack: () => void;
 }) {
-  const topGroups = getTopGroups(snapshot.groups, TOP_GROUPS_COUNT);
-
   return (
     <div className="flex flex-col gap-4 pb-2">
       <Button type="button" variant="ghost" onClick={onBack} className="w-fit px-4">
@@ -144,26 +138,9 @@ function HistoryRoundDetail({
       </Button>
       <p className="text-xs text-zinc-500">{formatSavedAt(snapshot.savedAt)}</p>
 
-      {topGroups.length > 0 ? (
-        <ul className="flex flex-wrap gap-2">
-          {topGroups.map((g, i) => (
-            <li
-              key={g.group}
-              className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-zinc-300"
-            >
-              <span className="font-semibold text-violet-300">#{i + 1}</span>{" "}
-              <span className="capitalize">{g.group}</span>
-              <span className="text-zinc-500"> · {g.count}</span>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-
       <ul className="flex flex-col gap-3">
         {snapshot.summaries.map((card, index) => {
-          const group =
-            snapshot.groups.find((g) => g.group === card.group) ??
-            topGroups.find((g) => g.group === card.group);
+          const group = snapshot.groups.find((g) => g.group === card.group);
           const contributorTags = group
             ? buildContributorTags(getGroupContributors(group))
             : [];
@@ -176,8 +153,8 @@ function HistoryRoundDetail({
               transition={{ delay: index * 0.05 }}
               className="rounded-2xl border border-white/10 bg-zinc-900/80 p-4"
             >
-              <h3 className="text-sm font-semibold capitalize text-violet-200">
-                {card.group}
+              <h3 className="text-sm font-semibold text-violet-200">
+                {getSummaryTopicLabel(card)}
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-zinc-200">
                 {card.summary}

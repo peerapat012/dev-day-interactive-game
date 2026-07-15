@@ -9,6 +9,7 @@ interface HostShellProps {
   onTabChange: (tab: HostTabId) => void;
   title: string;
   description?: string;
+  summaryEnabled?: boolean;
   children: ReactNode;
 }
 
@@ -17,6 +18,7 @@ export function HostShell({
   onTabChange,
   title,
   description,
+  summaryEnabled = true,
   children,
 }: HostShellProps) {
   return (
@@ -35,7 +37,11 @@ export function HostShell({
         </header>
         <main className="flex min-h-0 flex-1 flex-col">{children}</main>
       </div>
-      <HostTabBar activeTab={activeTab} onTabChange={onTabChange} />
+      <HostTabBar
+        activeTab={activeTab}
+        onTabChange={onTabChange}
+        summaryEnabled={summaryEnabled}
+      />
     </motion.div>
   );
 }

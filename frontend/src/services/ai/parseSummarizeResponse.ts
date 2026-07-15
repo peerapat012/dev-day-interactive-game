@@ -6,6 +6,7 @@ function itemToResult(item: unknown, index: number): SummarizeResultItem {
   }
   const row = item as Record<string, unknown>;
   const group = String(row.group ?? row.name ?? row.category ?? "").trim();
+  const topic = String(row.topic ?? row.topicName ?? row.name ?? group).trim();
   const summary = String(
     row.summarize ?? row.summary ?? row.text ?? row.message ?? row.content ?? "",
   ).trim();
@@ -14,7 +15,7 @@ function itemToResult(item: unknown, index: number): SummarizeResultItem {
     throw new Error(`LLM summarize: item at index ${index} is missing "group"`);
   }
 
-  return { group, summary };
+  return { group, topic, summary };
 }
 
 function listFromRecord(record: Record<string, unknown>): unknown {
@@ -59,12 +60,12 @@ export function parseSummarizeResponse(data: unknown): SummarizeResultItem[] {
     } else {
       return Object.entries(nested).map(([group, value]) => {
         if (typeof value === "string") {
-          return { group, summary: value.trim() };
+          return { group, topic: group, summary: value.trim() };
         }
         if (value && typeof value === "object") {
           return itemToResult({ group, ...(value as object) }, 0);
         }
-        return { group, summary: String(value ?? "").trim() };
+        return { group, topic: group, summary: String(value ?? "").trim() };
       });
     }
   }

@@ -105,14 +105,30 @@ export function mockClassifyBatch(
 
 export function mockSummarize(group: string, inputsPlainText: string): string {
   const sample = inputsPlainText.slice(0, 200);
-  return `Mock summary for "${group}": participants mentioned themes like ${sample || "varied topics"}.`;
+  return `หัวข้อนี้เน้นเรื่อง ${sample || group} และสะท้อนประเด็นที่ผู้เข้าร่วมสนใจร่วมกัน`;
+}
+
+function mockTopicName(group: string): string {
+  const thaiTopics: Record<string, string> = {
+    animal: "สัตว์",
+    entertainment: "ความบันเทิง",
+    food: "อาหาร",
+    frameworks: "เฟรมเวิร์ก",
+    programming: "การเขียนโปรแกรม",
+    "programming languages": "ภาษาโปรแกรม",
+    "spoken languages": "ภาษาพูด",
+    sports: "กีฬา",
+    travel: "การท่องเที่ยว",
+  };
+  return thaiTopics[group.toLowerCase()] ?? group;
 }
 
 export function mockSummarizeBatch(
   groups: Array<{ group: string; inputs: string }>,
-): Array<{ group: string; summary: string }> {
+): Array<{ group: string; topic: string; summary: string }> {
   return groups.map(({ group, inputs }) => ({
     group,
+    topic: mockTopicName(group),
     summary: mockSummarize(group, inputs),
   }));
 }

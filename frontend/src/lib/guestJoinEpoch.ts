@@ -22,16 +22,3 @@ export function bumpJoinFormEpoch(): number {
     return 0;
   }
 }
-
-/** @deprecated Room draft caused stale codes to reappear; epoch reset replaces this. */
-export function readGuestJoinRoomDraft(): string {
-  return "";
-}
-
-export function writeGuestJoinRoomDraft(_value: string): void {
-  /* no-op — do not persist typed room codes */
-}
-
-export function clearGuestJoinRoomDraft(): void {
-  /* no-op */
-}

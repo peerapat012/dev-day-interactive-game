@@ -58,7 +58,7 @@ export function HomeScreen() {
           <RoleCard
             href={HOST_PATH}
             title="Host"
-            description="Create a room, share the QR, classify groups, and run summaries."
+            description="Create a room, share the QR, collect inputs, and view summaries."
             accent="from-violet-600/30 to-violet-950/50 border-violet-400/30"
             delay={0.15}
           />
