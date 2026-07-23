@@ -9,7 +9,10 @@ import { buildContributorTags } from "@/lib/contributorTags";
 import { getSummaryTopicLabel } from "@/lib/hostSummaryState";
 import { Modal } from "@/shared/ui/Modal";
 import { Button } from "@/shared/ui/Button";
-import { TagCloud } from "@/shared/ui/TagCloud";
+import {
+  MAX_VISIBLE_GUEST_TAGS,
+  TagCloud,
+} from "@/shared/ui/TagCloud";
 import type { SavedRoundSnapshot } from "@/types/room";
 
 interface SummaryHistoryModalProps {
@@ -165,7 +168,11 @@ function HistoryRoundDetail({
                 </p>
               ) : null}
 
-              <TagCloud tags={contributorTags} label="Guests" />
+              <TagCloud
+                tags={contributorTags}
+                label="Guests"
+                maxVisible={MAX_VISIBLE_GUEST_TAGS}
+              />
             </motion.li>
           );
         })}
