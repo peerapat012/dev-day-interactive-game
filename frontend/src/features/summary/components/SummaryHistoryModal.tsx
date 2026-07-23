@@ -9,8 +9,10 @@ import { buildContributorTags } from "@/lib/contributorTags";
 import { getSummaryTopicLabel } from "@/lib/hostSummaryState";
 import { Modal } from "@/shared/ui/Modal";
 import { Button } from "@/shared/ui/Button";
-import { GuestNameBubbles } from "@/shared/ui/GuestNameBubbles";
-import { TagCloud } from "@/shared/ui/TagCloud";
+import {
+  MAX_VISIBLE_GUEST_TAGS,
+  TagCloud,
+} from "@/shared/ui/TagCloud";
 import type { SavedRoundSnapshot } from "@/types/room";
 
 interface SummaryHistoryModalProps {
@@ -160,16 +162,17 @@ function HistoryRoundDetail({
               <p className="mt-2 text-sm leading-relaxed text-zinc-200">
                 {card.summary}
               </p>
-              <div className="mt-3 flex flex-col gap-2">
-                <GuestNameBubbles tags={contributorTags} />
-                {group ? (
-                  <p className="text-xs text-zinc-500">
-                    {group.count} contribution{group.count === 1 ? "" : "s"}
-                  </p>
-                ) : null}
-              </div>
+              {group ? (
+                <p className="mt-2 text-xs text-zinc-500">
+                  {group.count} contribution{group.count === 1 ? "" : "s"}
+                </p>
+              ) : null}
 
-              <TagCloud tags={contributorTags} label="Guests" />
+              <TagCloud
+                tags={contributorTags}
+                label="Guests"
+                maxVisible={MAX_VISIBLE_GUEST_TAGS}
+              />
             </motion.li>
           );
         })}

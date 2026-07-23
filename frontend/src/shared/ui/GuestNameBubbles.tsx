@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { ContributorTag } from "@/lib/contributorTags";
+import { GuestContributorList } from "@/shared/ui/GuestContributorChip";
 import { Modal } from "@/shared/ui/Modal";
 import {
   GUEST_TAG_VARIANTS,
@@ -60,13 +61,11 @@ export function GuestNameBubbles({ tags }: GuestNameBubblesProps) {
         title="Guests"
         elevated
       >
-        <ul className="flex flex-wrap gap-1.5" aria-label="All guests">
-          {tags.map((tag) => (
-            <li key={tag.name}>
-              <GuestNameChip name={tag.name} />
-            </li>
-          ))}
-        </ul>
+        <p className="mb-3 text-[11px] leading-relaxed text-zinc-500">
+          <span className="text-zinc-400">(n)</span> = number of phrases that guest
+          submitted in this group. Inputs are shown below each name.
+        </p>
+        <GuestContributorList tags={tags} aria-label="All guests" />
         <p className="mt-4 text-xs text-zinc-500">
           {tags.length} guest{tags.length === 1 ? "" : "s"}
         </p>
