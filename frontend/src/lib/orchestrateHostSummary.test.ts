@@ -2,9 +2,9 @@ import { describe, expect, it, vi } from "vitest";
 import { orchestrateHostSummary } from "@/lib/orchestrateHostSummary";
 
 const ITEMS = [
-  { id: "1", input: "React hooks" },
-  { id: "2", input: "Next.js routing" },
-  { id: "3", input: "Spicy ramen" },
+  { id: "1", input: "React hooks", name: "Alice" },
+  { id: "2", input: "Next.js routing", name: "Bob" },
+  { id: "3", input: "Spicy ramen", name: "Carol" },
 ];
 
 describe("orchestrateHostSummary", () => {
@@ -40,6 +40,11 @@ describe("orchestrateHostSummary", () => {
     });
 
     expect(calls).toEqual(["classify", "summarize"]);
+    expect(classify).toHaveBeenCalledWith([
+      { id: "1", input: "React hooks" },
+      { id: "2", input: "Next.js routing" },
+      { id: "3", input: "Spicy ramen" },
+    ]);
     expect(summarize).toHaveBeenCalledWith([
       { group: "Frameworks", inputs: "React hooks, Next.js routing" },
       { group: "Food", inputs: "Spicy ramen" },
@@ -49,11 +54,44 @@ describe("orchestrateHostSummary", () => {
       { id: "2", group: "Frameworks" },
       { id: "3", group: "Food" },
     ]);
-    expect(result.groups.map(({ group, count }) => ({ group, count }))).toEqual([
-      { group: "Frameworks", count: 2 },
-      { group: "Food", count: 1 },
+    expect(result.groups).toEqual([
+      {
+        group: "Frameworks",
+        count: 2,
+        inputs: ["React hooks", "Next.js routing"],
+        contributors: [
+          { name: "Alice", input: "React hooks" },
+          { name: "Bob", input: "Next.js routing" },
+        ],
+      },
+      {
+        group: "Food",
+        count: 1,
+        inputs: ["Spicy ramen"],
+        contributors: [{ name: "Carol", input: "Spicy ramen" }],
+      },
     ]);
     expect(result.summaries).toHaveLength(2);
+  });
+
+  it("falls back to Guest when a name is missing", async () => {
+    const result = await orchestrateHostSummary(
+      [{ id: "1", input: "React hooks" }],
+      {
+        classify: async () => [{ id: "1", group: "Frameworks" }],
+        summarize: async () => [
+          {
+            group: "Frameworks",
+            topic: "เฟรมเวิร์ก",
+            summary: "กลุ่มนี้สนใจ React สำหรับการพัฒนาเว็บ",
+          },
+        ],
+      },
+    );
+
+    expect(result.groups[0].contributors).toEqual([
+      { name: "Guest", input: "React hooks" },
+    ]);
   });
 
   it("does not summarize when classification fails", async () => {

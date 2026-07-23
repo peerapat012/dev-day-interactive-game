@@ -4,20 +4,26 @@ import { classifyBatchWithLlm } from "@/services/ai/classifyBatch";
 import { mockClassifyBatch, mockSummarizeBatch } from "@/services/ai/mock";
 import { summarizeWithLlm } from "@/services/ai/summarizeLlm";
 import type {
-  ClassifyBatchItem,
+  HostSummaryGenerateItem,
   HostSummaryGenerateRequest,
 } from "@/types/api";
 
 const USE_MOCK = process.env.LLM_USE_MOCK === "true";
 
-function normalizeItems(body: HostSummaryGenerateRequest): ClassifyBatchItem[] {
+function normalizeItems(
+  body: HostSummaryGenerateRequest,
+): HostSummaryGenerateItem[] {
   if (!Array.isArray(body.items)) return [];
 
   return body.items
-    .map((item) => ({
-      id: item.id?.trim() ?? "",
-      input: item.input?.trim() ?? "",
-    }))
+    .map((item) => {
+      const name = item.name?.trim() ?? "";
+      return {
+        id: item.id?.trim() ?? "",
+        input: item.input?.trim() ?? "",
+        ...(name ? { name } : {}),
+      };
+    })
     .filter((item) => item.id && item.input);
 }
 

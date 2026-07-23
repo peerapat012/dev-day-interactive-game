@@ -4,6 +4,12 @@ export interface ClassifyBatchItem {
   input: string;
 }
 
+/** Host summary generate payload — includes guest display name for Round Summary chips. */
+export interface HostSummaryGenerateItem extends ClassifyBatchItem {
+  /** Guest display name; omitted or empty falls back to "Guest" in saved contributors. */
+  name?: string;
+}
+
 /** Client → Next.js POST /api/classify */
 export interface ClassifyBatchRequest {
   items: ClassifyBatchItem[];
@@ -88,7 +94,7 @@ export interface SummarizeBatchResponse {
 
 /** Client → Next.js POST /api/host-summary/generate */
 export interface HostSummaryGenerateRequest {
-  items: ClassifyBatchItem[];
+  items: HostSummaryGenerateItem[];
 }
 
 /** Classification data returned only so the client can persist the room snapshot. */

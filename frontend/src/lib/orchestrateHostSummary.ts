@@ -3,11 +3,12 @@ import { joinGroupInputs } from "@/lib/joinGroupInputs";
 import { assertThaiSummaryContract } from "@/lib/validateThaiSummary";
 import type {
   ClassifyBatchItem,
+  HostSummaryGenerateItem,
   HostSummaryGenerateResponse,
   SummarizeGroupPayload,
   SummarizeResultItem,
 } from "@/types/api";
-import type { GroupStat } from "@/types/entry";
+import type { GroupContributor, GroupStat } from "@/types/entry";
 
 interface HostSummaryDependencies {
   classify: (
@@ -18,11 +19,20 @@ interface HostSummaryDependencies {
   ) => Promise<SummarizeResultItem[]>;
 }
 
+function contributorFromItem(item: HostSummaryGenerateItem): GroupContributor {
+  return {
+    name: item.name?.trim() || "Guest",
+    input: item.input.trim() || "…",
+  };
+}
+
 export async function orchestrateHostSummary(
-  items: ClassifyBatchItem[],
+  items: HostSummaryGenerateItem[],
   dependencies: HostSummaryDependencies,
 ): Promise<HostSummaryGenerateResponse> {
-  const classified = await dependencies.classify(items);
+  const classified = await dependencies.classify(
+    items.map(({ id, input }) => ({ id, input })),
+  );
   const groupById = new Map(
     classified.map((item) => [item.id, item.group.trim()]),
   );
@@ -36,11 +46,16 @@ export async function orchestrateHostSummary(
   });
 
   const inputsByGroup = new Map<string, string[]>();
+  const contributorsByGroup = new Map<string, GroupContributor[]>();
   items.forEach((item) => {
     const group = groupById.get(item.id)!;
     const inputs = inputsByGroup.get(group) ?? [];
     inputs.push(item.input);
     inputsByGroup.set(group, inputs);
+
+    const contributors = contributorsByGroup.get(group) ?? [];
+    contributors.push(contributorFromItem(item));
+    contributorsByGroup.set(group, contributors);
   });
 
   const groups: GroupStat[] = [...inputsByGroup.entries()]
@@ -48,6 +63,7 @@ export async function orchestrateHostSummary(
       group,
       count: inputs.length,
       inputs,
+      contributors: contributorsByGroup.get(group) ?? [],
     }))
     .sort((a, b) => b.count - a.count);
   const topGroups = groups.slice(0, TOP_GROUPS_COUNT);

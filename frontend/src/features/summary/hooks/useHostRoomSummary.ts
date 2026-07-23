@@ -135,6 +135,7 @@ export function useHostRoomSummary() {
           items: currentEntries.map((entry) => ({
             id: entry.$id,
             input: entry.input,
+            name: entry.name,
           })),
         });
         setIsSummary(true);
@@ -241,6 +242,7 @@ export function useHostRoomSummary() {
         items: currentEntries.map((entry) => ({
           id: entry.$id,
           input: entry.input,
+          name: entry.name,
         })),
       });
       setIsSummary(true);
