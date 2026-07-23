@@ -58,6 +58,7 @@ export function GuestNameBubbles({ tags }: GuestNameBubblesProps) {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         title="Guests"
+        elevated
       >
         <ul className="flex flex-wrap gap-1.5" aria-label="All guests">
           {tags.map((tag) => (
