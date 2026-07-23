@@ -4,8 +4,11 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 import { SummaryHistoryModal } from "@/features/summary/components/SummaryHistoryModal";
 import { useHostRoomSummary } from "@/features/summary/hooks/useHostRoomSummary";
+import { getGroupContributors } from "@/lib/aggregateEntries";
+import { buildContributorTags } from "@/lib/contributorTags";
 import { getSummaryTopicLabel } from "@/lib/hostSummaryState";
 import { Button } from "@/shared/ui/Button";
+import { GuestNameBubbles } from "@/shared/ui/GuestNameBubbles";
 
 const RANK_STYLES = [
   "from-violet-600/30 to-violet-950/40 border-violet-400/30",
@@ -148,6 +151,9 @@ export function HostSummaryContent() {
               const group = topGroups.find((item) => item.group === card.group);
               const style =
                 RANK_STYLES[index] ?? RANK_STYLES[RANK_STYLES.length - 1];
+              const guestTags = group
+                ? buildContributorTags(getGroupContributors(group))
+                : [];
 
               return (
                 <motion.article
@@ -172,10 +178,13 @@ export function HostSummaryContent() {
                   <p className="flex-1 text-sm leading-relaxed text-zinc-100 sm:text-base">
                     {card.summary}
                   </p>
-                  <p className="text-xs text-zinc-500">
-                    {group?.count ?? 0} contribution
-                    {(group?.count ?? 0) === 1 ? "" : "s"}
-                  </p>
+                  <div className="mt-auto flex flex-col gap-2">
+                    <GuestNameBubbles tags={guestTags} />
+                    <p className="text-xs text-zinc-500">
+                      {group?.count ?? 0} contribution
+                      {(group?.count ?? 0) === 1 ? "" : "s"}
+                    </p>
+                  </div>
                 </motion.article>
               );
             })}
