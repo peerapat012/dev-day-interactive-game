@@ -4,6 +4,8 @@
 
 **Phase:** Core workflow implemented — React adapter and guest UX not started
 
+**Deployment safety:** Do not push `main`; pushes to `main` trigger Appwrite auto-deploy. Continue follow-up work on `refactor-and-implement`.
+
 **Last updated:** 2026-08-10
 
 ## Completed
