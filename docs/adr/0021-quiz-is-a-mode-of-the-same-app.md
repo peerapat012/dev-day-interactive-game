@@ -1,0 +1,3 @@
+# Add quiz as a mode of the same app
+
+The quiz game is a new mode of the existing host room app rather than a separate application. The home screen gains a mode picker (Word Cloud / Quiz), and a quiz room reuses the existing room code, guest sessions, Appwrite tables, and realtime plumbing. This avoids duplicating the join and room infrastructure while letting each mode drive its own gameplay flow.

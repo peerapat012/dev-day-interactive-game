@@ -42,7 +42,7 @@ export function useHostRoom() {
           if (cancelled) return;
 
           if (existing && existing.$id === storedRowId) {
-            setRoom(existing.roomId, existing.$id, existing.isSummary);
+            setRoom(existing.roomId, existing.$id, existing.isSummary, existing.mode);
             setReady(true);
             return;
           }
@@ -50,7 +50,7 @@ export function useHostRoom() {
           if (existing && existing.$id !== storedRowId) {
             leaveHostRoom();
             if (cancelled) return;
-            setRoom(existing.roomId, existing.$id, existing.isSummary);
+            setRoom(existing.roomId, existing.$id, existing.isSummary, existing.mode);
             setEntries([]);
             setReady(true);
             return;
@@ -61,7 +61,7 @@ export function useHostRoom() {
 
         const room = await createRoom();
         if (!cancelled) {
-          setRoom(room.roomId, room.$id, room.isSummary);
+          setRoom(room.roomId, room.$id, room.isSummary, room.mode);
           setEntries([]);
           setReady(true);
         }
@@ -86,7 +86,7 @@ export function useHostRoom() {
     try {
       await ensureGuestSession();
       const room = await createRoom();
-      setRoom(room.roomId, room.$id, room.isSummary);
+      setRoom(room.roomId, room.$id, room.isSummary, room.mode);
       setEntries([]);
       return room.roomId;
     } catch (err) {

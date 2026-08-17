@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { GuestJoinForm } from "@/features/guest/components/GuestJoinForm";
 import { GuestMessagePanel } from "@/features/guest/components/GuestMessagePanel";
 import { useRoomClosedKick } from "@/features/guest/hooks/useRoomClosedKick";
+import { QuizGuestScreen } from "@/features/quiz/components/QuizGuestScreen";
 import { readJoinFormEpoch } from "@/lib/guestJoinEpoch";
 import {
   guestPathWithRoom,
@@ -25,6 +26,7 @@ export function GuestScreen() {
   const displayName = usePlayerStore((s) => s.displayName);
   const storedRoomId = useRoomStore((s) => s.roomId);
   const guestId = useRoomStore((s) => s.guestId);
+  const mode = useRoomStore((s) => s.mode);
   const [storesReady, setStoresReady] = useState(false);
   const [joined, setJoined] = useState(false);
   const [joinFormEpoch, setJoinFormEpoch] = useState(() => readJoinFormEpoch());
@@ -163,6 +165,10 @@ export function GuestScreen() {
         />
       </div>
     );
+  }
+
+  if (mode === "quiz") {
+    return <QuizGuestScreen onLeaveRoom={() => void resetJoinForm()} />;
   }
 
   return (

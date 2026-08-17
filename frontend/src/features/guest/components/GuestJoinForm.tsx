@@ -100,7 +100,7 @@ export function GuestJoinForm({
 
       setDisplayName(trimmedName);
       setGuestMode(true);
-      setRoom(room.roomId, room.$id, room.isSummary);
+      setRoom(room.roomId, room.$id, room.isSummary, room.mode);
       setGuestId(guest.guestUuid);
       setHasSubmitted(guest.hasSubmitted);
       onJoined(roomCode);
