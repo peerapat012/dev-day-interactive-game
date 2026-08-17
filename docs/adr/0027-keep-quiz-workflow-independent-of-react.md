@@ -1,0 +1,3 @@
+# Keep the quiz workflow independent of React
+
+The quiz lifecycle is implemented as a framework-independent deep module with thin React adapters, matching the host-summary-workflow pattern. The core owns phases, timing, scoring, leaderboard computation, one-answer enforcement, and clear-session behavior; React hooks and components stay thin. This keeps the rules testable through one seam and prevents presentation concerns from entering the quiz domain model.

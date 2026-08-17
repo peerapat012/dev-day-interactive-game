@@ -4,11 +4,11 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { isGuestPath } from "@/lib/guestPaths";
 import { isHomePath } from "@/lib/homePaths";
-import { HOST_PATH, isHostPath } from "@/lib/hostPaths";
+import { HOST_PATH, isHostPath, isQuizHostPath } from "@/lib/hostPaths";
 import { isLegacyGamePath } from "@/lib/gameNav";
 import { usePlayerStore } from "@/store/playerStore";
 
-const PUBLIC_PATHS = ["/", "/lobby", "/guest", "/host"];
+const PUBLIC_PATHS = ["/", "/lobby", "/guest", "/host", "/quiz/host"];
 
 function isPublicPath(pathname: string): boolean {
   return (
@@ -47,6 +47,7 @@ export function PlayerGate({ children }: { children: React.ReactNode }) {
       guestMode &&
       !isGuestPath(pathname) &&
       !isHostPath(pathname) &&
+      !isQuizHostPath(pathname) &&
       !isHomePath(pathname)
     ) {
       const search =
@@ -77,6 +78,7 @@ export function PlayerGate({ children }: { children: React.ReactNode }) {
     guestMode &&
     !isGuestPath(pathname) &&
     !isHostPath(pathname) &&
+    !isQuizHostPath(pathname) &&
     !isHomePath(pathname)
   ) {
     return null;

@@ -6,6 +6,7 @@ import { getAppwriteClient } from "@/services/appwrite/client";
 import { ensureGuestSession } from "@/services/appwrite/auth";
 import { resetGuestsSubmissionForRoom } from "@/services/appwrite/guests";
 import type { Room, RoomDocument, RoomSnapshot, SavedRoundSnapshot } from "@/types/room";
+import type { RoomMode } from "@/types/quiz";
 import type { SummarizeResultItem } from "@/types/api";
 import type { GroupStat } from "@/types/entry";
 
@@ -104,6 +105,8 @@ function mapRoom(row: Record<string, unknown>): Room {
     summarizeJson,
     savedSnapshotsJson: (row.savedSnapshotsJson as string) ?? "[]",
     isSummary,
+    mode: (row.mode as Room["mode"]) ?? "wordcloud",
+    gameStateJson: (row.gameStateJson as string) ?? "",
     lastSavedAt: (row.lastSavedAt as string) || undefined,
     createdAt: row.createdAt as string,
     updatedAt: row.updatedAt as string,
@@ -154,6 +157,10 @@ export async function getRoomByCode(roomId: string): Promise<Room | null> {
 }
 
 export async function createRoom(): Promise<Room> {
+  return createRoomWithMode("wordcloud");
+}
+
+export async function createRoomWithMode(mode: RoomMode): Promise<Room> {
   await ensureGuestSession();
   assertConfig();
 
@@ -171,6 +178,8 @@ export async function createRoom(): Promise<Room> {
     summarizeJson: "[]",
     savedSnapshotsJson: "[]",
     isSummary: false,
+    mode,
+    gameStateJson: "",
     createdAt: now,
     updatedAt: now,
   };

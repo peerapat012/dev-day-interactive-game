@@ -6,6 +6,10 @@ export const APPWRITE = {
   guestsTableId:
     process.env.NEXT_PUBLIC_APPWRITE_GUESTS_TABLE_ID ?? "guests",
   roomsTableId: process.env.NEXT_PUBLIC_APPWRITE_ROOMS_TABLE_ID ?? "rooms",
+  answersTableId:
+    process.env.NEXT_PUBLIC_APPWRITE_ANSWERS_TABLE_ID ?? "answers",
+  questionDecksTableId:
+    process.env.NEXT_PUBLIC_APPWRITE_QUESTION_DECKS_TABLE_ID ?? "question_decks",
 } as const;
 
 export const BUBBLE = {

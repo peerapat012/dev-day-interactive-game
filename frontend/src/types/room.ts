@@ -1,5 +1,6 @@
 import type { GroupStat } from "@/types/entry";
 import type { SummarizeResultItem } from "@/types/api";
+import type { RoomMode } from "@/types/quiz";
 
 export interface GuestDocument {
   guestUuid: string;
@@ -31,6 +32,10 @@ export interface RoomDocument {
    */
   isSummary: boolean;
   lastSavedAt?: string;
+  /** Word Cloud or Quiz game mode. Defaults to "wordcloud" on the rooms table. */
+  mode: RoomMode;
+  /** Quiz host game state serialized as JSON (`QuizRoomGameState`). */
+  gameStateJson: string;
   createdAt: string;
   updatedAt: string;
 }

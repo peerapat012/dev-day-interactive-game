@@ -1,0 +1,3 @@
+# Enforce one answer per question per guest
+
+The `answers` table is the source of truth: one row per guest per question per room, created with a persisted one-answer-per-question check that mirrors the `guestHasSubmitted` pattern, and rejected if the question has already ended. The table holds selectedOption, answeredAt, isCorrect, and points so the leaderboard and live counts derive from durable data rather than client claims.

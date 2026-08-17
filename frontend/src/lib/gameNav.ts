@@ -1,9 +1,10 @@
 import { GUEST_PATH } from "@/lib/guestPaths";
-import { HOST_PATH } from "@/lib/hostPaths";
+import { HOST_PATH, QUIZ_HOST_PATH } from "@/lib/hostPaths";
 
 export const GAME_NAV = [
   { href: HOST_PATH, label: "Host", mobileLabel: "Host" },
   { href: GUEST_PATH, label: "Guest", mobileLabel: "Guest" },
+  { href: QUIZ_HOST_PATH, label: "Quiz", mobileLabel: "Quiz" },
 ] as const;
 
 export const GAME_PATHS = GAME_NAV.map((item) => item.href);

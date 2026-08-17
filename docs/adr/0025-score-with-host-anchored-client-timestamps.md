@@ -1,0 +1,3 @@
+# Score with host-anchored client timestamps
+
+Scoring uses the host-anchored question start time plus the client's answeredAt: `round(1000 × (1 − elapsedMs / timeLimitMs))`, correct answers only, wrong or late answers score 0, no streaks in v1. The same inputs are available on host and guest, so both compute the same score from the same formula rather than trusting the server's network-arrival time. Server-authoritative timing is explicitly deferred to a later ADR.

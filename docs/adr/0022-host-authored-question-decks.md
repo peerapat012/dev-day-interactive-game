@@ -1,0 +1,3 @@
+# Host-authored question decks built at runtime
+
+Hosts build question decks at runtime on the host screen; there is no deck marketplace or pre-seeded library in v1. An authenticated host may save a deck to the new `question_decks` table (owned by their account) for reuse, while an unauthenticated host's deck lives in localStorage and is wiped by Clear session. Decks are versioned as data inside a single JSON attribute rather than relational rows, keeping the runtime-authoring flow simple.

@@ -35,11 +35,17 @@ NEXT_PUBLIC_APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1
 NEXT_PUBLIC_APPWRITE_PROJECT_ID=
 NEXT_PUBLIC_APPWRITE_DATABASE_ID=
 NEXT_PUBLIC_APPWRITE_COLLECTION_ID=
+NEXT_PUBLIC_APPWRITE_GUESTS_TABLE_ID=guests
+NEXT_PUBLIC_APPWRITE_ROOMS_TABLE_ID=rooms
+NEXT_PUBLIC_APPWRITE_ANSWERS_TABLE_ID=answers
+NEXT_PUBLIC_APPWRITE_QUESTION_DECKS_TABLE_ID=question_decks
 ```
 
 ### 3. Appwrite setup
 
-1. **Auth** — Enable **Anonymous** sessions (Auth → Settings).
+1. **Auth** — Enable **Anonymous** sessions (Auth → Settings). For quiz
+   "saved decks", also enable **Email + Password** (Auth → Settings → Email →
+   Password) so hosts can sign in and own reusable decks.
 2. **Database** — Use database `word-cloud-wall` (or your own; free tier allows one DB).
 3. **Table** — Table `entries` with columns:
 
@@ -63,6 +69,11 @@ NEXT_PUBLIC_APPWRITE_COLLECTION_ID=
 
 6. **`guests` and `rooms` tables** — Required for `/host` and `/guest` flows as in your deployed schema. Host **Close room** deletes the room row (no extra columns).
 
+7. **Quiz mode tables** (see [Quiz mode](#quiz-mode)) — the `rooms` table needs
+   `mode` (enum: `wordcloud`, `quiz`; default `wordcloud`) and `gameStateJson`
+   (string; default empty). Create the `answers` and `question_decks` tables as
+   documented below.
+
 ### Wipe all database rows (fresh start)
 
 From `frontend/` with `APPWRITE_API_KEY` set in `.env.local` (API key must allow **Tables DB** read/delete on your tables):
@@ -81,6 +92,97 @@ This deletes **every row** in the configured **entries**, **guests**, and **room
 | `/`        | Input form + live raw-input bubble cloud (size = frequency) |
 | `/groups`  | Group category bubbles (size = count); click to open side panel with inputs |
 | `/summary` | Top 3 groups → `/api/summarize` → summary cards |
+| `/quiz/host` | Quiz host — build a deck, run live questions, view leaderboard/podium |
+| `/guest?room=CODE` | Join as guest (auto-detects Word Cloud vs Quiz by room mode) |
+
+## Quiz mode
+
+A Kahoot-style mode on the same app: hosts build question decks, run each
+question with a countdown, and guests answer once on their own devices.
+Scoring is standard Kahoot (`round(1000 × (1 − elapsed / timeLimit))`),
+correct answers only, computed from the host-anchored question start time plus
+the client `answeredAt`.
+
+### Flow
+
+```
+Home → Quiz → Host → build deck → room + QR → lobby
+  → start question (live timer) → reveal → top-5 leaderboard
+  → next question → … → final podium
+```
+
+Guests join with the same room code / QR flow; the guest screen auto-detects
+quiz rooms (`rooms.mode`).
+
+### Appwrite schema (quiz)
+
+**`rooms`** (existing table) — two extra attributes:
+
+| Attribute       | Type   | Notes |
+|-----------------|--------|-------|
+| `mode`          | enum   | `wordcloud` (default) \| `quiz` |
+| `gameStateJson` | string | Serialized `QuizRoomGameState`; default `""` |
+
+**`answers`** table — one row per guest per question per room:
+
+| Attribute           | Type     | Notes |
+|---------------------|----------|-------|
+| `roomId`            | string   | Room code |
+| `questionId`        | string   | Question id from the deck |
+| `guestId`           | string   | Account user id |
+| `guestUuid`         | string   | Guest row id |
+| `selectedOption`    | string   | Option id chosen (domain type field is `selectedOptionId`) |
+| `answeredAt`        | datetime | Client timestamp |
+| `isCorrect`         | boolean  | |
+| `points`            | integer  | |
+| `createdAt`         | datetime | |
+
+Index: `roomIdx` on `roomId`. Permissions: `read("any")`, `create("users")`,
+`update("users")`, `delete("users")`.
+
+**`question_decks`** table — reusable decks owned by an account user:
+
+| Attribute      | Type   | Notes |
+|----------------|--------|-------|
+| `ownerId`      | string | Account user id (`$id`) |
+| `name`         | string | Deck name |
+| `questionsJson`| text   | Serialized `QuestionDeck` |
+| `createdAt`    | datetime | |
+
+Enable **row-level security** and `create("users")` at the table level so only
+the owner can create rows; the service also writes `read/update/delete` for
+`Role.user(ownerId)`.
+
+### Auth
+
+- **Anonymous** — all guests and unauthenticated hosts (default).
+- **Email + Password** — an authenticated host can save decks to
+  `question_decks` and reuse them across devices. Sign in happens inline in the
+  quiz deck editor ("My saved decks"). Unauthenticated hosts keep their deck in
+  localStorage, wiped by Clear session.
+
+### Environment variables
+
+Quiz needs four extra IDs beyond the base setup:
+
+```env
+NEXT_PUBLIC_APPWRITE_ROOMS_TABLE_ID=rooms
+NEXT_PUBLIC_APPWRITE_ANSWERS_TABLE_ID=answers
+NEXT_PUBLIC_APPWRITE_QUESTION_DECKS_TABLE_ID=question_decks
+```
+
+### Key files
+
+| File | Role |
+|------|------|
+| `src/lib/quizWorkflow.ts` | Framework-independent core: phases, timing, scoring, leaderboards, one-answer, clear-session |
+| `src/features/quiz/hooks/useQuizHost.ts` | Thin React adapter (host) |
+| `src/features/quiz/hooks/useQuizGuest.ts` | Thin React adapter (guest) |
+| `src/services/appwrite/quizRooms.ts` | Create quiz room, persist/parse `gameStateJson` |
+| `src/services/appwrite/quizAnswers.ts` | One-answer check + create/list answers |
+| `src/services/appwrite/quizDecks.ts` | localStorage + `question_decks` CRUD |
+| `src/services/appwrite/realtimeQuiz.ts` | Rooms + answers subscriptions |
+| `src/services/appwrite/quizAuth.ts` | Email + Password login/register/logout |
 
 ## Folder structure
 
