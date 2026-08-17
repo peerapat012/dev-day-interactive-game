@@ -41,6 +41,14 @@ A framework-independent `quizWorkflow` core owns phases, timing, scoring, one-an
 - One answer per question is enforced via a persisted check mirroring `guestHasSubmitted`; answers to an ended question are rejected.
 - The framework-independent `quizWorkflow` core owns phases, timing, scoring, leaderboard, one-answer enforcement, and clear-session; React adapters stay thin.
 - The host game state is persisted as `gameStateJson` on the room row so phase/current question survive reload.
+- A live question auto-reveals when its time limit elapses, then auto-advances to the top-5 leaderboard after a 4s dwell; the host still manually starts each next question. Timers are scheduled through a `schedule` port and cancelled on any manual transition, room open, podium reset, or clear-session.
+
+## Host identity and room lifecycle
+
+- Entering quiz host as a signed-out user shows an auth gate: **Continue as guest** or **Log in / register** (reusing the same form as "My saved decks"). Anonymous sessions are not treated as signed-in; only an Email + Password session counts.
+- Appwrite forbids creating a session while another is active, so login/register end the current session first, and guest sessions are re-created after logout instead of being cached forever.
+- The quiz host can **Close room & end session** (deletes the room row, releasing guests) — works for anonymous hosts. **Clear session** also deletes the old room row before creating a fresh room, so guests are kicked from the abandoned room instead of staying on the complete page.
+- Guests detect a closed room by polling the room row (same as word cloud); room-existence reads disable list caching so a deleted room is seen promptly.
 
 ## Testing Decisions
 
@@ -60,4 +68,4 @@ A framework-independent `quizWorkflow` core owns phases, timing, scoring, one-an
 
 ## Further Notes
 
-The domain vocabulary and durable decisions are recorded in `CONTEXT.md` and ADRs 0021–0027. The implementation should mirror the host-summary-workflow pattern: a framework-independent core, thin React adapters, and focused vitest tests.
+The domain vocabulary and durable decisions are recorded in `CONTEXT.md` and ADRs 0021–0029. The implementation mirrors the host-summary-workflow pattern: a framework-independent core, thin React adapters, and focused vitest tests. Status is tracked in `.scratch/quiz-game/status.md`; deployment requirements (Appwrite schema, auth methods, env vars) are in `frontend/README.md`.

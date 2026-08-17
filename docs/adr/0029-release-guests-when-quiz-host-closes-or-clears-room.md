@@ -1,0 +1,3 @@
+# Release guests when a quiz host closes or clears the room
+
+Ending a quiz session means the room row is deleted so guest devices are released: the quiz host's "Close room & end session" deletes the room row (reusing the word cloud close semantics, which works for anonymous hosts because rooms are deletable by any user session). "Clear session" also deletes the old room row before creating a fresh room, so guests in the abandoned room are kicked rather than left on the quiz complete page. Guests detect a closed room by polling the room row; room-existence reads pass `ttl: 0` to disable list-response caching, since Appwrite row writes do not invalidate cached list responses and would otherwise keep a deleted room visible until the cache expires.

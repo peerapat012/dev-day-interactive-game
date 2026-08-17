@@ -10,9 +10,9 @@ Interactive web app where users submit short phrases, a placeholder API classifi
 - TypeScript
 - Tailwind CSS v4
 - Zustand (live state)
-- Appwrite SDK (guest / anonymous sessions)
+- Appwrite SDK (guest / anonymous sessions, Email + Password auth)
 - Framer Motion (animations)
-- No authentication UI
+- Quiz host auth gate (anonymous guest vs Email + Password)
 
 ## Quick start
 
@@ -106,13 +106,29 @@ the client `answeredAt`.
 ### Flow
 
 ```
-Home → Quiz → Host → build deck → room + QR → lobby
+Home → Quiz → Host → auth gate (guest or log in) → build deck → room + QR → lobby
   → start question (live timer) → reveal → top-5 leaderboard
   → next question → … → final podium
 ```
 
 Guests join with the same room code / QR flow; the guest screen auto-detects
 quiz rooms (`rooms.mode`).
+
+### Host identity, sessions, and room lifecycle
+
+- Entering `/quiz/host` while signed out shows an **auth gate**: "Continue as
+  guest" or "Log in / register". Guest hosts keep their deck in localStorage;
+  signed-in hosts can save decks to their account.
+- Anonymous sessions are **not** treated as signed in — only an Email + Password
+  session counts (`quizAuth.getQuizAuthUser` checks the session provider).
+- Appwrite forbids creating a session while another is active, so login/register
+  end the current session first, and guest sessions are recreated after logout.
+- **Close room & end session** (quiz host, bottom of the screen) deletes the room
+  row and returns home — guests are released and joins stop working. Works for
+  anonymous hosts too.
+- **Clear session** also deletes the old room row before creating a fresh room,
+  so guests in the abandoned room are kicked instead of staying on the complete
+  page. Guests detect a closed room by polling the room row (no list caching).
 
 ### Appwrite schema (quiz)
 
@@ -155,11 +171,21 @@ the owner can create rows; the service also writes `read/update/delete` for
 
 ### Auth
 
-- **Anonymous** — all guests and unauthenticated hosts (default).
+- **Anonymous** — all guests and unauthenticated hosts (default). The quiz host
+  shows an auth gate on entry: "Continue as guest" skips straight to the deck
+  editor; "Log in or register" opens the Email + Password form (same form used
+  in "My saved decks").
 - **Email + Password** — an authenticated host can save decks to
   `question_decks` and reuse them across devices. Sign in happens inline in the
   quiz deck editor ("My saved decks"). Unauthenticated hosts keep their deck in
   localStorage, wiped by Clear session.
+
+### Session behavior
+
+Appwrite allows only one session at a time, so creating a second session throws
+"Creation of a session is prohibited when a session is active". The quiz auth
+flow ends the current session before logging in or registering, and guest
+sessions are created on demand (never cached past logout).
 
 ### Environment variables
 
@@ -175,14 +201,16 @@ NEXT_PUBLIC_APPWRITE_QUESTION_DECKS_TABLE_ID=question_decks
 
 | File | Role |
 |------|------|
-| `src/lib/quizWorkflow.ts` | Framework-independent core: phases, timing, scoring, leaderboards, one-answer, clear-session |
-| `src/features/quiz/hooks/useQuizHost.ts` | Thin React adapter (host) |
+| `src/lib/quizWorkflow.ts` | Framework-independent core: phases, timing, scoring, leaderboards, one-answer, clear-session, auto-advance |
+| `src/features/quiz/hooks/useQuizHost.ts` | Thin React adapter (host): room lifecycle, auth, close room, clear session |
 | `src/features/quiz/hooks/useQuizGuest.ts` | Thin React adapter (guest) |
+| `src/features/quiz/components/HostAuthChoice.tsx` | Auth gate on quiz host entry (guest vs log in/register) |
+| `src/features/quiz/components/AuthForm.tsx` | Reusable login/register form (gate + saved decks) |
 | `src/services/appwrite/quizRooms.ts` | Create quiz room, persist/parse `gameStateJson` |
 | `src/services/appwrite/quizAnswers.ts` | One-answer check + create/list answers |
 | `src/services/appwrite/quizDecks.ts` | localStorage + `question_decks` CRUD |
 | `src/services/appwrite/realtimeQuiz.ts` | Rooms + answers subscriptions |
-| `src/services/appwrite/quizAuth.ts` | Email + Password login/register/logout |
+| `src/services/appwrite/quizAuth.ts` | Email + Password login/register/logout, anonymous detection |
 
 ## Folder structure
 
