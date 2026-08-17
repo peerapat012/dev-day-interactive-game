@@ -149,6 +149,7 @@ export async function getRoomByCode(roomId: string): Promise<Room | null> {
     databaseId: APPWRITE.databaseId,
     tableId: APPWRITE.roomsTableId,
     queries: [Query.equal("roomId", roomId), Query.limit(1)],
+    ttl: 0,
   });
 
   const row = result.rows[0];

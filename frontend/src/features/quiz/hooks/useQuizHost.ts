@@ -286,6 +286,14 @@ export function useQuizHost() {
 
   /** Wipe the local deck and start a fresh room (for unauthenticated hosts). */
   const clearSession = useCallback(async () => {
+    const oldRowId = useQuizHostStore.getState().roomRowId;
+    if (oldRowId) {
+      try {
+        await closeRoomSession(oldRowId);
+      } catch {
+        // Old room may already be gone; proceed with the fresh session.
+      }
+    }
     clearLocalDeck();
     setDeck(null);
     setGuests([]);
