@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useMemo, useState } from "react";
 import { Button } from "@/shared/ui/Button";
 import { Input } from "@/shared/ui/Input";
+import { AuthForm } from "@/features/quiz/components/AuthForm";
 import { optionColorAt, optionLetter } from "@/features/quiz/components/quizOptionStyles";
 import type { QuestionDeck, QuizQuestion } from "@/types/quiz";
 
@@ -98,15 +99,8 @@ export function DeckEditor({ initialDeck, onStart, onClearSession, auth }: DeckE
     initialDeck ? deckToDraft(initialDeck) : [emptyQuestion()],
   );
   const [authOpen, setAuthOpen] = useState(false);
-
-  const [loginEmail, setLoginEmail] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
-  const [regName, setRegName] = useState("");
-  const [regEmail, setRegEmail] = useState("");
-  const [regPassword, setRegPassword] = useState("");
-  const [authError, setAuthError] = useState<string | null>(null);
-  const [authBusy, setAuthBusy] = useState(false);
-  const [authMode, setAuthMode] = useState<"login" | "register">("login");
+  const [saveBusy, setSaveBusy] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const valid = useMemo(
     () => questions.length > 0 && questions.every(isQuestionValid),
@@ -178,48 +172,14 @@ export function DeckEditor({ initialDeck, onStart, onClearSession, auth }: DeckE
 
   async function handleSaveToCloud() {
     if (!valid) return;
-    setAuthBusy(true);
-    setAuthError(null);
+    setSaveBusy(true);
+    setSaveError(null);
     try {
       await auth.saveDeckToCloud(draftToDeck(name, questions));
     } catch (err) {
-      setAuthError(
-        err instanceof Error ? err.message : "Could not save deck",
-      );
+      setSaveError(err instanceof Error ? err.message : "Could not save deck");
     } finally {
-      setAuthBusy(false);
-    }
-  }
-
-  async function handleLogin() {
-    setAuthBusy(true);
-    setAuthError(null);
-    try {
-      await auth.login(loginEmail, loginPassword);
-    } catch (err) {
-      setAuthError(
-        err instanceof Error ? err.message : "Could not log in",
-      );
-    } finally {
-      setAuthBusy(false);
-    }
-  }
-
-  async function handleRegister() {
-    if (regPassword.length < 8) {
-      setAuthError("Password must be at least 8 characters.");
-      return;
-    }
-    setAuthBusy(true);
-    setAuthError(null);
-    try {
-      await auth.register(regName, regEmail, regPassword);
-    } catch (err) {
-      setAuthError(
-        err instanceof Error ? err.message : "Could not create account",
-      );
-    } finally {
-      setAuthBusy(false);
+      setSaveBusy(false);
     }
   }
 
@@ -390,87 +350,7 @@ export function DeckEditor({ initialDeck, onStart, onClearSession, auth }: DeckE
               transition={{ duration: 0.2 }}
             >
               {!auth.user ? (
-                <div className="flex flex-col gap-3">
-                  <div className="flex rounded-full border border-white/10 bg-white/5 p-1">
-                    {(["login", "register"] as const).map((mode) => (
-                      <button
-                        key={mode}
-                        type="button"
-                        onClick={() => {
-                          setAuthMode(mode);
-                          setAuthError(null);
-                        }}
-                        className={`relative flex-1 rounded-full py-2 text-xs font-medium transition-transform active:scale-[0.96] ${
-                          authMode === mode ? "text-white" : "text-zinc-400"
-                        }`}
-                      >
-                        {authMode === mode ? (
-                          <motion.span
-                            layoutId="auth-mode-pill"
-                            className="absolute inset-0 rounded-full bg-violet-500/80"
-                            transition={{ type: "spring", duration: 0.3, bounce: 0 }}
-                          />
-                        ) : null}
-                        <span className="relative capitalize">{mode}</span>
-                      </button>
-                    ))}
-                  </div>
-
-                  {authMode === "register" ? (
-                    <Input
-                      value={regName}
-                      onChange={(event) => setRegName(event.target.value)}
-                      placeholder="Name"
-                    />
-                  ) : null}
-                  <Input
-                    type="email"
-                    value={authMode === "login" ? loginEmail : regEmail}
-                    onChange={(event) =>
-                      authMode === "login"
-                        ? setLoginEmail(event.target.value)
-                        : setRegEmail(event.target.value)
-                    }
-                    placeholder="Email"
-                    autoComplete="email"
-                  />
-                  <Input
-                    type="password"
-                    value={authMode === "login" ? loginPassword : regPassword}
-                    onChange={(event) =>
-                      authMode === "login"
-                        ? setLoginPassword(event.target.value)
-                        : setRegPassword(event.target.value)
-                    }
-                    placeholder="Password"
-                    autoComplete={
-                      authMode === "login" ? "current-password" : "new-password"
-                    }
-                  />
-                  <Button
-                    type="button"
-                    onClick={
-                      authMode === "login" ? handleLogin : handleRegister
-                    }
-                    disabled={authBusy}
-                  >
-                    {authBusy
-                      ? "Please wait…"
-                      : authMode === "login"
-                        ? "Log in"
-                        : "Create account"}
-                  </Button>
-                  {authError ? (
-                    <p className="text-center text-xs text-rose-400">
-                      {authError}
-                    </p>
-                  ) : null}
-                  <p className="text-xs leading-relaxed text-zinc-500">
-                    Logging in lets you save decks to your account and reuse
-                    them across devices. Without an account, your deck stays on
-                    this device.
-                  </p>
-                </div>
+                <AuthForm onLogin={auth.login} onRegister={auth.register} />
               ) : (
                 <div className="flex flex-col gap-3">
                   <div className="flex items-center justify-between gap-2">
@@ -489,13 +369,13 @@ export function DeckEditor({ initialDeck, onStart, onClearSession, auth }: DeckE
                     type="button"
                     variant="ghost"
                     onClick={() => void handleSaveToCloud()}
-                    disabled={!valid || authBusy}
+                    disabled={!valid || saveBusy}
                   >
-                    {authBusy ? "Saving…" : "Save this deck to my account"}
+                    {saveBusy ? "Saving…" : "Save this deck to my account"}
                   </Button>
-                  {authError ? (
+                  {saveError ? (
                     <p className="text-center text-xs text-rose-400">
-                      {authError}
+                      {saveError}
                     </p>
                   ) : null}
 

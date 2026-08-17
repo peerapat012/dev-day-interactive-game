@@ -20,6 +20,7 @@ import {
   parseQuizGameState,
   persistQuizGameState,
 } from "@/services/appwrite/quizRooms";
+import { closeRoomSession } from "@/services/appwrite/rooms";
 import {
   createAnswer,
   listAnswersByRoom,
@@ -47,12 +48,14 @@ export function useQuizHost() {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [closing, setClosing] = useState(false);
 
   const [deck, setDeck] = useState<QuestionDeck | null>(null);
   const [guests, setGuests] = useState<QuizGuest[]>([]);
   const [wfState, setWfState] = useState<QuizWorkflowState | null>(null);
 
   const [user, setUser] = useState<QuizAuthUser | null>(null);
+  const [authLoaded, setAuthLoaded] = useState(false);
   const [savedDecks, setSavedDecks] = useState<SavedQuestionDeck[]>([]);
 
   const [workflow] = useState<QuizWorkflow>(() =>
@@ -180,9 +183,13 @@ export function useQuizHost() {
   // Auth bootstrap.
   useEffect(() => {
     let cancelled = false;
-    void getQuizAuthUser().then((u) => {
-      if (!cancelled) setUser(u);
-    });
+    void getQuizAuthUser()
+      .then((u) => {
+        if (!cancelled) setUser(u);
+      })
+      .finally(() => {
+        if (!cancelled) setAuthLoaded(true);
+      });
     return () => {
       cancelled = true;
     };
@@ -309,13 +316,37 @@ export function useQuizHost() {
     }
   }, [setRoom, workflow]);
 
+  /** End the session for everyone: deletes the room row and clears local state. */
+  const closeRoom = useCallback(async () => {
+    setClosing(true);
+    setError(null);
+    try {
+      const rowId = useQuizHostStore.getState().roomRowId;
+      if (rowId) await closeRoomSession(rowId);
+      useQuizHostStore.getState().clearRoom();
+      clearLocalDeck();
+      setDeck(null);
+      setGuests([]);
+      workflow.clearSession();
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Could not close the room";
+      setError(message);
+      throw err;
+    } finally {
+      setClosing(false);
+    }
+  }, [workflow]);
+
   return {
     ready,
     error,
     roomId,
     roomRowId,
     creating,
+    closing,
     createNewRoom,
+    closeRoom,
     wfState,
     deck,
     guests,
@@ -328,6 +359,7 @@ export function useQuizHost() {
     backToEditor,
     clearSession,
     user,
+    authLoaded,
     login,
     register,
     logout,

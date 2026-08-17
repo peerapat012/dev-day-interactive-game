@@ -2,8 +2,9 @@
 
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { DeckEditor } from "@/features/quiz/components/DeckEditor";
+import { HostAuthChoice } from "@/features/quiz/components/HostAuthChoice";
 import { HostGameControl } from "@/features/quiz/components/HostGameControl";
 import { useQuizHost } from "@/features/quiz/hooks/useQuizHost";
 import { Button } from "@/shared/ui/Button";
@@ -12,10 +13,11 @@ export function QuizHostScreen() {
   const router = useRouter();
   const host = useQuizHost();
   const inGame = Boolean(host.wfState && host.wfState.deck);
+  const [authDismissed, setAuthDismissed] = useState(false);
 
   const gameState = useMemo(() => host.wfState, [host.wfState]);
 
-  if (!host.ready) {
+  if (!host.ready || !host.authLoaded) {
     return (
       <div className="flex min-h-dvh items-center justify-center text-sm text-zinc-500">
         Preparing quiz host…
@@ -33,6 +35,16 @@ export function QuizHostScreen() {
           Back to home
         </Button>
       </div>
+    );
+  }
+
+  if (!host.user && !authDismissed && !inGame) {
+    return (
+      <HostAuthChoice
+        onContinueGuest={() => setAuthDismissed(true)}
+        onLogin={host.login}
+        onRegister={host.register}
+      />
     );
   }
 
@@ -123,6 +135,35 @@ export function QuizHostScreen() {
           }}
         />
       )}
+
+      <motion.section
+        className="flex flex-col gap-2 rounded-2xl border border-amber-500/25 bg-amber-500/5 p-4"
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <p className="text-sm text-zinc-400">
+          End the live session: connected guests are cleared locally, joins to
+          this room stop working, and you return to the home page to host again
+          later.
+        </p>
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={() => {
+            if (
+              window.confirm(
+                "Close this room for everyone? Guests will be cleared, the room link will stop working, and you will return to the home page.",
+              )
+            ) {
+              void host.closeRoom().then(() => router.replace("/"));
+            }
+          }}
+          disabled={host.closing}
+          className="w-full border-amber-500/35 text-amber-200"
+        >
+          {host.closing ? "Closing room…" : "Close room & end session"}
+        </Button>
+      </motion.section>
     </motion.div>
   );
 }
