@@ -6,6 +6,7 @@ import { AnswerPad } from "@/features/quiz/components/AnswerPad";
 import { GuestFeedback } from "@/features/quiz/components/GuestFeedback";
 import { HostLeaderboard } from "@/features/quiz/components/HostLeaderboard";
 import { Podium } from "@/features/quiz/components/Podium";
+import { QuizMusicToggle } from "@/features/quiz/components/QuizMusicToggle";
 import { useQuizGuest } from "@/features/quiz/hooks/useQuizGuest";
 import { Button } from "@/shared/ui/Button";
 
@@ -66,14 +67,17 @@ export function QuizGuestScreen({ onLeaveRoom }: QuizGuestScreenProps) {
           <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-violet-400 sm:text-xs">
             Quiz
           </p>
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={onLeaveRoom}
-            className="ml-auto shrink-0 px-3 py-1.5 text-xs text-zinc-400 hover:text-rose-300"
-          >
-            Leave room
-          </Button>
+          <div className="ml-auto flex items-center gap-2">
+            <QuizMusicToggle phase={state.phase} />
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={onLeaveRoom}
+              className="shrink-0 px-3 py-1.5 text-xs text-zinc-400 hover:text-rose-300"
+            >
+              Leave room
+            </Button>
+          </div>
         </div>
         <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
           <span

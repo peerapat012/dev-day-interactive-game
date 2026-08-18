@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { DeckEditor } from "@/features/quiz/components/DeckEditor";
 import { HostAuthChoice } from "@/features/quiz/components/HostAuthChoice";
 import { HostGameControl } from "@/features/quiz/components/HostGameControl";
+import { QuizMusicToggle } from "@/features/quiz/components/QuizMusicToggle";
 import { useQuizHost } from "@/features/quiz/hooks/useQuizHost";
 import { Button } from "@/shared/ui/Button";
 
@@ -56,15 +57,20 @@ export function QuizHostScreen() {
       transition={{ type: "spring", stiffness: 280, damping: 26 }}
     >
       <header className="flex flex-col gap-1">
-        {inGame ? (
-          <button
-            type="button"
-            onClick={host.backToEditor}
-            className="mb-2 self-start rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-transform active:scale-[0.96] hover:bg-white/10"
-          >
-            ← Back to deck editor
-          </button>
-        ) : null}
+        <div className="flex items-center justify-between gap-2">
+          {inGame ? (
+            <button
+              type="button"
+              onClick={host.backToEditor}
+              className="mb-2 self-start rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-transform active:scale-[0.96] hover:bg-white/10"
+            >
+              ← Back to deck editor
+            </button>
+          ) : (
+            <span className="mb-2" />
+          )}
+          <QuizMusicToggle phase={gameState?.phase} />
+        </div>
         <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-violet-400 sm:text-xs">
           Quiz host
         </p>
