@@ -49,6 +49,7 @@ A framework-independent `quizWorkflow` core owns phases, timing, scoring, one-an
 
 - Entering quiz host as a signed-out user shows an auth gate: **Continue as guest** or **Log in / register** (reusing the same form as "My saved decks"). Anonymous sessions are not treated as signed-in; only an Email + Password session counts.
 - Appwrite forbids creating a session while another is active, so login/register end the current session first, and guest sessions are re-created after logout instead of being cached forever.
+- Re-entering quiz host with a restored Email + Password session (after Close room / Clear session, which end the room but not the login) auto-logs the host in and loads their saved decks from `question_decks`, so account decks are visible again without re-logging in.
 - The quiz host can **Close room & end session** (deletes the room row, releasing guests) — works for anonymous hosts. **Clear session** also deletes the old room row before creating a fresh room, so guests are kicked from the abandoned room instead of staying on the complete page.
 - Guests detect a closed room by polling the room row (same as word cloud); room-existence reads disable list caching so a deleted room is seen promptly.
 
@@ -70,4 +71,4 @@ A framework-independent `quizWorkflow` core owns phases, timing, scoring, one-an
 
 ## Further Notes
 
-The domain vocabulary and durable decisions are recorded in `CONTEXT.md` and ADRs 0021–0031. The implementation mirrors the host-summary-workflow pattern: a framework-independent core, thin React adapters, and focused vitest tests. Status is tracked in `.scratch/quiz-game/status.md`; deployment requirements (Appwrite schema, auth methods, env vars) are in `frontend/README.md`.
+The domain vocabulary and durable decisions are recorded in `CONTEXT.md` and ADRs 0021–0032. The implementation mirrors the host-summary-workflow pattern: a framework-independent core, thin React adapters, and focused vitest tests. Status is tracked in `.scratch/quiz-game/status.md`; deployment requirements (Appwrite schema, auth methods, env vars) are in `frontend/README.md`.

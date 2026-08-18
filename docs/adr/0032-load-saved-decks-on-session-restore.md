@@ -1,0 +1,3 @@
+# Load saved decks when a quiz host session is restored
+
+An existing Email + Password session restores the signed-in quiz host and their saved decks on re-entry. `useQuizHost`'s auth bootstrap previously restored the user via `getQuizAuthUser` but loaded saved decks only through `refreshDecks` after an explicit login or register. Because Close room and Clear session end the room without logging out, re-entering quiz host auto-logged the host in while "My saved decks" stayed empty even though account decks existed. The auth bootstrap now calls `listMyDecks` whenever it finds a restored Email + Password user, mirroring the login/register path so a restored session sees the same saved decks.

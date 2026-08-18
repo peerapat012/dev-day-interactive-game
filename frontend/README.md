@@ -132,6 +132,9 @@ quiz rooms (`rooms.mode`).
   session counts (`quizAuth.getQuizAuthUser` checks the session provider).
 - Appwrite forbids creating a session while another is active, so login/register
   end the current session first, and guest sessions are recreated after logout.
+- Re-entering `/quiz/host` with a restored Email + Password session auto-logs the
+  host in and reloads their saved decks — Close room / Clear session end the
+  room, not the login, so account decks still appear under "My saved decks".
 - **Close room & end session** (quiz host, bottom of the screen) deletes the room
   row and returns home — guests are released and joins stop working. Works for
   anonymous hosts too.
