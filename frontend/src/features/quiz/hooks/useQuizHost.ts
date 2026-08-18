@@ -182,12 +182,21 @@ export function useQuizHost() {
     };
   }, [roomId, workflow]);
 
-  // Auth bootstrap.
+  // Auth bootstrap: restore an existing email session (auto-login) and load
+  // that account's saved decks.
   useEffect(() => {
     let cancelled = false;
     void getQuizAuthUser()
-      .then((u) => {
-        if (!cancelled) setUser(u);
+      .then(async (u) => {
+        if (cancelled) return;
+        setUser(u);
+        if (!u) return;
+        try {
+          const rows = await listMyDecks();
+          if (!cancelled) setSavedDecks(rows);
+        } catch {
+          if (!cancelled) setSavedDecks([]);
+        }
       })
       .finally(() => {
         if (!cancelled) setAuthLoaded(true);
