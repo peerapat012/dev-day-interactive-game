@@ -42,6 +42,8 @@ A framework-independent `quizWorkflow` core owns phases, timing, scoring, one-an
 - The framework-independent `quizWorkflow` core owns phases, timing, scoring, leaderboard, one-answer enforcement, and clear-session; React adapters stay thin.
 - The host game state is persisted as `gameStateJson` on the room row so phase/current question survive reload.
 - A live question auto-reveals when its time limit elapses, then auto-advances to the top-5 leaderboard after a 4s dwell; the host still manually starts each next question. Timers are scheduled through a `schedule` port and cancelled on any manual transition, room open, podium reset, or clear-session.
+- "Done" on the final podium resets the quiz to a fresh lobby in the same room so the host can run another quiz: the reset lobby is persisted back to `gameStateJson` (so a reload lands on a fresh lobby, not the podium) and the room's `answers` rows are cleared so a second quiz does not inherit the previous one's answers.
+- Reopening a persisted room mid-game restores the in-flight timer: a live question reschedules its auto-reveal for the remaining time (clamped at 0) and a reveal reschedules the auto-advance to the leaderboard after the 4s dwell, so a host reload does not stall the flow.
 
 ## Host identity and room lifecycle
 
@@ -68,4 +70,4 @@ A framework-independent `quizWorkflow` core owns phases, timing, scoring, one-an
 
 ## Further Notes
 
-The domain vocabulary and durable decisions are recorded in `CONTEXT.md` and ADRs 0021–0029. The implementation mirrors the host-summary-workflow pattern: a framework-independent core, thin React adapters, and focused vitest tests. Status is tracked in `.scratch/quiz-game/status.md`; deployment requirements (Appwrite schema, auth methods, env vars) are in `frontend/README.md`.
+The domain vocabulary and durable decisions are recorded in `CONTEXT.md` and ADRs 0021–0030. The implementation mirrors the host-summary-workflow pattern: a framework-independent core, thin React adapters, and focused vitest tests. Status is tracked in `.scratch/quiz-game/status.md`; deployment requirements (Appwrite schema, auth methods, env vars) are in `frontend/README.md`.

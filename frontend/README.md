@@ -114,6 +114,15 @@ Home → Quiz → Host → auth gate (guest or log in) → build deck → room +
 Guests join with the same room code / QR flow; the guest screen auto-detects
 quiz rooms (`rooms.mode`).
 
+### Reset and reload recovery
+
+- "Done" on the final podium resets the quiz to a fresh lobby in the same room
+  (host can build and run another quiz): the reset lobby is persisted and the
+  room's `answers` rows are cleared so a second quiz starts from zero.
+- Reloading the host mid-game restores the in-flight timer: a live question
+  reschedules its auto-reveal for the remaining time, and a reveal reschedules
+  the auto-advance to the leaderboard.
+
 ### Host identity, sessions, and room lifecycle
 
 - Entering `/quiz/host` while signed out shows an **auth gate**: "Continue as
@@ -207,7 +216,7 @@ NEXT_PUBLIC_APPWRITE_QUESTION_DECKS_TABLE_ID=question_decks
 | `src/features/quiz/components/HostAuthChoice.tsx` | Auth gate on quiz host entry (guest vs log in/register) |
 | `src/features/quiz/components/AuthForm.tsx` | Reusable login/register form (gate + saved decks) |
 | `src/services/appwrite/quizRooms.ts` | Create quiz room, persist/parse `gameStateJson` |
-| `src/services/appwrite/quizAnswers.ts` | One-answer check + create/list answers |
+| `src/services/appwrite/quizAnswers.ts` | One-answer check + create/list/clear answers |
 | `src/services/appwrite/quizDecks.ts` | localStorage + `question_decks` CRUD |
 | `src/services/appwrite/realtimeQuiz.ts` | Rooms + answers subscriptions |
 | `src/services/appwrite/quizAuth.ts` | Email + Password login/register/logout, anonymous detection |

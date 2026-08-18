@@ -1,0 +1,3 @@
+# Reset a finished quiz to a fresh lobby and restore timers on reload
+
+"Done" on the final podium resets the quiz to a fresh lobby in the same room so the host can run another quiz: the reset lobby is persisted back to `gameStateJson` (otherwise a reload would land back on the podium) and the room's `answers` rows are cleared via `clearAnswersByRoom` so a second quiz does not inherit the previous one's answers. Reopening a persisted room mid-game reschedules the in-flight timer through the `schedule` port — a live question auto-reveals after its remaining time (clamped at 0) and a reveal auto-advances to the leaderboard after the 4s dwell — so a host reload does not stall the flow.

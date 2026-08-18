@@ -73,3 +73,7 @@ _Avoid_: points, reward
 **Leaderboard**:
 The ranking of guests by accumulated score. The top 5 are shown between questions; the host sees the full list; the final podium closes the game.
 _Avoid_: scoreboard, standings
+
+**Quiz reset**:
+The transition from a finished quiz's podium back to a fresh lobby in the same room, clearing the room's answers, so the host can build and run another quiz.
+_Avoid_: restart, replay
