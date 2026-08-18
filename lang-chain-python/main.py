@@ -175,6 +175,44 @@ Return valid JSON only.
 
 """
 
+SYSTEM_GENERATE_QUESTIONS_PROMPT = """You are an AI question writer for a host-led multiple-choice quiz game.
+
+Generate a set of quiz questions on the given topic.
+
+# Input format
+
+{
+  "topic": "Space exploration",
+  "question_count": 5,
+  "option_count": 4,
+  "language": "Thai"
+}
+
+# Rules
+
+* Write exactly `question_count` questions about the `topic`.
+* Each question must have exactly `option_count` answer options.
+* The questions must be self-contained and answerable without outside knowledge beyond common sense.
+* The correct answer must be one of the options.
+* Randomize the position of the correct option: it must NOT always be first; vary it across questions.
+* Keep prompts concise and unambiguous.
+* Options should be short and mutually exclusive; one clearly correct, the rest plausible but wrong.
+* Write the question prompt and every option in the requested `language`. If the language is "Thai", write Thai. Otherwise write in that language.
+* Do not reuse the same question twice.
+
+# Output format
+
+Return ONLY valid JSON, no markdown, no explanation:
+
+{
+  "questions": [
+    { "prompt": "...", "options": ["...", "...", "...", "..."], "correctOptionIndex": 2 }
+  ]
+}
+
+`correctOptionIndex` is the 0-based index of the correct option in the `options` array. Vary it randomly per question.
+"""
+
 classify_agent = create_agent(
     model=ChatGoogleGenerativeAI(model="gemini-3.1-flash-lite"),
     tools=[],
@@ -192,6 +230,29 @@ summarize_agent = create_agent(
     tools=[],
     system_prompt=SYSTEM_SUMMARIZE_PROMPT,
 )
+
+generate_questions_agent = create_agent(
+    model=ChatGoogleGenerativeAI(model="gemini-3.1-flash-lite"),
+    tools=[],
+    system_prompt=SYSTEM_GENERATE_QUESTIONS_PROMPT,
+)
+
+
+class GeneratedQuestion(BaseModel):
+    prompt: str
+    options: list[str]
+    correctOptionIndex: int
+
+
+class GenerateQuestionsRequest(BaseModel):
+    topic: str
+    question_count: int
+    option_count: int
+    language: str
+
+
+class GenerateQuestionsResponse(BaseModel):
+    questions: list[GeneratedQuestion]
 
 
 class Group(BaseModel):
@@ -250,6 +311,13 @@ def summarize_groups(payload: SummarizeRequest) -> SummarizeResponse:
     return SummarizeResponse.model_validate_json(response["messages"][-1].text)
 
 
+def generate_questions(payload: GenerateQuestionsRequest) -> GenerateQuestionsResponse:
+    response = generate_questions_agent.invoke({
+        "messages": [{"role": "user", "content": payload.model_dump_json()}],
+    })
+    return GenerateQuestionsResponse.model_validate_json(response["messages"][-1].text)
+
+
 def _normalize_path(path: str) -> str:
     normalized = (path or "/").split("?")[0].rstrip("/")
     return normalized or "/"
@@ -298,6 +366,25 @@ def main(context):
             return context.res.json({"error": f"invalid request: {exc}"}, 400)
         try:
             result = summarize_groups(payload)
+            return context.res.json(result.model_dump())
+        except Exception as exc:
+            context.error(str(exc))
+            return context.res.json({"error": str(exc)}, 502)
+
+    if method == "POST" and path == "/generate-questions":
+        body = context.req.body_json or {}
+        try:
+            payload = GenerateQuestionsRequest.model_validate(body)
+        except Exception as exc:
+            return context.res.json({"error": f"invalid request: {exc}"}, 400)
+        if not payload.topic.strip():
+            return context.res.json({"error": "topic is required"}, 400)
+        if not (1 <= payload.question_count <= 20):
+            return context.res.json({"error": "question_count must be between 1 and 20"}, 400)
+        if not (2 <= payload.option_count <= 8):
+            return context.res.json({"error": "option_count must be between 2 and 8"}, 400)
+        try:
+            result = generate_questions(payload)
             return context.res.json(result.model_dump())
         except Exception as exc:
             context.error(str(exc))

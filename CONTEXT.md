@@ -50,6 +50,10 @@ _Avoid_: quiz app, separate room
 A host-authored, ordered collection of questions built at runtime on the host screen. An authenticated host saves a deck to the `question_decks` table for reuse; an unauthenticated host's deck lives in localStorage and is wiped by Clear session.
 _Avoid_: question set, quiz library
 
+**AI-generated question deck**:
+A question deck produced by the AI generator on the host screen from a topic, question amount, choice amount, and language. Generated questions replace the current deck for review and editing before the quiz starts.
+_Avoid_: auto quiz, smart deck
+
 **Question**:
 One quiz item with a prompt, an ordered list of options, the correct option, and a per-question time limit. The host starts the question's countdown.
 _Avoid_: trivia item, quiz item

@@ -1,0 +1,5 @@
+# AI-generated question decks
+
+Hosts can generate a question deck from AI instead of typing every question. The deck editor gains a "Generate questions with AI" panel where the host enters a topic, the number of questions (1–20), the number of options per question (2–8), and a language (Thai or English). On submit the frontend posts to `/api/generate-questions`, which proxies to the existing LLM backend (`POST /generate-questions`, same FastAPI function and Appwrite-execution path as `/summarize`) with `LLM_USE_MOCK=true` falling back to a keyword mock.
+
+The backend prompt asks Gemini to return `{ questions: [{ prompt, options, correctOptionIndex }] }`, randomizing the correct-option position so it is not always first. The frontend parses that response tolerantly (`parseGenerateQuestionsResponse`) and converts it into editor drafts via `generatedQuestionsToDraft`, wiring each `correctOptionId` from the returned index and defaulting the per-question time limit to 20s. Generated questions **replace** the current deck (per host choice) and the deck name is set to the topic, so the host can review and edit before starting.

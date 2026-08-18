@@ -6,10 +6,13 @@ from pydantic import BaseModel
 from main import (
     ClassifyBatchRequest,
     ClassifyBatchResponse,
+    GenerateQuestionsRequest,
+    GenerateQuestionsResponse,
     SummarizeRequest,
     SummarizeResponse,
     classify_inputs_batch,
     classify_message,
+    generate_questions,
     summarize_groups,
 )
 
@@ -46,3 +49,8 @@ def classify_batch(request: ClassifyBatchRequest) -> ClassifyBatchResponse:
 @app.post("/summarize", response_model=SummarizeResponse)
 def summarize(request: SummarizeRequest) -> SummarizeResponse:
     return summarize_groups(request)
+
+
+@app.post("/generate-questions", response_model=GenerateQuestionsResponse)
+def generate_questions_endpoint(request: GenerateQuestionsRequest) -> GenerateQuestionsResponse:
+    return generate_questions(request)

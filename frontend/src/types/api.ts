@@ -109,3 +109,28 @@ export interface HostSummaryGenerateResponse {
   groups: import("@/types/entry").GroupStat[];
   summaries: SummarizeResultItem[];
 }
+
+/** Client → Next.js POST /api/generate-questions */
+export interface GenerateQuestionsRequest {
+  /** Subject the questions should cover (e.g. "Space exploration"). */
+  topic: string;
+  /** How many questions to generate. */
+  questionCount: number;
+  /** How many options each question should have. */
+  optionCount: number;
+  /** Prompt/options language, e.g. "Thai" or "English". */
+  language: string;
+}
+
+/** One AI-generated quiz question. */
+export interface GeneratedQuestion {
+  prompt: string;
+  options: string[];
+  /** 0-based index of the correct option in `options`. */
+  correctOptionIndex: number;
+}
+
+/** FastAPI POST /generate-questions response body. */
+export interface GenerateQuestionsResponse {
+  questions: GeneratedQuestion[];
+}

@@ -25,3 +25,10 @@ export function getLlmClarifyUrl(): string {
 export function getLlmHealthUrl(): string {
   return process.env.LLM_HEALTH_URL ?? `${LOCAL_LLM_BASE}/health`;
 }
+
+export function getLlmGenerateQuestionsUrl(): string {
+  return (
+    process.env.LLM_GENERATE_QUESTIONS_URL ??
+    `${LOCAL_LLM_BASE}/generate-questions`
+  );
+}

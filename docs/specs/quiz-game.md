@@ -70,4 +70,4 @@ A framework-independent `quizWorkflow` core owns phases, timing, scoring, one-an
 
 ## Further Notes
 
-The domain vocabulary and durable decisions are recorded in `CONTEXT.md` and ADRs 0021–0030. The implementation mirrors the host-summary-workflow pattern: a framework-independent core, thin React adapters, and focused vitest tests. Status is tracked in `.scratch/quiz-game/status.md`; deployment requirements (Appwrite schema, auth methods, env vars) are in `frontend/README.md`.
+The domain vocabulary and durable decisions are recorded in `CONTEXT.md` and ADRs 0021–0031. The implementation mirrors the host-summary-workflow pattern: a framework-independent core, thin React adapters, and focused vitest tests. Status is tracked in `.scratch/quiz-game/status.md`; deployment requirements (Appwrite schema, auth methods, env vars) are in `frontend/README.md`.

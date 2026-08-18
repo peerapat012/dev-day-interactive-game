@@ -2,7 +2,7 @@
 
 Interactive web app where users submit short phrases, a placeholder API classifies them into semantic groups, and the UI visualizes raw inputs and grouped categories as animated bubbles. Built with Next.js App Router, TypeScript, Tailwind CSS, Zustand, Appwrite (guest access), and Framer Motion.
 
-**Note:** Classification uses FastAPI `POST /clarify`. Summarization uses FastAPI `POST /summarize` (triggered by button on `/summary`).
+**Note:** Classification uses FastAPI `POST /clarify`. Summarization uses FastAPI `POST /summarize` (triggered by button on `/summary`). Quiz hosts can also generate decks with AI via FastAPI `POST /generate-questions` (see [AI question generation](#ai-question-generation)).
 
 ## Tech stack
 
@@ -139,6 +139,23 @@ quiz rooms (`rooms.mode`).
   so guests in the abandoned room are kicked instead of staying on the complete
   page. Guests detect a closed room by polling the room row (no list caching).
 
+### AI question generation
+
+The deck editor has a **✨ Generate questions with AI** panel. Enter a topic,
+the number of questions (1–20), the number of choices per question (2–8), and a
+language (Thai or English), then generate. The AI returns questions with
+`{ prompt, options, correctOptionIndex }` (correct position randomized), which
+**replace** the current deck and set the deck name to the topic so the host can
+review and edit before starting.
+
+- Client calls `POST /api/generate-questions` (`src/services/ai/generateQuestions.ts`).
+- The route proxies to FastAPI `POST /generate-questions`
+  (`src/services/ai/generateQuestionsLlm.ts`) or the Appwrite function, with
+  `LLM_USE_MOCK=true` falling back to `mockGenerateQuestions`.
+- Response parsing is tolerant (`src/services/ai/parseGenerateQuestionsResponse.ts`);
+  conversion to editor drafts lives in
+  `src/lib/generatedQuestionsToDraft.ts` (defaults the time limit to 20s).
+
 ### Appwrite schema (quiz)
 
 **`rooms`** (existing table) — two extra attributes:
@@ -220,6 +237,10 @@ NEXT_PUBLIC_APPWRITE_QUESTION_DECKS_TABLE_ID=question_decks
 | `src/services/appwrite/quizDecks.ts` | localStorage + `question_decks` CRUD |
 | `src/services/appwrite/realtimeQuiz.ts` | Rooms + answers subscriptions |
 | `src/services/appwrite/quizAuth.ts` | Email + Password login/register/logout, anonymous detection |
+| `src/services/ai/generateQuestions.ts` | Client wrapper for `POST /api/generate-questions` |
+| `src/services/ai/generateQuestionsLlm.ts` | Server-side call to FastAPI `/generate-questions` (or Appwrite function) |
+| `src/services/ai/parseGenerateQuestionsResponse.ts` | Tolerant parsing of AI question responses |
+| `src/lib/generatedQuestionsToDraft.ts` | Convert generated questions into editor drafts (wires correct option, 20s time limit) |
 
 ## Folder structure
 
@@ -305,6 +326,7 @@ Store: `src/store/entriesStore.ts`
 |--------------------|---------|----------|
 | `POST /api/classify`  | `{ input: string }` | `{ input, group }` — proxies FastAPI |
 | `POST /api/summarize` | `{ groups: [{ group, inputs: string }] }` | `{ summaries: [{ group, summary }] }` |
+| `POST /api/generate-questions` | `{ topic, questionCount, optionCount, language }` | `{ questions: [{ prompt, options, correctOptionIndex }] }` |
 
 **FastAPI `/clarify`** — `{ "message": "<input>" }` → `{ "message": "<group>" }`
 
@@ -326,7 +348,7 @@ Store: `src/store/entriesStore.ts`
 }
 ```
 
-Env: `LLM_CLARIFY_URL`, `LLM_SUMMARIZE_URL`, `LLM_USE_MOCK=false`
+Env: `LLM_CLARIFY_URL`, `LLM_SUMMARIZE_URL`, `LLM_GENERATE_QUESTIONS_URL`, `LLM_USE_MOCK=false`
 
 ## Appwrite integration
 
