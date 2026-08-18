@@ -645,4 +645,98 @@ describe("quiz persistence and session", () => {
     );
     expect(workflow.getState().roomId).toBe("room-1");
   });
+
+  it("persists the reset so a reload after Done lands on a fresh lobby, not the podium", async () => {
+    let persisted: QuizRoomGameState | null = null;
+    const ports = makePorts({
+      loadGameState: vi.fn(async () => persisted),
+      persistGameState: vi.fn(async (_roomId, state) => {
+        persisted = state;
+      }),
+    });
+    const workflow = createQuizWorkflow(ports);
+    await workflow.open("room-1");
+    await workflow.startGame(DECK);
+    await workflow.startQuestion(0);
+    await workflow.reveal();
+    await workflow.showLeaderboard();
+    await workflow.endGame();
+    await workflow.endGame();
+
+    expect(workflow.getState().phase).toBe("lobby");
+
+    const reloaded = createQuizWorkflow(ports);
+    await reloaded.open("room-1");
+    expect(reloaded.getState().phase).toBe("lobby");
+  });
+
+  it("does not carry a finished quiz's answers into a second quiz in the same room", async () => {
+    const answerRows: QuizAnswer[] = [];
+    const ports = makePorts({
+      listAnswers: vi.fn(async () => answerRows),
+      submitAnswer: vi.fn(async (_command, answer) => {
+        answerRows.push(answer);
+        return answer;
+      }),
+      clearAnswers: vi.fn(async (roomId: string) => {
+        for (let index = answerRows.length - 1; index >= 0; index -= 1) {
+          if (answerRows[index].roomId === roomId) answerRows.splice(index, 1);
+        }
+      }),
+    });
+
+    const workflow = createQuizWorkflow(ports);
+    await workflow.open("room-1");
+    workflow.setGuests(GUESTS);
+    await workflow.startGame(DECK);
+    await workflow.startQuestion(0);
+    await workflow.submitAnswer({
+      guestId: "row-1",
+      guestUuid: "guest-1",
+      selectedOptionId: "b",
+      answeredAt: answeredAt(1_000_000, 1_000),
+    });
+    await workflow.reveal();
+    await workflow.showLeaderboard();
+    await workflow.endGame();
+    await workflow.endGame();
+    expect(workflow.getState().phase).toBe("lobby");
+
+    const reloaded = createQuizWorkflow(ports);
+    await reloaded.open("room-1");
+    reloaded.setGuests(GUESTS);
+    await reloaded.startGame(DECK);
+    await reloaded.startQuestion(0);
+
+    expect(reloaded.getState()).toMatchObject({
+      phase: "live",
+      answerCounts: {},
+      answeredCount: 0,
+      leaderboard: [],
+    });
+  });
+
+  it("reschedules the auto-reveal timer when reopening a persisted live question", async () => {
+    const persisted: QuizRoomGameState = {
+      phase: "live",
+      currentQuestionIndex: 0,
+      currentQuestion: DECK.questions[0],
+      questionStartedAtMs: 1_000_000,
+    };
+    const scheduler = makeFakeScheduler();
+    const workflow = createQuizWorkflow(
+      makePorts({
+        loadGameState: vi.fn(async () => persisted),
+        schedule: scheduler.schedule,
+      }),
+    );
+    await workflow.open("room-1");
+
+    expect(workflow.getState().phase).toBe("live");
+
+    scheduler.fireAll();
+    await flush();
+
+    expect(workflow.getState().phase).toBe("reveal");
+  });
 });

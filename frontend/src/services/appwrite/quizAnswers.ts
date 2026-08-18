@@ -107,3 +107,39 @@ export async function listAnswersByRoom(roomId: string): Promise<QuizAnswer[]> {
     mapAnswer(row as unknown as Record<string, unknown>),
   );
 }
+
+/** Delete every answer row for a room so a fresh quiz starts from zero. */
+export async function clearAnswersByRoom(roomId: string): Promise<void> {
+  await ensureGuestSession();
+  assertConfig();
+
+  const db = getTablesDB();
+  let cursor: string | undefined;
+
+  for (;;) {
+    const batch = await db.listRows({
+      databaseId: APPWRITE.databaseId,
+      tableId: APPWRITE.answersTableId,
+      queries: [
+        Query.equal("roomId", roomId),
+        Query.limit(100),
+        ...(cursor ? [Query.cursorAfter(cursor)] : []),
+      ],
+    });
+
+    if (!batch.rows.length) break;
+
+    await Promise.all(
+      batch.rows.map((row) =>
+        db.deleteRow({
+          databaseId: APPWRITE.databaseId,
+          tableId: APPWRITE.answersTableId,
+          rowId: row.$id,
+        }),
+      ),
+    );
+
+    if (batch.rows.length < 100) break;
+    cursor = batch.rows[batch.rows.length - 1]?.$id;
+  }
+}

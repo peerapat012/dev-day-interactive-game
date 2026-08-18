@@ -29,6 +29,8 @@ export interface QuizWorkflowPorts {
     command: SubmitAnswerCommand,
     answer: QuizAnswer,
   ) => Promise<QuizAnswer | null>;
+  /** Delete all persisted answers for a room (fresh quiz in the same room). */
+  clearAnswers?: (roomId: string) => Promise<void>;
   /** Schedule a one-off callback after a delay; returns a cancel function. */
   schedule?: (callback: () => void, delayMs: number) => () => void;
 }
@@ -343,12 +345,25 @@ export function createQuizWorkflow(ports: QuizWorkflowPorts) {
     // "Done" on the final podium: reset to a fresh lobby in the same room so
     // the host can build and run another quiz.
     cancelPending();
+    const roomId = state.roomId;
     guests = [];
     answers = [];
     selfGuestUuid = "";
     startedAtMs = null;
-    state = { ...EMPTY_STATE, roomId: state.roomId };
+    state = { ...EMPTY_STATE, roomId };
     emit({});
+    if (ports.clearAnswers) {
+      try {
+        await ports.clearAnswers(roomId);
+      } catch (error) {
+        emit({ error: errorMessage(error, "Could not clear quiz answers") });
+      }
+    }
+    try {
+      await ports.persistGameState(roomId, gameState());
+    } catch (error) {
+      emit({ error: errorMessage(error, "Could not persist reset") });
+    }
   }
 
   return {
@@ -384,6 +399,24 @@ export function createQuizWorkflow(ports: QuizWorkflowPorts) {
           questionStartedAtMs: persisted.questionStartedAtMs,
           error: null,
         });
+        if (
+          persisted.phase === "live" &&
+          persisted.currentQuestion &&
+          persisted.questionStartedAtMs !== null
+        ) {
+          const elapsedMs = now() - persisted.questionStartedAtMs;
+          const remainingMs = Math.max(
+            0,
+            persisted.currentQuestion.timeLimitMs - elapsedMs,
+          );
+          schedule(remainingMs, () => {
+            void reveal();
+          });
+        } else if (persisted.phase === "reveal") {
+          schedule(AUTO_LEADERBOARD_DELAY_MS, () => {
+            void showLeaderboard();
+          });
+        }
       }
 
       try {

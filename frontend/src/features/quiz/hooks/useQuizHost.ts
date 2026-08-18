@@ -22,6 +22,7 @@ import {
 } from "@/services/appwrite/quizRooms";
 import { closeRoomSession } from "@/services/appwrite/rooms";
 import {
+  clearAnswersByRoom,
   createAnswer,
   listAnswersByRoom,
 } from "@/services/appwrite/quizAnswers";
@@ -71,6 +72,7 @@ export function useQuizHost() {
       },
       listAnswers: async (id) => listAnswersByRoom(id),
       submitAnswer: async (command, answer) => createAnswer(answer),
+      clearAnswers: async (id) => clearAnswersByRoom(id),
     }),
   );
 
