@@ -89,7 +89,7 @@ export function MobileTabBar() {
             <li key={item.href} className="flex-1">
               <Link
                 href={item.href}
-                className={`flex min-h-[52px] flex-col items-center justify-center gap-1 rounded-xl px-2 py-1.5 transition active:scale-95 ${
+                className={`flex min-h-[52px] flex-col items-center justify-center gap-1 rounded-xl px-2 py-1.5 transition-[transform,background-color] active:scale-[0.96] ${
                   active
                     ? "bg-violet-500/15 text-violet-300"
                     : "text-zinc-400 active:bg-white/5"

@@ -11,7 +11,7 @@ export function PlayerBadge() {
   return (
     <Link
       href="/"
-      className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-sm transition hover:border-violet-400/40 hover:bg-violet-500/10"
+      className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-sm transition-[background-color,border-color] duration-150 ease-out hover:border-violet-400/40 hover:bg-violet-500/10"
       title="Change nickname"
     >
       <span

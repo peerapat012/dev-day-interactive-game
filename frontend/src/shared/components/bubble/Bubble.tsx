@@ -35,9 +35,10 @@ function BubbleComponent({
       initial={{ scale: 0, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       whileHover={{ scale: 1.06 }}
+      whileTap={{ scale: 0.96 }}
       transition={{ type: "spring", stiffness: 260, damping: 22 }}
       onClick={onClick}
-      className="absolute flex min-h-[44px] min-w-[44px] cursor-pointer touch-manipulation items-center justify-center rounded-full border border-white/15 text-center font-medium text-white shadow-lg backdrop-blur-md active:scale-95"
+      className="absolute flex min-h-[44px] min-w-[44px] cursor-pointer touch-manipulation items-center justify-center rounded-full border border-white/15 text-center font-medium text-white shadow-lg backdrop-blur-md"
       style={{
         left: x,
         top: y,

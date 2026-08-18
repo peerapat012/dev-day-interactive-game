@@ -48,7 +48,7 @@ export function GuestNameBubbles({ tags }: GuestNameBubblesProps) {
           <button
             type="button"
             onClick={() => setModalOpen(true)}
-            className="inline-flex min-h-[28px] items-center rounded-full border border-white/15 bg-white/5 px-2.5 py-0.5 text-xs font-medium text-zinc-300 transition-[transform,background-color,color,border-color] duration-150 ease-out hover:border-white/25 hover:bg-white/10 hover:text-zinc-100 active:scale-[0.96]"
+            className="relative inline-flex min-h-[28px] items-center rounded-full border border-white/15 bg-white/5 px-2.5 py-0.5 text-xs font-medium text-zinc-300 transition-[transform,background-color,color,border-color] duration-150 ease-out after:absolute after:-inset-2 after:content-[''] hover:border-white/25 hover:bg-white/10 hover:text-zinc-100 active:scale-[0.96]"
           >
             Show more
           </button>

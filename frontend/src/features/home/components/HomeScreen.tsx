@@ -149,7 +149,7 @@ function RoleCard({
     >
       <Link
         href={href}
-        className={`group flex h-full flex-col gap-3 rounded-3xl border bg-gradient-to-br p-6 shadow-xl transition hover:scale-[1.02] hover:border-white/20 ${accent}`}
+        className={`group flex h-full flex-col gap-3 rounded-3xl border bg-gradient-to-br p-6 shadow-xl transition-[transform,border-color] duration-200 ease-out hover:scale-[1.02] hover:border-white/20 ${accent}`}
       >
         <h2 className="text-xl font-semibold text-white">{title}</h2>
         <p className="flex-1 text-sm leading-relaxed text-zinc-300">{description}</p>

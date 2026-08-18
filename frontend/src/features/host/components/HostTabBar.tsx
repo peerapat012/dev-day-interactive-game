@@ -44,12 +44,12 @@ export function HostTabBar({
                     ? "Summary unlocks after guest submissions or when a saved summary exists"
                     : undefined
                 }
-                className={`flex min-h-[52px] w-full flex-col items-center justify-center gap-1 rounded-xl px-2 py-1.5 transition ${
+                className={`flex min-h-[52px] w-full flex-col items-center justify-center gap-1 rounded-xl px-2 py-1.5 transition-[transform,background-color] ${
                   disabled
                     ? "cursor-not-allowed text-zinc-600"
                     : active
-                      ? "bg-violet-500/15 text-violet-300 active:scale-95"
-                      : "text-zinc-400 active:scale-95 active:bg-white/5"
+                      ? "bg-violet-500/15 text-violet-300 active:scale-[0.96]"
+                      : "text-zinc-400 active:scale-[0.96] active:bg-white/5"
                 }`}
               >
                 <span className="text-[10px] font-medium leading-none sm:text-xs">

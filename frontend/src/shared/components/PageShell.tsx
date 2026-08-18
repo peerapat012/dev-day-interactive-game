@@ -31,7 +31,7 @@ export function PageShell({
             <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-violet-400 sm:text-xs">
               Word Cloud Game
             </p>
-            <h1 className="mt-0.5 truncate text-xl font-semibold tracking-tight text-zinc-50 sm:mt-1 sm:text-3xl">
+            <h1 className="mt-0.5 text-balance text-xl font-semibold tracking-tight text-zinc-50 sm:mt-1 sm:text-3xl">
               {title}
             </h1>
             {description ? (
