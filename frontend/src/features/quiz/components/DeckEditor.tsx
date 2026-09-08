@@ -7,7 +7,11 @@ import { Input } from "@/shared/ui/Input";
 import { AuthForm } from "@/features/quiz/components/AuthForm";
 import { optionColorAt, optionLetter } from "@/features/quiz/components/quizOptionStyles";
 import {
+  addDraftOption,
   generatedQuestionsToDraft,
+  MAX_DRAFT_OPTIONS,
+  MIN_DRAFT_OPTIONS,
+  removeDraftOption,
   uid,
   type DraftQuestion,
 } from "@/lib/generatedQuestionsToDraft";
@@ -34,7 +38,10 @@ const TIME_LIMITS_MS = [10000, 20000, 30000, 60000];
 const GENERATION_LANGUAGES = ["Thai", "English"] as const;
 
 function emptyQuestion(): DraftQuestion {
-  const options = [0, 1].map(() => ({ id: uid(), text: "" }));
+  const options = Array.from({ length: MIN_DRAFT_OPTIONS }, () => ({
+    id: uid(),
+    text: "",
+  }));
   return {
     id: uid(),
     prompt: "",
@@ -135,21 +142,19 @@ export function DeckEditor({ initialDeck, onStart, onClearSession, auth }: DeckE
     );
   }
 
-  function removeOption(questionIndex: number, optionId: string) {    setQuestions((prev) =>
-      prev.map((question, i) => {
-        if (i !== questionIndex) return question;
-        const options = question.options.filter((o) => o.id !== optionId);
-        const stillValid = options.some(
-          (o) => o.id === question.correctOptionId,
-        );
-        return {
-          ...question,
-          options,
-          correctOptionId: stillValid
-            ? question.correctOptionId
-            : (options[0]?.id ?? ""),
-        };
-      }),
+  function addOption(questionIndex: number) {
+    setQuestions((prev) =>
+      prev.map((question, i) =>
+        i === questionIndex ? addDraftOption(question) : question,
+      ),
+    );
+  }
+
+  function removeOption(questionIndex: number, optionId: string) {
+    setQuestions((prev) =>
+      prev.map((question, i) =>
+        i === questionIndex ? removeDraftOption(question, optionId) : question,
+      ),
     );
   }
 
@@ -288,8 +293,8 @@ export function DeckEditor({ initialDeck, onStart, onClearSession, auth }: DeckE
                   <Input
                     id="ai-option-count"
                     type="number"
-                    min={2}
-                    max={8}
+                    min={MIN_DRAFT_OPTIONS}
+                    max={MAX_DRAFT_OPTIONS}
                     value={aiOptionCount}
                     onChange={(event) =>
                       setAiOptionCount(Number(event.target.value))
@@ -416,7 +421,7 @@ export function DeckEditor({ initialDeck, onStart, onClearSession, auth }: DeckE
                       placeholder={`Option ${optionLetter(optionIndex)}`}
                       className="min-h-[40px]"
                     />
-                    {question.options.length > 2 ? (
+                    {question.options.length > MIN_DRAFT_OPTIONS ? (
                       <button
                         type="button"
                         onClick={() => removeOption(index, option.id)}
@@ -429,6 +434,15 @@ export function DeckEditor({ initialDeck, onStart, onClearSession, auth }: DeckE
                   </div>
                 );
               })}
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => addOption(index)}
+                disabled={question.options.length >= MAX_DRAFT_OPTIONS}
+                className="self-start"
+              >
+                Add option
+              </Button>
             </div>
 
             <div className="flex items-center justify-between gap-2">
