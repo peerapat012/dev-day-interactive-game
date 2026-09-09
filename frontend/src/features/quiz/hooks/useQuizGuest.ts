@@ -17,6 +17,7 @@ import {
 } from "@/services/appwrite/realtimeQuiz";
 import { getQuizRoomByCode, parseQuizGameState } from "@/services/appwrite/quizRooms";
 import { listGuestsByRoom } from "@/services/appwrite/guests";
+import { syncQuizGuestNames } from "@/lib/syncQuizGuestNames";
 import { usePlayerStore } from "@/store/playerStore";
 import { useRoomStore } from "@/store/roomStore";
 
@@ -54,6 +55,7 @@ export function useQuizGuest() {
     if (!roomId || !guestUuid || !guestMode) return;
 
     let cancelled = false;
+    let stopGuestNames: (() => void) | undefined;
 
     async function init() {
       setError(null);
@@ -65,7 +67,13 @@ export function useQuizGuest() {
         setGuestId(user.$id);
 
         await workflow.open(roomId);
+        if (cancelled) return;
         workflow.setSelfGuest(guestUuid);
+        stopGuestNames = syncQuizGuestNames(
+          workflow,
+          () => listGuestsByRoom(roomId),
+          (err) => console.warn("[quiz-guest] Could not refresh player names:", err),
+        );
         if (!cancelled) setReady(true);
       } catch (err) {
         if (!cancelled) {
@@ -79,6 +87,7 @@ export function useQuizGuest() {
 
     return () => {
       cancelled = true;
+      stopGuestNames?.();
     };
   }, [roomId, guestUuid, guestMode, workflow]);
 
@@ -104,32 +113,6 @@ export function useQuizGuest() {
       unsubscribe = result.unsubscribe;
     });
     return () => unsubscribe?.();
-  }, [roomId, workflow]);
-
-  // Guest list → real names on the leaderboard / podium.
-  useEffect(() => {
-    if (!roomId) return;
-    let cancelled = false;
-
-    async function refreshGuests() {
-      try {
-        const rows = await listGuestsByRoom(roomId);
-        if (cancelled) return;
-        workflow.setGuests(
-          rows.map((row) => ({
-            guestUuid: row.guestUuid,
-            displayName: row.displayName,
-          })),
-        );
-      } catch {
-        // Ignore transient guest-list failures.
-      }
-    }
-
-    void refreshGuests();
-    return () => {
-      cancelled = true;
-    };
   }, [roomId, workflow]);
 
   const submit = useCallback(

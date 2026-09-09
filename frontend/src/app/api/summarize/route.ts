@@ -1,14 +1,16 @@
+import { isMockAiEnabled } from "@/lib/llmServerConfig";
+import { aiErrorResponse } from "@/services/ai/apiError";
+import { summarizeRequestSchema } from "@/services/ai/requestSchemas";
 import { NextResponse } from "next/server";
 import { joinGroupInputs } from "@/lib/joinGroupInputs";
 import { summarizeWithLlm } from "@/services/ai/summarizeLlm";
 import { mockSummarizeBatch } from "@/services/ai/mock";
 import type {
-  SummarizeBatchRequest,
   SummarizeBatchResponse,
   SummarizeGroupPayload,
 } from "@/types/api";
 
-const USE_MOCK = process.env.LLM_USE_MOCK === "true";
+export const runtime = "nodejs";
 
 function normalizeInputs(inputs: string | string[] | undefined): string {
   if (typeof inputs === "string") return inputs.trim();
@@ -16,11 +18,16 @@ function normalizeInputs(inputs: string | string[] | undefined): string {
   return "";
 }
 
+
 /**
- * Summarize top groups via FastAPI POST /summarize (or mock when LLM_USE_MOCK=true).
+ * Summarize top groups via TanStack AI + Gemini (or mock when LLM_USE_MOCK=true).
  */
 export async function POST(request: Request) {
-  const body = (await request.json()) as SummarizeBatchRequest;
+  const parsed = summarizeRequestSchema.safeParse(await request.json().catch(() => null));
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
+  const body = parsed.data;
   const groups = Array.isArray(body.groups) ? body.groups : [];
 
   if (groups.length === 0) {
@@ -45,15 +52,13 @@ export async function POST(request: Request) {
       inputs: normalizeInputs(g.inputs as string | string[]),
     }));
 
-    const summaries = USE_MOCK
+    const summaries = isMockAiEnabled()
       ? mockSummarizeBatch(payloads)
       : await summarizeWithLlm(payloads);
 
     const response: SummarizeBatchResponse = { summaries };
     return NextResponse.json(response);
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Summarization failed";
-    return NextResponse.json({ error: message }, { status: 502 });
+    return aiErrorResponse(err, "Summarization failed");
   }
 }

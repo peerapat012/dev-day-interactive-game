@@ -1,14 +1,4 @@
-/**
- * Canonical group labels after classification.
- *
- * Used only in Next.js POST /api/classify (server route), after the LLM returns
- * labels — regardless of backend:
- *   - FastAPI local (LLM_CLASSIFY_BATCH_URL)
- *   - Appwrite function (/classify-batch)
- *   - mock (LLM_USE_MOCK=true)
- *
- * Not used inside Python/FastAPI or Appwrite function code.
- */
+/** Legacy group-label normalization utility; AI routes preserve model labels. */
 
 const ALIASES: Record<string, string> = {
   // --- Tech: keep Frameworks / Languages / Programming separate (never "technology") ---

@@ -1,3 +1,6 @@
+import { isMockAiEnabled } from "@/lib/llmServerConfig";
+import { aiErrorResponse } from "@/services/ai/apiError";
+import { questionsRequestSchema } from "@/services/ai/requestSchemas";
 import { NextResponse } from "next/server";
 import { generateQuestionsWithLlm } from "@/services/ai/generateQuestionsLlm";
 import { mockGenerateQuestions } from "@/services/ai/mock";
@@ -6,7 +9,7 @@ import type {
   GenerateQuestionsResponse,
 } from "@/types/api";
 
-const USE_MOCK = process.env.LLM_USE_MOCK === "true";
+export const runtime = "nodejs";
 
 const MAX_QUESTION_COUNT = 20;
 const MIN_OPTION_COUNT = 2;
@@ -24,19 +27,15 @@ function normalizeRequest(body: Partial<GenerateQuestionsRequest>) {
 }
 
 /**
- * Generate quiz questions via FastAPI POST /generate-questions
+ * Generate quiz questions via TanStack AI + Gemini
  * (or mock when LLM_USE_MOCK=true).
  */
 export async function POST(request: Request) {
-  let body: Partial<GenerateQuestionsRequest>;
-  try {
-    body = (await request.json()) as Partial<GenerateQuestionsRequest>;
-  } catch {
-    return NextResponse.json(
-      { error: "Invalid JSON request body" },
-      { status: 400 },
-    );
+  const parsed = questionsRequestSchema.safeParse(await request.json().catch(() => null));
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
+  const body = parsed.data;
 
   const requestBody = normalizeRequest(body);
 
@@ -54,14 +53,12 @@ export async function POST(request: Request) {
   }
 
   try {
-    const response: GenerateQuestionsResponse = USE_MOCK
+    const response: GenerateQuestionsResponse = isMockAiEnabled()
       ? { questions: mockGenerateQuestions(requestBody) }
       : await generateQuestionsWithLlm(requestBody);
 
     return NextResponse.json(response);
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Question generation failed";
-    return NextResponse.json({ error: message }, { status: 502 });
+    return aiErrorResponse(err, "Question generation failed");
   }
 }

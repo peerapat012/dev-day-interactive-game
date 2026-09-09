@@ -1,57 +1,22 @@
 import { NextResponse } from "next/server";
-import {
-  getLlmHealthUrl,
-  useAppwriteLlmFunction,
-} from "@/lib/llmServerConfig";
-import { fetchLlm } from "@/lib/llmFetch";
+import { getAiConfig, isMockAiEnabled } from "@/lib/llmServerConfig";
 
-/** GET /api/llm-health — verify Next.js can reach the local FastAPI LLM server. */
+/** Configuration readiness only: never sends a billable provider request. */
 export async function GET() {
-  if (useAppwriteLlmFunction()) {
-    return NextResponse.json({
-      mode: "appwrite",
-      ok: true,
-      message: "LLM_USE_APPWRITE_FUNCTION=true (not probing local FastAPI)",
-    });
+  if (isMockAiEnabled()) {
+    return NextResponse.json({ mode: "mock", ok: true, providerChecked: false });
   }
-
-  const url = getLlmHealthUrl();
-
   try {
-    const res = await fetchLlm(url, { method: "GET", cache: "no-store" }, "LLM health");
-    const text = await res.text();
-
-    if (!res.ok) {
-      return NextResponse.json(
-        {
-          mode: "local",
-          ok: false,
-          url,
-          status: res.status,
-          detail: text || res.statusText,
-        },
-        { status: 502 },
-      );
-    }
-
-    let body: unknown = text;
-    try {
-      body = text ? JSON.parse(text) : null;
-    } catch {
-      /* plain text health is fine */
-    }
-
+    const { model } = getAiConfig();
     return NextResponse.json({
-      mode: "local",
-      ok: true,
-      url,
-      body,
+      mode: "tanstack", provider: "gemini", model, ok: true,
+      providerChecked: false,
+      message: "AI is configured. Gemini connectivity and credentials have not been tested.",
     });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Health check failed";
-    return NextResponse.json(
-      { mode: "local", ok: false, url, error: message },
-      { status: 502 },
-    );
+  } catch (error) {
+    return NextResponse.json({
+      mode: "tanstack", provider: "gemini", ok: false, providerChecked: false,
+      error: error instanceof Error ? error.message : "AI configuration is invalid.",
+    }, { status: 503 });
   }
 }

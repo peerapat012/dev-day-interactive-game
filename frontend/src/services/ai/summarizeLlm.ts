@@ -1,69 +1,23 @@
-import {
-  invokeAppwriteFunction,
-  useAppwriteLlmFunction,
-} from "@/services/ai/appwriteFunction";
-import { getLlmSummarizeUrl } from "@/lib/llmServerConfig";
-import { fetchLlm } from "@/lib/llmFetch";
-import { parseSummarizeResponse } from "@/services/ai/parseSummarizeResponse";
-import type {
-  FastApiSummarizeRequest,
-  SummarizeGroupPayload,
-  SummarizeResultItem,
-} from "@/types/api";
+import "server-only";
+import { z } from "zod";
+import { generateStructuredOutput } from "@/services/ai/structuredOutput";
+import { SUMMARIZE_PROMPT } from "@/services/ai/prompts";
+import { validateResultKeys } from "@/services/ai/validateResultKeys";
+import { assertThaiSummaryContract } from "@/lib/validateThaiSummary";
+import type { SummarizeGroupPayload, SummarizeResultItem } from "@/types/api";
 
-/**
- * Server-only: POST /summarize with { groups } → parsed summary cards.
- * Uses Appwrite Function when LLM_USE_APPWRITE_FUNCTION=true, else direct URL.
- */
-export async function summarizeWithLlm(
-  groups: SummarizeGroupPayload[],
-): Promise<SummarizeResultItem[]> {
-  const body: FastApiSummarizeRequest = { groups };
+const schema = z.object({
+  summaries: z.array(z.object({
+    group: z.string().min(1),
+    topic: z.string().trim().min(1),
+    summary: z.string().trim().min(1),
+  })),
+});
 
-  let data: unknown;
-  if (useAppwriteLlmFunction()) {
-    data = await invokeAppwriteFunction("/summarize", "POST", body);
-  } else {
-    data = await fetchSummarizeDirect(body);
-  }
-
-  try {
-    return parseSummarizeResponse(data);
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "parse error";
-    const raw = JSON.stringify(data).slice(0, 400);
-    throw new Error(`${message}. Raw: ${raw}`);
-  }
-}
-
-async function fetchSummarizeDirect(
-  body: FastApiSummarizeRequest,
-): Promise<unknown> {
-  const url = getLlmSummarizeUrl();
-  const res = await fetchLlm(
-    url,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-      cache: "no-store",
-    },
-    "LLM summarize",
-  );
-
-  const rawText = await res.text();
-
-  if (!res.ok) {
-    throw new Error(
-      `LLM summarize failed (${res.status}): ${rawText || res.statusText}`,
-    );
-  }
-
-  try {
-    return rawText ? JSON.parse(rawText) : null;
-  } catch {
-    throw new Error(
-      `LLM summarize returned non-JSON (status ${res.status}): ${rawText.slice(0, 300)}`,
-    );
-  }
+export async function summarizeWithLlm(groups: SummarizeGroupPayload[]): Promise<SummarizeResultItem[]> {
+  if (groups.length === 0) return [];
+  const { summaries } = await generateStructuredOutput(SUMMARIZE_PROMPT, { groups }, schema);
+  validateResultKeys(groups.map((group) => group.group), summaries.map((item) => item.group));
+  assertThaiSummaryContract(summaries);
+  return summaries;
 }

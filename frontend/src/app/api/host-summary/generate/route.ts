@@ -1,3 +1,6 @@
+import { isMockAiEnabled } from "@/lib/llmServerConfig";
+import { aiErrorResponse } from "@/services/ai/apiError";
+import { classifyRequestSchema } from "@/services/ai/requestSchemas";
 import { NextResponse } from "next/server";
 import { orchestrateHostSummary } from "@/lib/orchestrateHostSummary";
 import { classifyBatchWithLlm } from "@/services/ai/classifyBatch";
@@ -8,7 +11,7 @@ import type {
   HostSummaryGenerateRequest,
 } from "@/types/api";
 
-const USE_MOCK = process.env.LLM_USE_MOCK === "true";
+export const runtime = "nodejs";
 
 function normalizeItems(
   body: HostSummaryGenerateRequest,
@@ -28,12 +31,11 @@ function normalizeItems(
 }
 
 export async function POST(request: Request) {
-  let body: HostSummaryGenerateRequest;
-  try {
-    body = (await request.json()) as HostSummaryGenerateRequest;
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON request body" }, { status: 400 });
+  const parsed = classifyRequestSchema.safeParse(await request.json().catch(() => null));
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
+  const body = parsed.data;
 
   const items = normalizeItems(body);
   if (items.length === 0) {
@@ -46,17 +48,15 @@ export async function POST(request: Request) {
   try {
     const result = await orchestrateHostSummary(items, {
       classify: async (pendingItems) =>
-        USE_MOCK
+        isMockAiEnabled()
           ? mockClassifyBatch(pendingItems)
           : (await classifyBatchWithLlm(pendingItems)).results,
       summarize: async (groups) =>
-        USE_MOCK ? mockSummarizeBatch(groups) : summarizeWithLlm(groups),
+        isMockAiEnabled() ? mockSummarizeBatch(groups) : summarizeWithLlm(groups),
     });
 
     return NextResponse.json(result);
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Summary generation failed";
-    return NextResponse.json({ error: message }, { status: 502 });
+    return aiErrorResponse(err, "Summary generation failed");
   }
 }

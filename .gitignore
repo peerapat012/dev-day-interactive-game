@@ -71,3 +71,5 @@ temp/
 .scratch/
 opencode.json
 .opencode/
+
+.agents/

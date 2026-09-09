@@ -3,7 +3,7 @@ import type {
   SummarizeBatchResponse,
 } from "@/types/api";
 
-/** Client → Next.js /api/summarize → FastAPI /summarize */
+/** Client → Next.js /api/summarize → TanStack AI + Gemini */
 export async function summarizeTopGroups(
   payload: SummarizeBatchRequest,
 ): Promise<SummarizeBatchResponse> {

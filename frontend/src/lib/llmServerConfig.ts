@@ -1,34 +1,22 @@
-const LOCAL_LLM_BASE = "http://127.0.0.1:8000";
+import "server-only";
+import { GEMINI_MODELS } from "@tanstack/ai-gemini";
 
-/** Server-only LLM routing for Next.js API routes. */
-export function useAppwriteLlmFunction(): boolean {
-  const flag = process.env.LLM_USE_APPWRITE_FUNCTION;
-  if (flag === "true") return true;
-  if (flag === "false") return false;
-  return process.env.NODE_ENV === "production";
+export const AI_TIMEOUT_MS = 120_000;
+export class AiConfigurationError extends Error {}
+
+export function isMockAiEnabled(): boolean {
+  return process.env.LLM_USE_MOCK === "true";
 }
 
-export function getLlmClassifyBatchUrl(): string {
-  return (
-    process.env.LLM_CLASSIFY_BATCH_URL ?? `${LOCAL_LLM_BASE}/classify-batch`
-  );
-}
-
-export function getLlmSummarizeUrl(): string {
-  return process.env.LLM_SUMMARIZE_URL ?? `${LOCAL_LLM_BASE}/summarize`;
-}
-
-export function getLlmClarifyUrl(): string {
-  return process.env.LLM_CLARIFY_URL ?? `${LOCAL_LLM_BASE}/clarify`;
-}
-
-export function getLlmHealthUrl(): string {
-  return process.env.LLM_HEALTH_URL ?? `${LOCAL_LLM_BASE}/health`;
-}
-
-export function getLlmGenerateQuestionsUrl(): string {
-  return (
-    process.env.LLM_GENERATE_QUESTIONS_URL ??
-    `${LOCAL_LLM_BASE}/generate-questions`
-  );
+export function getAiConfig() {
+  const apiKey = process.env.GOOGLE_API_KEY?.trim();
+  if (!apiKey) {
+    throw new AiConfigurationError("Set GOOGLE_API_KEY on the Next.js server to enable AI.");
+  }
+  const requestedModel = process.env.AI_MODEL?.trim() || "gemini-3.1-flash-lite";
+  const model = GEMINI_MODELS.find((candidate) => candidate === requestedModel);
+  if (!model) {
+    throw new AiConfigurationError("AI_MODEL is not supported by the installed Gemini adapter.");
+  }
+  return { apiKey, model };
 }

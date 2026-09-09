@@ -2,7 +2,7 @@
 
 Interactive web app where users submit short phrases, a placeholder API classifies them into semantic groups, and the UI visualizes raw inputs and grouped categories as animated bubbles. Built with Next.js App Router, TypeScript, Tailwind CSS, Zustand, Appwrite (guest access), and Framer Motion.
 
-**Note:** Classification uses FastAPI `POST /clarify`. Summarization uses FastAPI `POST /summarize` (triggered by button on `/summary`). Quiz hosts can also generate decks with AI via FastAPI `POST /generate-questions` (see [AI question generation](#ai-question-generation)).
+**AI runtime:** Next.js API routes call TanStack AI with Gemini directly for batch classification, Thai summaries, and quiz question generation. Appwrite continues to provide database, authentication, and realtime services. See [AI configuration](#ai-configuration).
 
 ## Tech stack
 
@@ -152,11 +152,10 @@ language (Thai or English), then generate. The AI returns questions with
 review and edit before starting.
 
 - Client calls `POST /api/generate-questions` (`src/services/ai/generateQuestions.ts`).
-- The route proxies to FastAPI `POST /generate-questions`
-  (`src/services/ai/generateQuestionsLlm.ts`) or the Appwrite function, with
-  `LLM_USE_MOCK=true` falling back to `mockGenerateQuestions`.
-- Response parsing is tolerant (`src/services/ai/parseGenerateQuestionsResponse.ts`);
-  conversion to editor drafts lives in
+- The route uses TanStack AI + Gemini through `src/services/ai/generateQuestionsLlm.ts`.
+  `LLM_USE_MOCK=true` explicitly selects `mockGenerateQuestions` without contacting Gemini.
+- Responses are strictly validated against the requested question and option
+  counts before conversion to editor drafts in
   `src/lib/generatedQuestionsToDraft.ts` (defaults the time limit to 20s).
 
 ### Appwrite schema (quiz)
@@ -241,8 +240,7 @@ NEXT_PUBLIC_APPWRITE_QUESTION_DECKS_TABLE_ID=question_decks
 | `src/services/appwrite/realtimeQuiz.ts` | Rooms + answers subscriptions |
 | `src/services/appwrite/quizAuth.ts` | Email + Password login/register/logout, anonymous detection |
 | `src/services/ai/generateQuestions.ts` | Client wrapper for `POST /api/generate-questions` |
-| `src/services/ai/generateQuestionsLlm.ts` | Server-side call to FastAPI `/generate-questions` (or Appwrite function) |
-| `src/services/ai/parseGenerateQuestionsResponse.ts` | Tolerant parsing of AI question responses |
+| `src/services/ai/generateQuestionsLlm.ts` | Server-only TanStack AI structured question generation |
 | `src/lib/generatedQuestionsToDraft.ts` | Convert generated questions into editor drafts (wires correct option, 20s time limit) |
 
 ## Folder structure
@@ -295,17 +293,17 @@ src/
 ### Data flow
 
 ```txt
-User input
-  → POST /api/classify → FastAPI /clarify
-  → normalizeGroupName()
-  → createEntry() → Appwrite
-  → realtime subscription → Zustand store
-  → RawWordCloud / GroupWordCloud / SummaryCards
+Guest input
+  → Appwrite entries → realtime subscription → Zustand store → Word cloud
 
-Summary page:
-  → top 3 groups from store
-  → POST /api/summarize (mock) per group
-  → SummaryCards
+Host opens Summary / Refresh summary:
+  → captured entries → POST /api/host-summary/generate
+  → TanStack AI + Gemini: classify batch, then summarize top groups
+  → persist entry groups and room snapshot in Appwrite → Summary cards
+
+Quiz deck generation:
+  → POST /api/generate-questions → TanStack AI + Gemini
+  → validated questions → host reviews/edits deck → optional save
 ```
 
 - **Server Components** for pages (metadata, minimal client JS on shells).
@@ -325,33 +323,49 @@ Store: `src/store/entriesStore.ts`
 
 ### API layer
 
-| Endpoint           | Request | Response |
-|--------------------|---------|----------|
-| `POST /api/classify`  | `{ input: string }` | `{ input, group }` — proxies FastAPI |
-| `POST /api/summarize` | `{ groups: [{ group, inputs: string }] }` | `{ summaries: [{ group, summary }] }` |
+| Endpoint | Request | Response |
+|----------|---------|----------|
+| `POST /api/classify` | `{ items: [{ id, input }] }` | `{ results: [{ id, input, group }] }` |
+| `POST /api/summarize` | `{ groups: [{ group, inputs }] }` | `{ summaries: [{ group, topic, summary }] }` |
+| `POST /api/host-summary/generate` | `{ items: [{ id, input, name? }] }` | `{ entryGroups, groups, summaries }` |
 | `POST /api/generate-questions` | `{ topic, questionCount, optionCount, language }` | `{ questions: [{ prompt, options, correctOptionIndex }] }` |
+| `GET /api/llm-health` | None | Configuration readiness; `providerChecked: false` |
 
-**FastAPI `/clarify`** — `{ "message": "<input>" }` → `{ "message": "<group>" }`
+All AI generation runs server-side using TanStack AI structured output with Zod validation.
+Summary inputs accept a string or string array. The host-summary operation classifies
+its captured entries first, then summarizes the top groups. Descriptions remain Thai;
+group keys and entry IDs must match the request exactly. Quiz output must match the
+requested question/option counts and contain valid correct-option indices.
 
-**FastAPI `/summarize`** — top 3 groups only; `inputs` is one plain-text string (phrases comma-separated):
+Invalid requests return 400, missing/unsupported AI configuration returns 503, and
+provider or output-validation failures return 502 with `{ error }`. Provider errors
+are sanitized; model output is never silently repaired or substituted with mock data.
 
-```json
-// Request
-{
-  "groups": [
-    { "group": "technology", "inputs": "ai agent, coding, cloud" }
-  ]
-}
+## AI configuration
 
-// Response
-{
-  "summarize": [
-    { "group": "technology", "summarize": "Summary text..." }
-  ]
-}
-```
+Keep existing Appwrite settings in `.env.local`. Add the AI variables documented in
+[.env.example](.env.example) when ready; no real key is included in the repository:
 
-Env: `LLM_CLARIFY_URL`, `LLM_SUMMARIZE_URL`, `LLM_GENERATE_QUESTIONS_URL`, `LLM_USE_MOCK=false`
+- `GOOGLE_API_KEY`: Gemini key, read only by the Next.js server. Never use a `NEXT_PUBLIC_` prefix.
+- `AI_MODEL`: defaults to `gemini-3.1-flash-lite`; must be supported by the installed Gemini adapter.
+- `LLM_USE_MOCK`: only the exact value `true` enables local mock responses. Default is real AI.
+
+The app can build and serve non-AI features without a key. AI requests return a clear
+configuration error until a key is set, unless mock mode is explicitly enabled.
+Restart the Next.js process after changing environment variables.
+
+Each model call has a 120-second deadline. A host summary makes two sequential calls;
+configure deployment request limits to allow up to 240 seconds plus processing overhead.
+The health endpoint checks configuration only: it does not validate the key or call Gemini.
+
+The old `LLM_USE_APPWRITE_FUNCTION`, `LLM_APPWRITE_FUNCTION_ID`, and `LLM_*_URL`
+settings are no longer read. The retained `../lang-chain-python/` directory is reference
+code and is not part of the active runtime; there is no fallback to Python or Appwrite Functions.
+No database migration is required. Existing deployed Appwrite Functions are not automatically removed.
+
+Before releasing with real credentials, smoke-test batch classification, Thai summary
+creation/refresh, and Thai/English quiz generation followed by editing and saving a deck.
+Automated tests mock the TanStack AI call and do not consume Gemini quota.
 
 ## Appwrite integration
 
@@ -376,11 +390,11 @@ Bootstrap: `src/features/cloud/hooks/useRealtimeEntries.ts`
 
 ## Classify flow
 
-1. User submits text in `CloudInput`.
-2. `classifyInput()` → `POST /api/classify`.
-3. API calls FastAPI `clarifyWithLlm()` (or mock if `LLM_USE_MOCK=true`) + `normalizeGroupName()`.
-4. `createEntry()` saves to Appwrite.
-5. Store updates via optimistic `upsertEntry` + realtime.
+1. Guest entries are stored in Appwrite and received through realtime updates.
+2. The host opens Summary or explicitly refreshes, capturing the current entries.
+3. `POST /api/host-summary/generate` uses TanStack AI to classify that batch, then summarize the top groups.
+4. The existing host workflow persists entry groups and the room snapshot before marking the summary ready.
+5. Entries arriving during generation stay pending for a later refresh; failures preserve the last good summary.
 
 ## Bubble rendering
 
@@ -474,7 +488,7 @@ npm run lint     # ESLint
 | `src/store/entriesStore.ts` | Zustand live state |
 | `src/services/appwrite/entries.ts` | Appwrite CRUD |
 | `src/services/appwrite/realtime.ts` | Realtime subscription |
-| `src/services/ai/clarify.ts` | FastAPI /clarify client (server-only) |
+| `src/services/ai/structuredOutput.ts` | Server-only TanStack AI + Gemini structured generation |
 | `src/services/ai/mock.ts` | Fallback mock classify + summarize |
 | `src/lib/normalizeGroupName.ts` | Category normalization |
 | `src/features/cloud/hooks/useSubmitEntry.ts` | Submit → classify → save |

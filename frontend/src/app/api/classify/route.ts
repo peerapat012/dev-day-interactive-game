@@ -1,8 +1,10 @@
+import { isMockAiEnabled } from "@/lib/llmServerConfig";
+import { aiErrorResponse } from "@/services/ai/apiError";
+import { classifyRequestSchema } from "@/services/ai/requestSchemas";
 import { NextResponse } from "next/server";
 import { classifyBatchWithLlm } from "@/services/ai/classifyBatch";
 import { mockClassifyBatch } from "@/services/ai/mock";
 import type {
-  ClassifyBatchRequest,
   ClassifyBatchResponse,
 } from "@/types/api";
 
@@ -11,13 +13,17 @@ function rawGroupLabel(group: string | undefined): string {
   return group?.trim() ?? "";
 }
 
-const USE_MOCK = process.env.LLM_USE_MOCK === "true";
+export const runtime = "nodejs";
 
 /**
- * Batch-classify pending inputs in one LLM call (FastAPI POST /classify-batch).
+ * Batch-classify pending inputs in one LLM call (TanStack AI + Gemini).
  */
 export async function POST(request: Request) {
-  const body = (await request.json()) as ClassifyBatchRequest;
+  const parsed = classifyRequestSchema.safeParse(await request.json().catch(() => null));
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
+  const body = parsed.data;
   const items = Array.isArray(body.items)
     ? body.items
         .map((item) => ({
@@ -35,7 +41,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const llmResults = USE_MOCK
+    const llmResults = isMockAiEnabled()
       ? mockClassifyBatch(items)
       : (await classifyBatchWithLlm(items)).results;
 
@@ -53,8 +59,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json(response);
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Classification failed";
-    return NextResponse.json({ error: message }, { status: 502 });
+    return aiErrorResponse(err, "Classification failed");
   }
 }

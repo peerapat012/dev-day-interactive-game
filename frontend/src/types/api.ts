@@ -25,28 +25,9 @@ export interface ClassifyBatchResponse {
   results: ClassifyBatchResultItem[];
 }
 
-/** FastAPI POST /classify-batch */
-export interface FastApiClassifyBatchRequest {
-  inputs: ClassifyBatchItem[];
-}
-
-export interface FastApiClassifyBatchResultItem {
-  id: string;
-  group: string;
-}
-
-export interface FastApiClassifyBatchResponse {
-  results: FastApiClassifyBatchResultItem[];
-}
-
-/** FastAPI /clarify request body */
-export interface ChatRequest {
-  message: string;
-}
-
-/** FastAPI /clarify response body */
-export interface ChatResponse {
-  message: string;
+/** Server-side AI classification result. */
+export interface AiClassifyBatchResponse {
+  results: Array<{ id: string; group: string }>;
 }
 
 /** One group — `inputs` is all user phrases as one comma-separated plain text string */
@@ -58,23 +39,6 @@ export interface SummarizeGroupPayload {
 /** Client → Next.js /api/summarize */
 export interface SummarizeBatchRequest {
   groups: SummarizeGroupPayload[];
-}
-
-/** FastAPI /summarize request body */
-export interface FastApiSummarizeRequest {
-  groups: SummarizeGroupPayload[];
-}
-
-/** FastAPI /summarize response item */
-export interface FastApiSummarizeItem {
-  group: string;
-  topic: string;
-  summarize: string;
-}
-
-/** FastAPI /summarize response body */
-export interface FastApiSummarizeResponse {
-  summarize: FastApiSummarizeItem[];
 }
 
 /** UI summary card */
@@ -130,7 +94,7 @@ export interface GeneratedQuestion {
   correctOptionIndex: number;
 }
 
-/** FastAPI POST /generate-questions response body. */
+/** Next.js POST /api/generate-questions response body. */
 export interface GenerateQuestionsResponse {
   questions: GeneratedQuestion[];
 }

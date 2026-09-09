@@ -143,7 +143,7 @@ export function mockGenerateQuestions(
 ): Array<{ prompt: string; options: string[]; correctOptionIndex: number }> {
   const { topic, questionCount, optionCount, language } = request;
   const label = topic.trim() || "this topic";
-  return Array.from({ length: Math.min(questionCount, 5) }, (_, i) => {
+  return Array.from({ length: questionCount }, (_, i) => {
     const options = Array.from({ length: optionCount }, (_, o) =>
       `${label} option ${o + 1}`,
     );
