@@ -102,10 +102,9 @@ export function QuizGuestScreen({ onLeaveRoom }: QuizGuestScreenProps) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -4 }}
             >
-              <motion.div
-                className="h-10 w-10 rounded-full border-2 border-violet-400/40 border-t-violet-300"
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              <div
+                className="h-10 w-10 animate-spin rounded-full border-2 border-violet-400/40 border-t-violet-300"
+                aria-hidden="true"
               />
               <p className="text-base font-medium text-zinc-200">
                 Waiting for the host to start…

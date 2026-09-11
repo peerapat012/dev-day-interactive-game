@@ -38,8 +38,14 @@ export function HostGameControl({
   onCreateNewRoom,
   creating,
 }: HostGameControlProps) {
-  const { phase, deck, currentQuestion, currentQuestionIndex, answerCounts } =
-    state;
+  const {
+    phase,
+    deck,
+    currentQuestion,
+    currentQuestionIndex,
+    answerCounts,
+    answeredCount,
+  } = state;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-6">
@@ -54,12 +60,13 @@ export function HostGameControl({
             onCreateNewRoom={onCreateNewRoom}
             creating={creating}
           />
-        ) : phase === "live" ? (          <LiveView
+        ) : phase === "live" ? (
+          <LiveView
             key="live"
             question={currentQuestion}
             index={currentQuestionIndex}
             startedAtMs={state.questionStartedAtMs}
-            answerCounts={answerCounts}
+            answeredCount={answeredCount}
             onReveal={onReveal}
           />
         ) : phase === "reveal" ? (
@@ -223,13 +230,13 @@ function LiveView({
   question,
   index,
   startedAtMs,
-  answerCounts,
+  answeredCount,
   onReveal,
 }: {
   question: QuizQuestion | null;
   index: number;
   startedAtMs: number | null;
-  answerCounts: Record<string, number>;
+  answeredCount: number;
   onReveal: () => void;
 }) {
   const remainingMs = useQuizCountdown({
@@ -255,7 +262,20 @@ function LiveView({
           {seconds} {seconds === 1 ? "second" : "seconds"} left — auto-reveals at 0
         </p>
       </div>
-      <LiveChart question={question} answerCounts={answerCounts} />
+      <div
+        className="rounded-2xl border border-white/10 bg-zinc-900/60 p-5 text-center"
+        aria-live="polite"
+      >
+        <p className="text-3xl font-bold tabular-nums text-violet-300">
+          {answeredCount}
+        </p>
+        <p className="mt-1 text-sm text-zinc-400">
+          {answeredCount === 1 ? "answer" : "answers"} received
+        </p>
+        <p className="mt-2 text-xs text-zinc-500">
+          Choice results stay hidden until reveal.
+        </p>
+      </div>
       <Button type="button" onClick={onReveal} className="w-full">
         Reveal answers now
       </Button>

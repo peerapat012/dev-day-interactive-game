@@ -18,7 +18,7 @@ A framework-independent `quizWorkflow` core owns phases, timing, scoring, one-an
 4. As an unauthenticated host, I want my deck kept in localStorage and wiped by Clear session, so that stale quiz content does not persist.
 5. As a host, I want a lobby phase where guests can join before the first question, so that late joiners are still included.
 6. As a host, I want to start each question with a countdown that guests see live, so that pacing is clear.
-7. As a host, I want to see live answer counts on a bar chart while the question is open, so that I know how many guests have answered.
+7. As a host, I want to see how many guests have answered while choice results stay hidden until reveal, so that live responses do not expose the distribution early.
 8. As a host, I want to reveal the correct answer and per-guest points after the question, so that guests learn the outcome.
 9. As a host, I want a top-5 leaderboard between questions and a final podium at the end, so that standings are legible.
 10. As a host, I want the full leaderboard for my own view, so that I can address tiebreakers or issues.
@@ -56,7 +56,7 @@ A framework-independent `quizWorkflow` core owns phases, timing, scoring, one-an
 ## Testing Decisions
 
 - Tests cross the framework-independent `quizWorkflow` seam and assert external behavior.
-- Cover phase transitions, countdown/timing, scoring formula, live answer counts, top-5 and full leaderboards, podium, one-answer enforcement, rejection of answers to ended questions, and clear-session behavior.
+- Cover phase transitions, countdown/timing, scoring formula, live answered totals, revealed choice counts, top-5 and full leaderboards, podium, one-answer enforcement, rejection of answers to ended questions, and clear-session behavior.
 - Use in-memory adapters for answer persistence and game state.
 - Done means the workflow tests pass, the existing test suite passes, lint passes, TypeScript type checking passes, and the production build succeeds.
 
