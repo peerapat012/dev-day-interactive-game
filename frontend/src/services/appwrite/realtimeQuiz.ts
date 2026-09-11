@@ -114,6 +114,7 @@ export async function subscribeToQuizAnswers(
     const subscription: RealtimeSubscription = await realtime.subscribe(
       [channel],
       (response) => {
+        if (response.events.some((event) => event.endsWith(".delete"))) return;
         const payload = response.payload as Record<string, unknown> | undefined;
         const answer = mapAnswerPayload(payload ?? {});
         if (!answer || answer.roomId !== roomId) return;
