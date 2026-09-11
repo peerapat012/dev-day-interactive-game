@@ -257,7 +257,6 @@ src/
 │   └── summary/page.tsx           # Server — top 3 cards
 ├── features/
 │   ├── cloud/
-│   │   ├── components/CloudInput.tsx, RawWordCloud.tsx, CloudPageClient.tsx
 │   │   └── hooks/useSubmitEntry.ts, useRealtimeEntries.ts
 │   ├── groups/
 │   │   ├── components/GroupWordCloud.tsx, GroupDetailPanel.tsx
@@ -267,14 +266,12 @@ src/
 │       └── hooks/useTopGroupsSummary.ts
 ├── shared/
 │   ├── components/AppNav.tsx, PageShell.tsx
-│   ├── components/bubble/Bubble.tsx, BubbleField.tsx
 │   ├── components/providers/AppProviders.tsx
-│   ├── hooks/useBubbleLayout.ts
 │   └── ui/Button.tsx, Input.tsx, Modal.tsx
 ├── services/
 │   ├── appwrite/client.ts, auth.ts, entries.ts, realtime.ts
-│   └── ai/classify.ts, summarize.ts, mock.ts
-├── lib/constants.ts, normalizeGroupName.ts, bubbleScale.ts, aggregateEntries.ts
+│   └── ai/generateHostSummary.ts, mock.ts
+├── lib/constants.ts, aggregateEntries.ts
 ├── store/entriesStore.ts
 └── types/entry.ts, api.ts
 ```
@@ -396,21 +393,9 @@ Bootstrap: `src/features/cloud/hooks/useRealtimeEntries.ts`
 4. The existing host workflow persists entry groups and the room snapshot before marking the summary ready.
 5. Entries arriving during generation stay pending for a later refresh; failures preserve the last good summary.
 
-## Bubble rendering
+## Floating text rendering
 
-- **Aggregation:** `buildRawBubbles` (frequency by input text), `buildGroupBubbles` (count per group) in `src/lib/aggregateEntries.ts`.
-- **Sizing:** `scaleBubbleSize` / `scaleFontSize` in `src/lib/bubbleScale.ts` (√ scaling).
-- **Layout:** `useBubbleLayout` — deterministic positions from id hash + collision avoidance.
-- **Components:** memoized `Bubble`, `BubbleField` with `ResizeObserver`.
-
-## Performance tips
-
-- `Bubble` is wrapped in `memo()`.
-- Aggregations use `useMemo`.
-- Layout positions are stable across re-renders (hash-based).
-- Realtime merges incrementally — avoid `listEntries()` after every insert.
-- Use Zustand selectors (`s => s.entries`) not the whole store.
-- **Future:** virtualize at 500+ bubbles; paginate Appwrite with `Query.cursorAfter`.
+Active screens use `FloatingTextField`, `FloatingTextPill`, and `useFloatingTextLayout`.
 
 ## Semantic grouping vs predefined categories
 
@@ -435,35 +420,9 @@ input → classify API → normalized group string → Appwrite → aggregate UI
 
 Possible providers: Pinecone, Qdrant, Weaviate, pgvector. Add behind `services/ai/` without changing UI.
 
-## Avoiding duplicate / similar LLM groups
+## Group labels
 
-### MVP (implemented)
-
-`src/lib/normalizeGroupName.ts`:
-
-- lowercase, trim, remove punctuation
-- alias map (`tech` → `technology`, `dogs` → `animal`)
-- light singularization
-
-### Suggested next steps
-
-1. **Canonical registry** — fuzzy-match new labels against existing groups (Levenshtein / stemmer).
-2. **Embeddings** — merge if cosine similarity > threshold to an existing centroid.
-3. **Prompt constraint** — ask LLM to prefer existing groups when similar.
-4. **Post-process merge** — periodic job to collapse overlapping groups.
-
-### Normalization pipeline
-
-```txt
-raw LLM label
-  → trim / lowercase / remove punctuation
-  → alias dictionary
-  → singularize tokens
-  → optional: match existing groups (fuzzy or embedding)
-  → store canonical `group` only (never raw LLM string in DB)
-```
-
-Always normalize **before** `createEntry()`.
+AI routes preserve model labels; no alias dictionary or singularization is applied.
 
 ## Future scalability
 
@@ -490,6 +449,4 @@ npm run lint     # ESLint
 | `src/services/appwrite/realtime.ts` | Realtime subscription |
 | `src/services/ai/structuredOutput.ts` | Server-only TanStack AI + Gemini structured generation |
 | `src/services/ai/mock.ts` | Fallback mock classify + summarize |
-| `src/lib/normalizeGroupName.ts` | Category normalization |
 | `src/features/cloud/hooks/useSubmitEntry.ts` | Submit → classify → save |
-| `src/shared/components/bubble/BubbleField.tsx` | Shared bubble canvas |
