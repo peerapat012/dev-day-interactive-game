@@ -456,6 +456,7 @@ export function createQuizWorkflow(ports: QuizWorkflowPorts) {
 
     /** Guest-side ingest of the host's broadcast game state (realtime rooms channel). */
     async applyRemoteGameState(nextState: QuizRoomGameState) {
+      if (nextState.phase === "lobby") answers = [];
       startedAtMs = nextState.questionStartedAtMs;
       emit({
         phase: nextState.phase,

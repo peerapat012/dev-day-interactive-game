@@ -552,6 +552,52 @@ describe("quiz leaderboard", () => {
 });
 
 describe("quiz persistence and session", () => {
+  it("clears the guest's previous scores when the host starts a new lobby", async () => {
+    const workflow = createQuizWorkflow(makePorts());
+    await workflow.open("room-1");
+    workflow.setGuests(GUESTS);
+    workflow.setSelfGuest("guest-1");
+    await workflow.applyRemoteGameState({
+      phase: "live",
+      currentQuestionIndex: 0,
+      currentQuestion: DECK.questions[0],
+      questionStartedAtMs: 1_000_000,
+    });
+    workflow.applyRemoteAnswer({
+      roomId: "room-1",
+      questionId: "q1",
+      guestId: "row-1",
+      guestUuid: "guest-1",
+      selectedOptionId: "b",
+      answeredAt: answeredAt(1_000_000, 1_000),
+      isCorrect: true,
+      points: 900,
+    });
+    await workflow.applyRemoteGameState({
+      phase: "podium",
+      currentQuestionIndex: 0,
+      currentQuestion: DECK.questions[0],
+      questionStartedAtMs: 1_000_000,
+    });
+    expect(workflow.getState().leaderboard[0]?.score).toBe(900);
+
+    await workflow.applyRemoteGameState({
+      phase: "lobby",
+      currentQuestionIndex: -1,
+      currentQuestion: null,
+      questionStartedAtMs: null,
+    });
+
+    expect(workflow.getState()).toMatchObject({
+      phase: "lobby",
+      leaderboard: [],
+      topLeaderboard: [],
+      answerCounts: {},
+      answeredCount: 0,
+      myAnswer: null,
+    });
+  });
+
   it("restores the phase and answers on open", async () => {
     const persisted: QuizRoomGameState = {
       phase: "leaderboard",
