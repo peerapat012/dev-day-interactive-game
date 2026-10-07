@@ -1,5 +1,7 @@
 "use client";
 
+import { confirmDialog } from "@/shared/feedback/dialogStore";
+import { toast } from "@/shared/feedback/toastStore";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -7,6 +9,7 @@ import { buildGuestJoinUrl } from "@/lib/guestJoinUrl";
 import { leaveHostRoom } from "@/lib/leaveHostRoom";
 import { clearRoomRows, closeRoomSession } from "@/services/appwrite/rooms";
 import { useEntriesStore } from "@/store/entriesStore";
+import { useRoomStore } from "@/store/roomStore";
 import { Button } from "@/shared/ui/Button";
 
 interface HostRoomTabProps {
@@ -24,14 +27,11 @@ export function HostRoomTab({
 }: HostRoomTabProps) {
   const router = useRouter();
   const setEntries = useEntriesStore((s) => s.setEntries);
+  const setIsSummary = useRoomStore((s) => s.setIsSummary);
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const [clearing, setClearing] = useState(false);
-  const [clearError, setClearError] = useState<string | null>(null);
   const [closing, setClosing] = useState(false);
-  const [closeError, setCloseError] = useState<string | null>(null);
-  const [createError, setCreateError] = useState<string | null>(null);
-  const [createdCode, setCreatedCode] = useState<string | null>(null);
 
   const guestUrl = useMemo(() => buildGuestJoinUrl(roomId), [roomId]);
 
@@ -62,44 +62,41 @@ export function HostRoomTab({
   }
 
   async function handleCreateNewRoom() {
-    if (
-      !window.confirm(
-        "Create a new room with a new code? Current guest link and QR will stop working for this session.",
-      )
-    ) {
-      return;
-    }
+    const confirmed = await confirmDialog({
+      title: "Create a new room?",
+      message:
+        "A new code will be generated. The current guest link and QR will stop working for this session.",
+      confirmLabel: "New room",
+    });
+    if (!confirmed) return;
 
-    setCreateError(null);
-    setCreatedCode(null);
     try {
       const newCode = await onCreateNewRoom();
-      setCreatedCode(newCode);
-      setTimeout(() => setCreatedCode(null), 4000);
+      toast.success(`New room code: ${newCode}`, "New room created");
     } catch (err) {
-      setCreateError(
+      toast.error(
         err instanceof Error ? err.message : "Could not create room",
       );
     }
   }
 
   async function handleCloseRoomSession() {
-    if (
-      !window.confirm(
-        "End this room for everyone? Guests will be cleared off this session, their old QR/link will stop working, and you will return to the home page.",
-      )
-    ) {
-      return;
-    }
+    const confirmed = await confirmDialog({
+      title: "End this room?",
+      message:
+        "Guests will be cleared off this session, their old QR/link will stop working, and you will return to the home page.",
+      confirmLabel: "End room",
+      tone: "danger",
+    });
+    if (!confirmed) return;
 
     setClosing(true);
-    setCloseError(null);
     try {
       await closeRoomSession(roomRowId);
       leaveHostRoom();
       router.replace("/");
     } catch (err) {
-      setCloseError(
+      toast.error(
         err instanceof Error ? err.message : "Could not close the room",
       );
     } finally {
@@ -108,21 +105,23 @@ export function HostRoomTab({
   }
 
   async function handleClear() {
-    if (
-      !window.confirm(
-        "Clear all phrases and saved summaries for this room? Guests keep the same link and can send a new phrase.",
-      )
-    ) {
-      return;
-    }
+    const confirmed = await confirmDialog({
+      title: "Clear all phrases?",
+      message:
+        "All phrases and saved summaries for this room will be removed. Guests keep the same link and can send a new phrase.",
+      confirmLabel: "Clear",
+      tone: "danger",
+    });
+    if (!confirmed) return;
 
     setClearing(true);
-    setClearError(null);
     try {
       await clearRoomRows(roomId);
       setEntries([]);
+      setIsSummary(false);
+      toast.success("All phrases and summaries were cleared.", "Room cleared");
     } catch (err) {
-      setClearError(err instanceof Error ? err.message : "Clear failed");
+      toast.error(err instanceof Error ? err.message : "Clear failed");
     } finally {
       setClearing(false);
     }
@@ -175,15 +174,6 @@ export function HostRoomTab({
         >
           {creating ? "Creating…" : "Create new room"}
         </Button>
-        {createdCode ? (
-          <p className="mt-3 text-center text-sm text-success">
-            New room code:{" "}
-            <span className="font-mono font-bold">{createdCode}</span>
-          </p>
-        ) : null}
-        {createError ? (
-          <p className="mt-3 text-sm text-danger">{createError}</p>
-        ) : null}
       </motion.div>
 
       <motion.div className="rounded-2xl border border-amber-500/25 bg-amber-500/5 p-4">
@@ -200,9 +190,6 @@ export function HostRoomTab({
         >
           {closing ? "Closing session…" : "Close room & end session"}
         </Button>
-        {closeError ? (
-          <p className="mt-3 text-sm text-danger">{closeError}</p>
-        ) : null}
       </motion.div>
 
       <motion.div className="rounded-2xl border border-line bg-surface p-4">
@@ -233,9 +220,6 @@ export function HostRoomTab({
         >
           {clearing ? "Clearing…" : "Clear room data"}
         </Button>
-        {clearError ? (
-          <p className="mt-3 text-sm text-danger">{clearError}</p>
-        ) : null}
       </motion.div>
     </motion.div>
   );

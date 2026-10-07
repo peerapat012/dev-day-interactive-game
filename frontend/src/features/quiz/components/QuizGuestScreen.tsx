@@ -8,6 +8,7 @@ import { HostLeaderboard } from "@/features/quiz/components/HostLeaderboard";
 import { Podium } from "@/features/quiz/components/Podium";
 import { QuizMusicToggle } from "@/features/quiz/components/QuizMusicToggle";
 import { useQuizGuest } from "@/features/quiz/hooks/useQuizGuest";
+import { confirmDialog } from "@/shared/feedback/dialogStore";
 import { Button } from "@/shared/ui/Button";
 
 interface QuizGuestScreenProps {
@@ -72,7 +73,17 @@ export function QuizGuestScreen({ onLeaveRoom }: QuizGuestScreenProps) {
             <Button
               type="button"
               variant="ghost"
-              onClick={onLeaveRoom}
+              onClick={() => {
+                void confirmDialog({
+                  title: "Leave this room?",
+                  message:
+                    "Your nickname and saved room on this device will be cleared. You can scan the QR again to rejoin.",
+                  confirmLabel: "Leave",
+                  tone: "danger",
+                }).then((confirmed) => {
+                  if (confirmed) onLeaveRoom();
+                });
+              }}
               className="shrink-0 px-3 py-1.5 text-xs text-fg-muted hover:text-danger"
             >
               Leave room

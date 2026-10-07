@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/shared/feedback/dialogStore";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -156,13 +157,17 @@ export function QuizHostScreen() {
           type="button"
           variant="ghost"
           onClick={() => {
-            if (
-              window.confirm(
-                "Close this room for everyone? Guests will be cleared, the room link will stop working, and you will return to the home page.",
-              )
-            ) {
-              void host.closeRoom().then(() => router.replace("/"));
-            }
+            void confirmDialog({
+              title: "Close this room?",
+              message:
+                "Guests will be cleared, the room link will stop working, and you will return to the home page.",
+              confirmLabel: "Close room",
+              tone: "danger",
+            }).then((confirmed) => {
+              if (confirmed) {
+                void host.closeRoom().then(() => router.replace("/"));
+              }
+            });
           }}
           disabled={host.closing}
           className="w-full border-amber-500/35 text-accent-text"

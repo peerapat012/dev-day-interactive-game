@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/shared/feedback/dialogStore";
 import { AnimatePresence, motion } from "framer-motion";
 import { useMemo, useState } from "react";
 import { Button } from "@/shared/ui/Button";
@@ -595,9 +596,15 @@ export function DeckEditor({ initialDeck, onStart, onClearSession, auth }: DeckE
           type="button"
           variant="ghost"
           onClick={() => {
-            if (window.confirm("Clear the deck and start a fresh room?")) {
-              onClearSession();
-            }
+            void confirmDialog({
+              title: "Clear session?",
+              message:
+                "The deck will be cleared and you will start a fresh room.",
+              confirmLabel: "Clear",
+              tone: "danger",
+            }).then((confirmed) => {
+              if (confirmed) onClearSession();
+            });
           }}
           className="w-full border-rose-500/30 text-danger"
         >

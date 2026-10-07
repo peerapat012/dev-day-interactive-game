@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/shared/feedback/dialogStore";
 import { motion } from "framer-motion";
 import { useId, useState } from "react";
 import { clearGuestRoomSession } from "@/lib/clearGuestRoomSession";
@@ -112,13 +113,14 @@ export function GuestJoinForm({
   }
 
   async function handleClearDevice() {
-    if (
-      !window.confirm(
-        "Clear saved room and nickname on this device? You can join again with a fresh room code.",
-      )
-    ) {
-      return;
-    }
+    const confirmed = await confirmDialog({
+      title: "Clear this device?",
+      message:
+        "Saved room and nickname on this device will be cleared. You can join again with a fresh room code.",
+      confirmLabel: "Clear",
+      tone: "danger",
+    });
+    if (!confirmed) return;
     await leaveGuestRoom();
     setName("");
     setRoomInput("");

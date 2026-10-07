@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { leaveGuestRoom } from "@/lib/leaveGuestRoom";
+import { alertDialog } from "@/shared/feedback/dialogStore";
 import { getRoomByCode } from "@/services/appwrite/rooms";
 import { useRoomStore } from "@/store/roomStore";
 
@@ -32,10 +33,13 @@ export function useRoomClosedKick(active: boolean, onKicked: () => void) {
         if (cancelled || warnedRef.current) return;
         if (!room) {
           warnedRef.current = true;
+          void alertDialog({
+            title: "Session ended",
+            message:
+              "The host ended this session. This device was cleared — join again with a fresh QR from the host.",
+            confirmLabel: "Got it",
+          });
           void leaveGuestRoom().then(() => onKickedRef.current());
-          window.alert(
-            "The host ended this session. This device was cleared — join again with a fresh QR from the host.",
-          );
         }
       } catch {
         /* transient network; retry on next tick */

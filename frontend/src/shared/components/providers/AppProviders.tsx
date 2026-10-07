@@ -5,6 +5,8 @@ import { useRealtimeEntries } from "@/features/cloud/hooks/useRealtimeEntries";
 import { ensureGuestSession } from "@/services/appwrite/auth";
 import { useThemeStore } from "@/shared/theme/themeStore";
 import { PlayerGate } from "@/shared/components/PlayerGate";
+import { DialogHost } from "@/shared/ui/DialogHost";
+import { Toaster } from "@/shared/ui/Toaster";
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   useRealtimeEntries();
@@ -14,5 +16,11 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
     void ensureGuestSession().catch(() => undefined);
   }, []);
 
-  return <PlayerGate>{children}</PlayerGate>;
+  return (
+    <>
+      <PlayerGate>{children}</PlayerGate>
+      <DialogHost />
+      <Toaster />
+    </>
+  );
 }

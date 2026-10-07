@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/shared/feedback/dialogStore";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { GuestEntriesFeed } from "@/features/guest/components/GuestEntriesFeed";
@@ -38,14 +39,15 @@ export function GuestMessagePanel({ onLeaveRoom }: GuestMessagePanelProps) {
     }
   }
 
-  function handleLeaveRoom() {
-    if (
-      !window.confirm(
-        "Leave this room? Your nickname and saved room on this device will be cleared. You can scan the QR again to rejoin.",
-      )
-    ) {
-      return;
-    }
+  async function handleLeaveRoom() {
+    const confirmed = await confirmDialog({
+      title: "Leave this room?",
+      message:
+        "Your nickname and saved room on this device will be cleared. You can scan the QR again to rejoin.",
+      confirmLabel: "Leave",
+      tone: "danger",
+    });
+    if (!confirmed) return;
     void leaveGuestRoom().then(() => onLeaveRoom?.());
   }
 
