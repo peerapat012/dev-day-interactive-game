@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { GuestJoinForm } from "@/features/guest/components/GuestJoinForm";
 import { GuestMessagePanel } from "@/features/guest/components/GuestMessagePanel";
 import { useRoomClosedKick } from "@/features/guest/hooks/useRoomClosedKick";
+import { useRoomModeSync } from "@/features/guest/hooks/useRoomModeSync";
 import { QuizGuestScreen } from "@/features/quiz/components/QuizGuestScreen";
 import { readJoinFormEpoch } from "@/lib/guestJoinEpoch";
 import {
@@ -56,6 +57,7 @@ export function GuestScreen() {
   const canShowLobby = storesReady && sessionIsLive && (joined || resumeFromQr);
 
   useRoomClosedKick(canShowLobby, onRoomClosedByHost);
+  useRoomModeSync(canShowLobby);
 
   useEffect(() => onGuestStoresHydrated(() => setStoresReady(true)), []);
 

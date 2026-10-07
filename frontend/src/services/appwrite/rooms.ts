@@ -7,6 +7,7 @@ import { findUnknownOptionalColumns, withoutColumns } from "@/lib/roomOptionalCo
 import { getAppwriteClient } from "@/services/appwrite/client";
 import { ensureGuestSession } from "@/services/appwrite/auth";
 import { resetGuestsSubmissionForRoom } from "@/services/appwrite/guests";
+import { clearAnswersByRoom } from "@/services/appwrite/quizAnswers";
 import type { Room, RoomDocument, RoomSnapshot, SavedRoundSnapshot } from "@/types/room";
 import type { RoomMode } from "@/types/quiz";
 import type { SummarizeResultItem } from "@/types/api";
@@ -172,6 +173,31 @@ export async function createRoomWithMode(mode: RoomMode): Promise<Room> {
   };
 
   const row = await createRoomRow(data);
+  return mapRoom(row);
+}
+
+/**
+ * Change a room's mode in place: same code, row and guests. Word cloud data is
+ * kept; entering quiz always starts from a fresh lobby (no old answers/state).
+ */
+export async function switchRoomMode(
+  roomRowId: string,
+  roomId: string,
+  mode: RoomMode,
+): Promise<Room> {
+  await ensureGuestSession();
+  assertConfig();
+
+  const patch: Partial<RoomDocument> = {
+    mode,
+    updatedAt: new Date().toISOString(),
+  };
+  if (mode === "quiz") {
+    await clearAnswersByRoom(roomId);
+    patch.gameStateJson = "";
+  }
+
+  const row = await updateRoomRow(roomRowId, patch);
   return mapRoom(row);
 }
 

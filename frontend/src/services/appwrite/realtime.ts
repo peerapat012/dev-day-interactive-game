@@ -3,6 +3,7 @@ import { APPWRITE } from "@/lib/constants";
 import { getAppwriteClient } from "@/services/appwrite/client";
 import { ensureGuestSession } from "@/services/appwrite/auth";
 import type { Entry } from "@/types/entry";
+import type { RoomMode } from "@/types/quiz";
 
 export type EntryRealtimeHandler = (entry: Entry, event: string[]) => void;
 
@@ -138,6 +139,46 @@ export async function subscribeToRoundQuestion(
     };
   } catch (err) {
     console.warn("[realtime] round question subscribe failed:", err);
+    return { connected: false, unsubscribe: () => undefined };
+  }
+}
+
+/** Subscribe to `mode` changes on one room's row (host switched game mode). */
+export async function subscribeToRoomMode(
+  roomId: string,
+  onMode: (mode: RoomMode) => void,
+): Promise<SubscribeResult> {
+  if (!APPWRITE.databaseId || !APPWRITE.roomsTableId || !roomId.trim()) {
+    return { connected: false, unsubscribe: () => undefined };
+  }
+
+  await ensureGuestSession();
+
+  const channel = Channel.tablesdb(APPWRITE.databaseId)
+    .table(APPWRITE.roomsTableId)
+    .row();
+
+  try {
+    const realtime = getRealtimeService();
+    const subscription: RealtimeSubscription = await realtime.subscribe(
+      [channel],
+      (response) => {
+        if (response.events?.some((event) => event.endsWith(".delete"))) return;
+        const payload = response.payload as Record<string, unknown> | undefined;
+        if (!payload || (payload.roomId as string) !== roomId) return;
+        onMode(payload.mode === "quiz" ? "quiz" : "wordcloud");
+      },
+      [Query.equal("roomId", roomId)],
+    );
+
+    return {
+      connected: true,
+      unsubscribe: () => {
+        void subscription.unsubscribe();
+      },
+    };
+  } catch (err) {
+    console.warn("[realtime] room mode subscribe failed:", err);
     return { connected: false, unsubscribe: () => undefined };
   }
 }

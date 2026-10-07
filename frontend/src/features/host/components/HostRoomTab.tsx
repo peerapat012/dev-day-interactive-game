@@ -5,7 +5,9 @@ import { toast } from "@/shared/feedback/toastStore";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { useSwitchRoomMode } from "@/features/host/hooks/useSwitchRoomMode";
 import { buildGuestJoinUrl } from "@/lib/guestJoinUrl";
+import { modeLabel } from "@/lib/roomMode";
 import { leaveHostRoom } from "@/lib/leaveHostRoom";
 import { clearRoomRows, closeRoomSession } from "@/services/appwrite/rooms";
 import { useEntriesStore } from "@/store/entriesStore";
@@ -32,6 +34,12 @@ export function HostRoomTab({
   const [copiedCode, setCopiedCode] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [closing, setClosing] = useState(false);
+
+  const { switching, target, switchMode } = useSwitchRoomMode(
+    "wordcloud",
+    roomId,
+    roomRowId,
+  );
 
   const guestUrl = useMemo(() => buildGuestJoinUrl(roomId), [roomId]);
 
@@ -173,6 +181,22 @@ export function HostRoomTab({
           className="mt-3 w-full"
         >
           {creating ? "Creating…" : "Create new room"}
+        </Button>
+      </motion.div>
+
+      <motion.div className="rounded-2xl border border-line bg-surface p-4">
+        <p className="text-sm text-fg-secondary">
+          Run a quiz in this same room. The code and guests stay; their screens
+          switch automatically.
+        </p>
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={() => void switchMode()}
+          disabled={switching || creating || clearing || closing}
+          className="mt-3 w-full"
+        >
+          {switching ? "Switching…" : `Switch to ${modeLabel(target)}`}
         </Button>
       </motion.div>
 

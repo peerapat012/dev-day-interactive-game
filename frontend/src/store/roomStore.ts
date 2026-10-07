@@ -20,6 +20,7 @@ interface RoomState {
     mode?: RoomMode,
   ) => void;
   setIsSummary: (isSummary: boolean) => void;
+  setMode: (mode: RoomMode) => void;
   setGuestId: (guestId: string) => void;
   setHasSubmitted: (hasSubmitted: boolean) => void;
   clearRoom: () => void;
@@ -37,6 +38,7 @@ export const useRoomStore = create<RoomState>()(
       setRoom: (roomId, roomRowId, isSummary = false, mode = "wordcloud") =>
         set({ roomId, roomRowId, isSummary, mode }),
       setIsSummary: (isSummary) => set({ isSummary }),
+      setMode: (mode) => set({ mode }),
       setGuestId: (guestId) => set({ guestId }),
       setHasSubmitted: (hasSubmitted) => set({ hasSubmitted }),
       clearRoom: () =>

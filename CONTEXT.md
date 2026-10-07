@@ -85,3 +85,7 @@ _Avoid_: scoreboard, standings
 **Quiz reset**:
 The transition from a finished quiz's podium back to a fresh lobby in the same room, clearing the room's answers, so the host can build and run another quiz.
 _Avoid_: restart, replay
+
+**Mode switch**:
+The host changing a live room between Word Cloud and Quiz in place. The room code, row and guests stay; guest screens follow the new mode automatically. Word cloud data is kept; entering Quiz always starts from a fresh lobby with no old answers.
+_Avoid_: change game, new room

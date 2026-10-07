@@ -8,12 +8,18 @@ import { DeckEditor } from "@/features/quiz/components/DeckEditor";
 import { HostAuthChoice } from "@/features/quiz/components/HostAuthChoice";
 import { HostGameControl } from "@/features/quiz/components/HostGameControl";
 import { QuizMusicToggle } from "@/features/quiz/components/QuizMusicToggle";
+import { useSwitchRoomMode } from "@/features/host/hooks/useSwitchRoomMode";
 import { useQuizHost } from "@/features/quiz/hooks/useQuizHost";
 import { Button } from "@/shared/ui/Button";
 
 export function QuizHostScreen() {
   const router = useRouter();
   const host = useQuizHost();
+  const { switching, switchMode } = useSwitchRoomMode(
+    "quiz",
+    host.roomId,
+    host.roomRowId,
+  );
   const inGame = Boolean(host.wfState && host.wfState.deck);
   const [authDismissed, setAuthDismissed] = useState(false);
 
@@ -142,6 +148,22 @@ export function QuizHostScreen() {
           }}
         />
       )}
+
+      <section className="flex flex-col gap-2 rounded-2xl border border-line bg-surface p-4">
+        <p className="text-sm text-fg-muted">
+          Go back to the word cloud in this same room. The code and guests stay;
+          their screens switch automatically.
+        </p>
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={() => void switchMode()}
+          disabled={switching || host.closing}
+          className="w-full"
+        >
+          {switching ? "Switching…" : "Switch to Word Cloud"}
+        </Button>
+      </section>
 
       <motion.section
         className="flex flex-col gap-2 rounded-2xl border border-amber-500/25 bg-amber-500/5 p-4"
