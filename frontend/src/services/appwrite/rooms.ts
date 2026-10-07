@@ -288,8 +288,9 @@ export async function updateRoundQuestion(
     return mapRoom(row as unknown as Record<string, unknown>);
   } catch (error) {
     if (findUnknownOptionalColumns(error).includes("roundQuestion")) {
+      const detail = error instanceof Error ? error.message : String(error);
       throw new Error(
-        'Add a "roundQuestion" string column (size 500, optional) to the rooms table to use round questions.',
+        `Could not save "roundQuestion". Check the rooms table has a string column named exactly "roundQuestion" (size 500, optional). Appwrite said: ${detail}`,
       );
     }
     throw error;
