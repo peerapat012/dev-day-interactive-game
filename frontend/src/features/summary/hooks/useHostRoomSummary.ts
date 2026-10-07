@@ -202,6 +202,23 @@ export function useHostRoomSummary() {
     resolveSavedOrGenerate,
   ]);
 
+  // Room data was cleared elsewhere (isSummary dropped): discard the stale summary.
+  const isSummary = useRoomStore((s) => s.isSummary);
+  useEffect(() => {
+    if (!roomRowId || isSummary || state.status !== "ready") return;
+
+    stateByRoomRef.current.delete(roomRowId);
+    const operation = ++operationRef.current;
+    busyRef.current = false;
+    commitState(roomRowId, operation, {
+      status: "empty",
+      groups: [],
+      summaries: [],
+      question: "",
+      error: null,
+    });
+  }, [commitState, isSummary, roomRowId, state.status]);
+
   const retry = useCallback(async () => {
     if (!roomRowId || busyRef.current) return;
 
