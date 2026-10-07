@@ -21,5 +21,8 @@ export const BUBBLE = {
 
 export const TOP_GROUPS_COUNT = 5;
 
+/** Max characters for the host-authored round question. */
+export const ROUND_QUESTION_MAX_LENGTH = 500;
+
 /** Stored on new rows until Summary runs classification. */
 export const PENDING_GROUP = "";

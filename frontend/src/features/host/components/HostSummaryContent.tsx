@@ -7,7 +7,10 @@ import { useHostRoomSummary } from "@/features/summary/hooks/useHostRoomSummary"
 import { getGroupContributors } from "@/lib/aggregateEntries";
 import { buildContributorTags } from "@/lib/contributorTags";
 import { getSummaryTopicLabel } from "@/lib/hostSummaryState";
+import { ROUND_QUESTION_MAX_LENGTH } from "@/lib/constants";
 import { Button } from "@/shared/ui/Button";
+import { Input } from "@/shared/ui/Input";
+import { RoundQuestionCard } from "@/shared/ui/RoundQuestionCard";
 import { GuestNameBubbles } from "@/shared/ui/GuestNameBubbles";
 
 const RANK_STYLES = [
@@ -28,12 +31,14 @@ function summaryGridClass(count: number): string {
 
 export function HostSummaryContent() {
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [nextQuestion, setNextQuestion] = useState("");
   const {
     status,
     topGroups,
     summaries,
     busy,
     error,
+    question,
     isResetting,
     entryCount,
     retry,
@@ -74,6 +79,8 @@ export function HostSummaryContent() {
           </span>
         )}
       </motion.div>
+
+      <RoundQuestionCard question={question} />
 
       <motion.div
         initial={{ opacity: 0 }}
@@ -204,9 +211,21 @@ export function HostSummaryContent() {
             Clears guest inputs and the active summary for this room. Guests stay
             in the room and can submit again — no need to scan the QR code again.
           </p>
+          <Input
+            value={nextQuestion}
+            onChange={(e) => setNextQuestion(e.target.value)}
+            placeholder="Next round question (optional)"
+            maxLength={ROUND_QUESTION_MAX_LENGTH}
+            disabled={busy}
+            className="mt-4"
+          />
           <Button
             type="button"
-            onClick={() => void beginNewRound()}
+            onClick={() => {
+              void beginNewRound(nextQuestion).then((started) => {
+                if (started) setNextQuestion("");
+              });
+            }}
             disabled={busy}
             className="mt-4 w-full sm:w-auto"
           >

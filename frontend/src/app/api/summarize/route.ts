@@ -1,6 +1,7 @@
 import { isMockAiEnabled } from "@/lib/llmServerConfig";
 import { aiErrorResponse } from "@/services/ai/apiError";
 import { summarizeRequestSchema } from "@/services/ai/requestSchemas";
+import { normalizeRoundQuestion } from "@/lib/roundQuestion";
 import { NextResponse } from "next/server";
 import { joinGroupInputs } from "@/lib/joinGroupInputs";
 import { summarizeWithLlm } from "@/services/ai/summarizeLlm";
@@ -28,6 +29,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
   const body = parsed.data;
+  const question = normalizeRoundQuestion(body.question) || undefined;
   const groups = Array.isArray(body.groups) ? body.groups : [];
 
   if (groups.length === 0) {
@@ -54,7 +56,7 @@ export async function POST(request: Request) {
 
     const summaries = isMockAiEnabled()
       ? mockSummarizeBatch(payloads)
-      : await summarizeWithLlm(payloads);
+      : await summarizeWithLlm(payloads, question);
 
     const response: SummarizeBatchResponse = { summaries };
     return NextResponse.json(response);

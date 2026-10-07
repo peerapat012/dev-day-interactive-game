@@ -1,6 +1,7 @@
 import { isMockAiEnabled } from "@/lib/llmServerConfig";
 import { aiErrorResponse } from "@/services/ai/apiError";
 import { classifyRequestSchema } from "@/services/ai/requestSchemas";
+import { normalizeRoundQuestion } from "@/lib/roundQuestion";
 import { NextResponse } from "next/server";
 import { orchestrateHostSummary } from "@/lib/orchestrateHostSummary";
 import { classifyBatchWithLlm } from "@/services/ai/classifyBatch";
@@ -37,6 +38,7 @@ export async function POST(request: Request) {
   }
   const body = parsed.data;
 
+  const question = normalizeRoundQuestion(body.question) || undefined;
   const items = normalizeItems(body);
   if (items.length === 0) {
     return NextResponse.json(
@@ -46,14 +48,20 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await orchestrateHostSummary(items, {
-      classify: async (pendingItems) =>
-        isMockAiEnabled()
-          ? mockClassifyBatch(pendingItems)
-          : (await classifyBatchWithLlm(pendingItems)).results,
-      summarize: async (groups) =>
-        isMockAiEnabled() ? mockSummarizeBatch(groups) : summarizeWithLlm(groups),
-    });
+    const result = await orchestrateHostSummary(
+      items,
+      {
+        classify: async (pendingItems, roundQuestion) =>
+          isMockAiEnabled()
+            ? mockClassifyBatch(pendingItems)
+            : (await classifyBatchWithLlm(pendingItems, roundQuestion)).results,
+        summarize: async (groups, roundQuestion) =>
+          isMockAiEnabled()
+            ? mockSummarizeBatch(groups)
+            : summarizeWithLlm(groups, roundQuestion),
+      },
+      question,
+    );
 
     return NextResponse.json(result);
   } catch (err) {

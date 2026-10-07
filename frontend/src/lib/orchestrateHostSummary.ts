@@ -13,9 +13,11 @@ import type { GroupContributor, GroupStat } from "@/types/entry";
 interface HostSummaryDependencies {
   classify: (
     items: ClassifyBatchItem[],
+    question?: string,
   ) => Promise<Array<{ id: string; group: string }>>;
   summarize: (
     groups: SummarizeGroupPayload[],
+    question?: string,
   ) => Promise<SummarizeResultItem[]>;
 }
 
@@ -29,9 +31,11 @@ function contributorFromItem(item: HostSummaryGenerateItem): GroupContributor {
 export async function orchestrateHostSummary(
   items: HostSummaryGenerateItem[],
   dependencies: HostSummaryDependencies,
+  question?: string,
 ): Promise<HostSummaryGenerateResponse> {
   const classified = await dependencies.classify(
     items.map(({ id, input }) => ({ id, input })),
+    question,
   );
   const groupById = new Map(
     classified.map((item) => [item.id, item.group.trim()]),
@@ -73,6 +77,7 @@ export async function orchestrateHostSummary(
       group: group.group,
       inputs: joinGroupInputs(group.inputs),
     })),
+    question,
   );
   const summaryByGroup = new Map(
     generated.map((summary) => [summary.group, summary]),

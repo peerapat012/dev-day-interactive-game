@@ -12,6 +12,10 @@ _Avoid_: session, lobby
 One active collection of guest entries in a host room, ending when the host accepts or replaces its summary and begins collecting a new collection.
 _Avoid_: run, cycle
 
+**Round question**:
+An optional prompt the host sets for a round (for example "What worries you most about AI?"). Guests see it while submitting, and AI grouping and summaries interpret entries as answers to it. A new round starts with the host's next question or none. It is stored on the host room, read when a summary is generated, and kept with the saved round.
+_Avoid_: topic, prompt, theme
+
 **Saved round**:
 A completed round retained as historical output, including its groups and summaries, after the host moves on to a new round. A round is not saved until it has an active summary; earlier versions created by Refresh summary are summary snapshots, not saved rounds.
 _Avoid_: history item, archive

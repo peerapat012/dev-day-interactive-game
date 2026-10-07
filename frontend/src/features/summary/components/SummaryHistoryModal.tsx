@@ -8,6 +8,7 @@ import { getGroupContributors } from "@/lib/aggregateEntries";
 import { buildContributorTags } from "@/lib/contributorTags";
 import { getSummaryTopicLabel } from "@/lib/hostSummaryState";
 import { Modal } from "@/shared/ui/Modal";
+import { RoundQuestionCard } from "@/shared/ui/RoundQuestionCard";
 import { Button } from "@/shared/ui/Button";
 import {
   MAX_VISIBLE_GUEST_TAGS,
@@ -113,6 +114,11 @@ function HistoryList({
               <span className="text-sm font-semibold text-zinc-100">
                 Round {roundNumber}
               </span>
+              {round.question?.trim() ? (
+                <span className="line-clamp-2 text-xs text-violet-200">
+                  {round.question.trim()}
+                </span>
+              ) : null}
               <span className="text-xs text-zinc-400">
                 {formatSavedAt(round.savedAt)}
               </span>
@@ -140,6 +146,7 @@ function HistoryRoundDetail({
         ← Back to list
       </Button>
       <p className="text-xs text-zinc-500">{formatSavedAt(snapshot.savedAt)}</p>
+      <RoundQuestionCard question={snapshot.question ?? ""} />
 
       <ul className="flex flex-col gap-3">
         {snapshot.summaries.map((card, index) => {

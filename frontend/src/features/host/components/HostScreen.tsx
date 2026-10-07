@@ -55,7 +55,7 @@ function HostTabPanel({
         />
       </div>
       <div className={activeTab === "inputs" ? "flex min-h-0 flex-1 flex-col" : "hidden"}>
-        <HostInputsTab roomId={roomId} />
+        <HostInputsTab roomId={roomId} roomRowId={roomRowId} />
       </div>
       <div className={activeTab === "summary" ? "flex min-h-0 flex-1 flex-col" : "hidden"}>
         <HostSummaryTab />

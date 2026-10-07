@@ -18,6 +18,8 @@ export interface SavedRoundSnapshot {
   savedAt: string;
   groups: GroupStat[];
   summaries: SummarizeResultItem[];
+  /** Round question the saved entries answered, when the host set one. */
+  question?: string;
 }
 
 export interface RoomDocument {
@@ -32,6 +34,11 @@ export interface RoomDocument {
    */
   isSummary: boolean;
   lastSavedAt?: string;
+  /**
+   * Optional host-authored question for the active word cloud round. Needs a
+   * `roundQuestion` string column on the rooms table; readers default to "".
+   */
+  roundQuestion?: string;
   /** Word Cloud or Quiz game mode. Defaults to "wordcloud" on the rooms table. */
   mode: RoomMode;
   /** Quiz host game state serialized as JSON (`QuizRoomGameState`). */
@@ -48,4 +55,5 @@ export interface RoomSnapshot {
   groups: GroupStat[];
   summaries: SummarizeResultItem[];
   isSummary: boolean;
+  roundQuestion?: string;
 }

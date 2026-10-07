@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getTopGroups } from "@/lib/aggregateEntries";
+import { normalizeRoundQuestion } from "@/lib/roundQuestion";
 import { TOP_GROUPS_COUNT } from "@/lib/constants";
 import {
   getDisplaySummaries,
@@ -30,6 +31,8 @@ interface SummaryState {
   status: HostSummaryStatus;
   groups: GroupStat[];
   summaries: SummarizeResultItem[];
+  /** Round question the active summary was generated for ("" when none). */
+  question: string;
   error: string | null;
 }
 
@@ -37,6 +40,7 @@ const INITIAL_STATE: SummaryState = {
   status: "loading_saved",
   groups: [],
   summaries: [],
+  question: "",
   error: null,
 };
 
@@ -109,6 +113,7 @@ export function useHostRoomSummary() {
             status: "ready",
             groups: snapshot.groups,
             summaries: snapshot.summaries,
+            question: snapshot.roundQuestion ?? "",
             error: null,
           });
           return;
@@ -120,15 +125,18 @@ export function useHostRoomSummary() {
             status: "empty",
             groups: [],
             summaries: [],
+            question: snapshot.roundQuestion ?? "",
             error: null,
           });
           return;
         }
 
+        const question = snapshot.roundQuestion ?? "";
         commitState(targetRoomRowId, operation, {
           status: "generating",
           groups: [],
           summaries: [],
+          question,
           error: null,
         });
         const result = await generateAndSaveHostSummary(targetRoomRowId, {
@@ -137,12 +145,14 @@ export function useHostRoomSummary() {
             input: entry.input,
             name: entry.name,
           })),
+          question,
         });
         setIsSummary(true);
         commitState(targetRoomRowId, operation, {
           status: "ready",
           groups: result.groups,
           summaries: result.summaries,
+          question,
           error: null,
         });
       } catch (error) {
@@ -150,6 +160,7 @@ export function useHostRoomSummary() {
           status: "error",
           groups: [],
           summaries: [],
+          question: "",
           error: getErrorMessage(error, "Failed to load or generate summary"),
         });
       } finally {
@@ -220,6 +231,7 @@ export function useHostRoomSummary() {
         status: "error",
         groups: [],
         summaries: [],
+        question: "",
         error: "No submissions are available to regenerate this summary.",
       });
       return;
@@ -234,9 +246,11 @@ export function useHostRoomSummary() {
     });
 
     try {
+      const { roundQuestion = "" } = await getRoomSnapshot(roomRowId);
       await saveRoomRound(roomRowId, {
         groups: state.groups,
         summaries: state.summaries,
+        question: state.question,
       });
       const result = await generateAndSaveHostSummary(roomRowId, {
         items: currentEntries.map((entry) => ({
@@ -244,12 +258,14 @@ export function useHostRoomSummary() {
           input: entry.input,
           name: entry.name,
         })),
+        question: roundQuestion,
       });
       setIsSummary(true);
       commitState(roomRowId, operation, {
         status: "ready",
         groups: result.groups,
         summaries: result.summaries,
+        question: roundQuestion,
         error: null,
       });
     } catch (error) {
@@ -260,6 +276,7 @@ export function useHostRoomSummary() {
           status: snapshot.summaries.length > 0 ? "ready" : "error",
           groups: snapshot.groups,
           summaries: snapshot.summaries,
+          question: snapshot.roundQuestion ?? "",
           error: getErrorMessage(error, "Failed to regenerate summary"),
         });
       } catch {
@@ -267,6 +284,7 @@ export function useHostRoomSummary() {
           status: "error",
           groups: state.groups,
           summaries: state.summaries,
+          question: state.question,
           error: getErrorMessage(error, "Failed to regenerate summary"),
         });
       }
@@ -277,7 +295,8 @@ export function useHostRoomSummary() {
     }
   }, [commitState, roomRowId, setIsSummary, state]);
 
-  const beginNewRound = useCallback(async () => {
+  /** Resolves true only when the new round was started. */
+  const beginNewRound = useCallback(async (nextQuestion = ""): Promise<boolean> => {
     if (
       !roomId ||
       !roomRowId ||
@@ -285,7 +304,7 @@ export function useHostRoomSummary() {
       state.status !== "ready" ||
       state.summaries.length === 0
     ) {
-      return;
+      return false;
     }
 
     busyRef.current = true;
@@ -295,8 +314,9 @@ export function useHostRoomSummary() {
       await saveRoomRound(roomRowId, {
         groups: state.groups,
         summaries: state.summaries,
+        question: state.question,
       });
-      await startNewRound(roomId, roomRowId);
+      await startNewRound(roomId, roomRowId, nextQuestion);
       if (
         mountedRef.current &&
         useRoomStore.getState().roomRowId === roomRowId &&
@@ -308,16 +328,20 @@ export function useHostRoomSummary() {
           status: "empty",
           groups: [],
           summaries: [],
+          question: normalizeRoundQuestion(nextQuestion),
           error: null,
         });
       }
+      return true;
     } catch (error) {
       commitState(roomRowId, operation, {
         status: "error",
         groups: [],
         summaries: [],
+        question: "",
         error: getErrorMessage(error, "Failed to start new round"),
       });
+      return false;
     } finally {
       if (operationRef.current === operation) {
         busyRef.current = false;
@@ -340,6 +364,7 @@ export function useHostRoomSummary() {
     topGroups,
     summaries: displaySummaries,
     error: state.error,
+    question: state.question,
     isHydrated,
     isResetting,
     busy:

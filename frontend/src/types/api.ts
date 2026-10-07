@@ -13,6 +13,8 @@ export interface HostSummaryGenerateItem extends ClassifyBatchItem {
 /** Client → Next.js POST /api/classify */
 export interface ClassifyBatchRequest {
   items: ClassifyBatchItem[];
+  /** Optional host-authored round question the entries answer. */
+  question?: string;
 }
 
 export interface ClassifyBatchResultItem {
@@ -39,6 +41,8 @@ export interface SummarizeGroupPayload {
 /** Client → Next.js /api/summarize */
 export interface SummarizeBatchRequest {
   groups: SummarizeGroupPayload[];
+  /** Optional host-authored round question the entries answer. */
+  question?: string;
 }
 
 /** UI summary card */
@@ -59,6 +63,8 @@ export interface SummarizeBatchResponse {
 /** Client → Next.js POST /api/host-summary/generate */
 export interface HostSummaryGenerateRequest {
   items: HostSummaryGenerateItem[];
+  /** Optional host-authored round question captured with the entry snapshot. */
+  question?: string;
 }
 
 /** Classification data returned only so the client can persist the room snapshot. */

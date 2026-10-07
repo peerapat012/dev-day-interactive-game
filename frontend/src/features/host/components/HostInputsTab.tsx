@@ -3,14 +3,18 @@
 import { motion } from "framer-motion";
 import { useMemo } from "react";
 import { buildFloatingItemsFromEntries } from "@/lib/buildFloatingTextItems";
+import { useRoundQuestion } from "@/features/cloud/hooks/useRoundQuestion";
+import { RoundQuestionEditor } from "@/features/host/components/RoundQuestionEditor";
 import { FloatingTextField } from "@/shared/components/floating-text/FloatingTextField";
 import { useEntriesStore } from "@/store/entriesStore";
 
 interface HostInputsTabProps {
   roomId: string;
+  roomRowId: string;
 }
 
-export function HostInputsTab({ roomId }: HostInputsTabProps) {
+export function HostInputsTab({ roomId, roomRowId }: HostInputsTabProps) {
+  const { question, setQuestion } = useRoundQuestion(roomId);
   const entries = useEntriesStore((s) => s.entries);
   const isHydrated = useEntriesStore((s) => s.isHydrated);
 
@@ -38,6 +42,11 @@ export function HostInputsTab({ roomId }: HostInputsTabProps) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
+      <RoundQuestionEditor
+        roomRowId={roomRowId}
+        question={question}
+        onSaved={setQuestion}
+      />
       <p className="text-sm text-zinc-400">
         {roomEntries.length === 0
           ? "No guest phrases yet."

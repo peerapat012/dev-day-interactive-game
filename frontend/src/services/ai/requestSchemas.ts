@@ -1,4 +1,7 @@
 import { z } from "zod";
+import { ROUND_QUESTION_MAX_LENGTH } from "@/lib/constants";
+
+const roundQuestionSchema = z.string().max(ROUND_QUESTION_MAX_LENGTH).optional();
 
 export const classifyRequestSchema = z.object({
   items: z.array(z.object({
@@ -6,6 +9,7 @@ export const classifyRequestSchema = z.object({
     input: z.string(),
     name: z.string().optional(),
   })),
+  question: roundQuestionSchema,
 });
 
 export const summarizeRequestSchema = z.object({
@@ -13,6 +17,7 @@ export const summarizeRequestSchema = z.object({
     group: z.string(),
     inputs: z.union([z.string(), z.array(z.string())]).optional(),
   })),
+  question: roundQuestionSchema,
 });
 
 export const questionsRequestSchema = z.object({

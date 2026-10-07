@@ -40,15 +40,21 @@ describe("orchestrateHostSummary", () => {
     });
 
     expect(calls).toEqual(["classify", "summarize"]);
-    expect(classify).toHaveBeenCalledWith([
-      { id: "1", input: "React hooks" },
-      { id: "2", input: "Next.js routing" },
-      { id: "3", input: "Spicy ramen" },
-    ]);
-    expect(summarize).toHaveBeenCalledWith([
-      { group: "Frameworks", inputs: "React hooks, Next.js routing" },
-      { group: "Food", inputs: "Spicy ramen" },
-    ]);
+    expect(classify).toHaveBeenCalledWith(
+      [
+        { id: "1", input: "React hooks" },
+        { id: "2", input: "Next.js routing" },
+        { id: "3", input: "Spicy ramen" },
+      ],
+      undefined,
+    );
+    expect(summarize).toHaveBeenCalledWith(
+      [
+        { group: "Frameworks", inputs: "React hooks, Next.js routing" },
+        { group: "Food", inputs: "Spicy ramen" },
+      ],
+      undefined,
+    );
     expect(result.entryGroups).toEqual([
       { id: "1", group: "Frameworks" },
       { id: "2", group: "Frameworks" },
@@ -122,5 +128,30 @@ describe("orchestrateHostSummary", () => {
         ],
       }),
     ).rejects.toThrow("must have a Thai description");
+  });
+  it("passes the round question to classification and summarization", async () => {
+    const classify = vi.fn(async () => [{ id: "1", group: "ข้อมูลรั่วไหล" }]);
+    const summarize = vi.fn(async () => [
+      {
+        group: "ข้อมูลรั่วไหล",
+        topic: "ข้อมูลรั่วไหล",
+        summary: "กลุ่มนี้กังวลว่าข้อมูลส่วนตัวอาจรั่วไหลเมื่อใช้ AI",
+      },
+    ]);
+
+    await orchestrateHostSummary(
+      [{ id: "1", input: "กลัวข้อมูลรั่ว", name: "Alice" }],
+      { classify, summarize },
+      "กังวลอะไรเรื่อง AI",
+    );
+
+    expect(classify).toHaveBeenCalledWith(
+      [{ id: "1", input: "กลัวข้อมูลรั่ว" }],
+      "กังวลอะไรเรื่อง AI",
+    );
+    expect(summarize).toHaveBeenCalledWith(
+      [{ group: "ข้อมูลรั่วไหล", inputs: "กลัวข้อมูลรั่ว" }],
+      "กังวลอะไรเรื่อง AI",
+    );
   });
 });

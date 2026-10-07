@@ -1,7 +1,9 @@
 import { ID, Permission, Query, Role, TablesDB } from "appwrite";
 import { APPWRITE } from "@/lib/constants";
+import { normalizeRoundQuestion } from "@/lib/roundQuestion";
 import { deriveIsSummaryFromSummarizeJson } from "@/lib/hostSummaryState";
 import { generateRoomCode } from "@/lib/roomCode";
+import { findUnknownOptionalColumns, withoutColumns } from "@/lib/roomOptionalColumns";
 import { getAppwriteClient } from "@/services/appwrite/client";
 import { ensureGuestSession } from "@/services/appwrite/auth";
 import { resetGuestsSubmissionForRoom } from "@/services/appwrite/guests";
@@ -22,73 +24,55 @@ function assertConfig(): void {
   }
 }
 
-/** True when Appwrite rejects an unknown `isSummary` attribute. */
-function isUnknownIsSummaryAttributeError(error: unknown): boolean {
-  const message = error instanceof Error ? error.message : String(error);
-  return /isSummary/i.test(message) && /unknown|invalid|not found|attribute/i.test(message);
-}
-
-function withoutIsSummaryField<T extends { isSummary?: boolean }>(
+/**
+ * Write `data`; if Appwrite rejects an optional column the deployed schema lacks
+ * (`isSummary`, `roundQuestion`), retry once without it.
+ */
+async function writeWithOptionalColumnFallback<T extends object>(
   data: T,
-): Omit<T, "isSummary"> {
-  const next = { ...data };
-  delete next.isSummary;
-  return next;
+  write: (data: Partial<T>) => Promise<unknown>,
+): Promise<Record<string, unknown>> {
+  try {
+    return (await write(data)) as Record<string, unknown>;
+  } catch (error) {
+    const missing = findUnknownOptionalColumns(error).filter(
+      (column) => column in data,
+    );
+    if (missing.length === 0) throw error;
+    return (await write(withoutColumns(data, missing))) as Record<string, unknown>;
+  }
 }
 
 async function createRoomRow(
   data: RoomDocument,
 ): Promise<Record<string, unknown>> {
-  try {
-    return (await getTablesDB().createRow({
+  return writeWithOptionalColumnFallback(data, (next) =>
+    getTablesDB().createRow({
       databaseId: APPWRITE.databaseId,
       tableId: APPWRITE.roomsTableId,
       rowId: ID.unique(),
-      data,
+      data: next as RoomDocument,
       permissions: [
         Permission.read(Role.any()),
         Permission.update(Role.users()),
         Permission.delete(Role.users()),
       ],
-    })) as unknown as Record<string, unknown>;
-  } catch (error) {
-    if (!isUnknownIsSummaryAttributeError(error)) throw error;
-    return (await getTablesDB().createRow({
-      databaseId: APPWRITE.databaseId,
-      tableId: APPWRITE.roomsTableId,
-      rowId: ID.unique(),
-      data: withoutIsSummaryField(data),
-      permissions: [
-        Permission.read(Role.any()),
-        Permission.update(Role.users()),
-        Permission.delete(Role.users()),
-      ],
-    })) as unknown as Record<string, unknown>;
-  }
+    }),
+  );
 }
 
 async function updateRoomRow(
   roomRowId: string,
   patch: Partial<RoomDocument>,
 ): Promise<Record<string, unknown>> {
-  try {
-    return (await getTablesDB().updateRow({
+  return writeWithOptionalColumnFallback(patch, (next) =>
+    getTablesDB().updateRow({
       databaseId: APPWRITE.databaseId,
       tableId: APPWRITE.roomsTableId,
       rowId: roomRowId,
-      data: patch,
-    })) as unknown as Record<string, unknown>;
-  } catch (error) {
-    if (!("isSummary" in patch) || !isUnknownIsSummaryAttributeError(error)) {
-      throw error;
-    }
-    return (await getTablesDB().updateRow({
-      databaseId: APPWRITE.databaseId,
-      tableId: APPWRITE.roomsTableId,
-      rowId: roomRowId,
-      data: withoutIsSummaryField(patch),
-    })) as unknown as Record<string, unknown>;
-  }
+      data: next,
+    }),
+  );
 }
 
 function mapRoom(row: Record<string, unknown>): Room {
@@ -105,6 +89,7 @@ function mapRoom(row: Record<string, unknown>): Room {
     summarizeJson,
     savedSnapshotsJson: (row.savedSnapshotsJson as string) ?? "[]",
     isSummary,
+    roundQuestion: (row.roundQuestion as string) ?? "",
     mode: (row.mode as Room["mode"]) ?? "wordcloud",
     gameStateJson: (row.gameStateJson as string) ?? "",
     lastSavedAt: (row.lastSavedAt as string) || undefined,
@@ -138,6 +123,7 @@ function parseSnapshot(room: Room): RoomSnapshot {
     groups,
     summaries,
     isSummary: room.isSummary || summaries.length > 0,
+    roundQuestion: room.roundQuestion ?? "",
   };
 }
 
@@ -197,6 +183,7 @@ export async function updateRoomSnapshot(
     savedSnapshots: SavedRoundSnapshot[];
     lastSavedAt: string | null;
     isSummary: boolean;
+    roundQuestion: string;
   }>,
 ): Promise<Room> {
   await ensureGuestSession();
@@ -221,6 +208,9 @@ export async function updateRoomSnapshot(
   if (snapshot.isSummary !== undefined) {
     patch.isSummary = snapshot.isSummary;
   }
+  if (snapshot.roundQuestion !== undefined) {
+    patch.roundQuestion = normalizeRoundQuestion(snapshot.roundQuestion);
+  }
 
   const row = await updateRoomRow(roomRowId, patch);
   return mapRoom(row);
@@ -232,6 +222,7 @@ export async function saveRoomRound(
   payload: {
     groups: GroupStat[];
     summaries: SummarizeResultItem[];
+    question?: string;
   },
 ): Promise<Room> {
   await ensureGuestSession();
@@ -250,6 +241,7 @@ export async function saveRoomRound(
     savedAt,
     groups: payload.groups,
     summaries: payload.summaries,
+    ...(payload.question ? { question: payload.question } : {}),
   });
 
   return updateRoomSnapshot(roomRowId, {
@@ -273,6 +265,35 @@ export async function closeRoomSession(roomRowId: string): Promise<void> {
     tableId: APPWRITE.roomsTableId,
     rowId: roomRowId,
   });
+}
+
+/** Host sets (or clears, with "") the question for the active round. */
+export async function updateRoundQuestion(
+  roomRowId: string,
+  question: string,
+): Promise<Room> {
+  await ensureGuestSession();
+  assertConfig();
+
+  try {
+    const row = await getTablesDB().updateRow({
+      databaseId: APPWRITE.databaseId,
+      tableId: APPWRITE.roomsTableId,
+      rowId: roomRowId,
+      data: {
+        roundQuestion: normalizeRoundQuestion(question),
+        updatedAt: new Date().toISOString(),
+      },
+    });
+    return mapRoom(row as unknown as Record<string, unknown>);
+  } catch (error) {
+    if (findUnknownOptionalColumns(error).includes("roundQuestion")) {
+      throw new Error(
+        'Add a "roundQuestion" string column (size 500, optional) to the rooms table to use round questions.',
+      );
+    }
+    throw error;
+  }
 }
 
 export async function getRoomSnapshot(roomRowId: string): Promise<RoomSnapshot> {
@@ -338,7 +359,11 @@ async function deleteAllInTable(
 }
 
 /** Clear active round data but keep room + saved history. Guests can submit again. */
-export async function startNewRound(roomId: string, roomRowId: string): Promise<void> {
+export async function startNewRound(
+  roomId: string,
+  roomRowId: string,
+  nextQuestion = "",
+): Promise<void> {
   await ensureGuestSession();
   assertConfig();
 
@@ -354,6 +379,7 @@ export async function startNewRound(roomId: string, roomRowId: string): Promise<
     groups: [],
     summaries: [],
     isSummary: false,
+    roundQuestion: nextQuestion,
   });
 }
 
@@ -381,6 +407,7 @@ export async function clearRoomRows(roomId: string): Promise<void> {
       savedSnapshots: [],
       lastSavedAt: null,
       isSummary: false,
+      roundQuestion: "",
     });
   }
 }

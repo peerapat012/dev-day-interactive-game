@@ -99,6 +99,49 @@ export async function subscribeToEntries(
   }
 }
 
+/**
+ * Subscribe to round-question changes on one room's row. The handler receives
+ * the current `roundQuestion` ("" when unset) on every room update.
+ */
+export async function subscribeToRoundQuestion(
+  roomId: string,
+  onQuestion: (question: string) => void,
+): Promise<SubscribeResult> {
+  if (!APPWRITE.databaseId || !APPWRITE.roomsTableId || !roomId.trim()) {
+    return { connected: false, unsubscribe: () => undefined };
+  }
+
+  await ensureGuestSession();
+
+  const channel = Channel.tablesdb(APPWRITE.databaseId)
+    .table(APPWRITE.roomsTableId)
+    .row();
+
+  try {
+    const realtime = getRealtimeService();
+    const subscription: RealtimeSubscription = await realtime.subscribe(
+      [channel],
+      (response) => {
+        if (response.events?.some((event) => event.endsWith(".delete"))) return;
+        const payload = response.payload as Record<string, unknown> | undefined;
+        if (!payload || (payload.roomId as string) !== roomId) return;
+        onQuestion((payload.roundQuestion as string) ?? "");
+      },
+      [Query.equal("roomId", roomId)],
+    );
+
+    return {
+      connected: true,
+      unsubscribe: () => {
+        void subscription.unsubscribe();
+      },
+    };
+  } catch (err) {
+    console.warn("[realtime] round question subscribe failed:", err);
+    return { connected: false, unsubscribe: () => undefined };
+  }
+}
+
 /** Full teardown (e.g. logout). Prefer per-hook `unsubscribe()` during normal navigation. */
 export async function closeEntriesRealtime(): Promise<void> {
   if (realtimeService) {

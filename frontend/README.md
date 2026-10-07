@@ -167,6 +167,12 @@ review and edit before starting.
 | `mode`          | enum   | `wordcloud` (default) \| `quiz` |
 | `gameStateJson` | string | Serialized `QuizRoomGameState`; default `""` |
 
+**`rooms`** also takes one optional attribute for Word Cloud round questions:
+
+| Attribute       | Type   | Notes |
+|-----------------|--------|-------|
+| `roundQuestion` | string | Size 500, not required; default `""`. Without it the app still works, but hosts cannot save a round question (they see an error). |
+
 **`answers`** table — one row per guest per question per room:
 
 | Attribute           | Type     | Notes |

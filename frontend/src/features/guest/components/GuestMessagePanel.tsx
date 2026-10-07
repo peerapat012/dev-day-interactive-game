@@ -4,9 +4,12 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 import { GuestEntriesFeed } from "@/features/guest/components/GuestEntriesFeed";
 import { useGuestSubmissionStatus } from "@/features/guest/hooks/useGuestSubmissionStatus";
+import { useRoundQuestion } from "@/features/cloud/hooks/useRoundQuestion";
 import { useSubmitEntry } from "@/features/cloud/hooks/useSubmitEntry";
 import { useEntriesStore } from "@/store/entriesStore";
 import { usePlayerStore } from "@/store/playerStore";
+import { useRoomStore } from "@/store/roomStore";
+import { RoundQuestionCard } from "@/shared/ui/RoundQuestionCard";
 import { Button } from "@/shared/ui/Button";
 import { Input } from "@/shared/ui/Input";
 import { leaveGuestRoom } from "@/lib/leaveGuestRoom";
@@ -17,6 +20,8 @@ interface GuestMessagePanelProps {
 
 export function GuestMessagePanel({ onLeaveRoom }: GuestMessagePanelProps) {
   const displayName = usePlayerStore((s) => s.displayName);
+  const roomId = useRoomStore((s) => s.roomId);
+  const { question } = useRoundQuestion(roomId);
   const [text, setText] = useState("");
   const { submit, isSubmitting, hasSubmitted } = useSubmitEntry();
   const { checking, guestInvalid } = useGuestSubmissionStatus();
@@ -84,6 +89,7 @@ export function GuestMessagePanel({ onLeaveRoom }: GuestMessagePanelProps) {
       </header>
 
       <main className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
+        <RoundQuestionCard question={question} className="mb-3" />
         <GuestEntriesFeed />
       </main>
 
@@ -141,7 +147,7 @@ export function GuestMessagePanel({ onLeaveRoom }: GuestMessagePanelProps) {
             <Input
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder="Type your one phrase for this game…"
+              placeholder={question.trim() ? "Type your short answer…" : "Type your one phrase for this game…"}
               disabled={isSubmitting}
               maxLength={200}
               autoComplete="off"

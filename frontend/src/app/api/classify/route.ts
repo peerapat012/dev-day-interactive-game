@@ -1,6 +1,7 @@
 import { isMockAiEnabled } from "@/lib/llmServerConfig";
 import { aiErrorResponse } from "@/services/ai/apiError";
 import { classifyRequestSchema } from "@/services/ai/requestSchemas";
+import { normalizeRoundQuestion } from "@/lib/roundQuestion";
 import { NextResponse } from "next/server";
 import { classifyBatchWithLlm } from "@/services/ai/classifyBatch";
 import { mockClassifyBatch } from "@/services/ai/mock";
@@ -24,6 +25,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
   const body = parsed.data;
+  const question = normalizeRoundQuestion(body.question) || undefined;
   const items = Array.isArray(body.items)
     ? body.items
         .map((item) => ({
@@ -43,7 +45,7 @@ export async function POST(request: Request) {
   try {
     const llmResults = isMockAiEnabled()
       ? mockClassifyBatch(items)
-      : (await classifyBatchWithLlm(items)).results;
+      : (await classifyBatchWithLlm(items, question)).results;
 
     const groupById = new Map(
       llmResults.map((row) => [row.id, rawGroupLabel(row.group)]),

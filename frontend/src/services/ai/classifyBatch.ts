@@ -9,9 +9,13 @@ const schema = z.object({
   results: z.array(z.object({ id: z.string().min(1), group: z.string().trim().min(1) })),
 });
 
-export async function classifyBatchWithLlm(items: ClassifyBatchItem[]): Promise<AiClassifyBatchResponse> {
+export async function classifyBatchWithLlm(
+  items: ClassifyBatchItem[],
+  question?: string,
+): Promise<AiClassifyBatchResponse> {
   if (items.length === 0) return { results: [] };
-  const result = await generateStructuredOutput(CLASSIFY_BATCH_PROMPT, { inputs: items }, schema);
+  const input = question ? { question, inputs: items } : { inputs: items };
+  const result = await generateStructuredOutput(CLASSIFY_BATCH_PROMPT, input, schema);
   validateResultKeys(items.map((item) => item.id), result.results.map((item) => item.id));
   return result;
 }

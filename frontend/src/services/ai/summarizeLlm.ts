@@ -14,9 +14,13 @@ const schema = z.object({
   })),
 });
 
-export async function summarizeWithLlm(groups: SummarizeGroupPayload[]): Promise<SummarizeResultItem[]> {
+export async function summarizeWithLlm(
+  groups: SummarizeGroupPayload[],
+  question?: string,
+): Promise<SummarizeResultItem[]> {
   if (groups.length === 0) return [];
-  const { summaries } = await generateStructuredOutput(SUMMARIZE_PROMPT, { groups }, schema);
+  const input = question ? { question, groups } : { groups };
+  const { summaries } = await generateStructuredOutput(SUMMARIZE_PROMPT, input, schema);
   validateResultKeys(groups.map((group) => group.group), summaries.map((item) => item.group));
   assertThaiSummaryContract(summaries);
   return summaries;

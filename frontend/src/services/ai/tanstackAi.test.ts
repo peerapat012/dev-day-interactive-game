@@ -21,6 +21,10 @@ const classification = { results: items.map(({ id }) => ({ id, group: "Framework
 const summaries = [{ group: "Frameworks", topic: "เฟรมเวิร์ก", summary: "สนใจการพัฒนาเว็บด้วย React และ Vue" }];
 const questionRequest = { topic: "Web", questionCount: 1, optionCount: 2, language: "Thai" };
 const question = { prompt: "ข้อใดเป็นเฟรมเวิร์ก", options: ["React", "Python"], correctOptionIndex: 0 };
+const sentPayloads = () => chatMock.mock.calls.map(([options]) => {
+  const message = options.messages![0] as { content: string };
+  return JSON.parse(message.content) as Record<string, unknown>;
+});
 const request = (body: unknown) => new Request("http://localhost/api/test", {
   method: "POST", body: JSON.stringify(body), headers: { "Content-Type": "application/json" },
 });
@@ -45,6 +49,29 @@ describe("TanStack structured generation", () => {
       messages: [{ role: "user", content: JSON.stringify({ inputs: items }) }],
       outputSchema: expect.anything(), abortController: expect.any(AbortController),
       debug: false,
+    }));
+  });
+
+  it("sends the round question to the classifier when provided", async () => {
+    chatMock.mockResolvedValue(classification);
+    await classifyBatchWithLlm(items, "ใช้ AI ตัวไหนบ่อยที่สุด");
+    expect(chatMock).toHaveBeenCalledWith(expect.objectContaining({
+      messages: [{
+        role: "user",
+        content: JSON.stringify({ question: "ใช้ AI ตัวไหนบ่อยที่สุด", inputs: items }),
+      }],
+    }));
+  });
+
+  it("sends the round question to the summarizer when provided", async () => {
+    chatMock.mockResolvedValue({ summaries });
+    const groups = [{ group: "Frameworks", inputs: "React, Vue" }];
+    await summarizeWithLlm(groups, "ใช้ AI ตัวไหนบ่อยที่สุด");
+    expect(chatMock).toHaveBeenCalledWith(expect.objectContaining({
+      messages: [{
+        role: "user",
+        content: JSON.stringify({ question: "ใช้ AI ตัวไหนบ่อยที่สุด", groups }),
+      }],
     }));
   });
 
@@ -191,6 +218,35 @@ describe("existing API contracts", () => {
     expect(body.groups[0]).toMatchObject({ group: "Frameworks", count: 2, inputs: ["React", "Vue"] });
     expect(body.summaries).toEqual(summaries);
     expect(chatMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("forwards the round question through the host summary route", async () => {
+    chatMock.mockResolvedValueOnce(classification).mockResolvedValueOnce({ summaries });
+    const response = await hostSummary(request({ items, question: "  ชอบเครื่องมืออะไร  " }));
+    expect(response.status).toBe(200);
+    expect(sentPayloads()).toHaveLength(2);
+    for (const payload of sentPayloads()) {
+      expect(payload.question).toBe("ชอบเครื่องมืออะไร");
+    }
+  });
+
+  it("omits a blank round question", async () => {
+    chatMock.mockResolvedValueOnce(classification).mockResolvedValueOnce({ summaries });
+    await hostSummary(request({ items, question: "   " }));
+    expect(sentPayloads()).toHaveLength(2);
+    for (const payload of sentPayloads()) {
+      expect(payload).not.toHaveProperty("question");
+    }
+  });
+
+  it.each([
+    { handler: classify, payload: { items } },
+    { handler: summarize, payload: { groups: [{ group: "Frameworks", inputs: ["React"] }] } },
+    { handler: hostSummary, payload: { items } },
+  ])("rejects an overlong round question", async ({ handler, payload }) => {
+    const response = await handler(request({ ...payload, question: "ก".repeat(501) }));
+    expect(response.status).toBe(400);
+    expect(chatMock).not.toHaveBeenCalled();
   });
 
   it("returns the requested number of mock questions, including more than five", async () => {
