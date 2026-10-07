@@ -38,8 +38,11 @@ export function useHostRoom() {
         }
 
         if (storedCode && storedRowId.trim()) {
-          const existing = await getRoomByCode(storedCode);
+          const fetched = await getRoomByCode(storedCode);
           if (cancelled) return;
+          // A stored quiz room must not be resumed as a word cloud room, or
+          // guests joining its code land in the quiz.
+          const existing = fetched?.mode === "wordcloud" ? fetched : null;
 
           if (existing && existing.$id === storedRowId) {
             setRoom(existing.roomId, existing.$id, existing.isSummary, existing.mode);
