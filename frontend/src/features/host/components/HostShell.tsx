@@ -2,7 +2,6 @@
 
 import { motion } from "framer-motion";
 import type { ReactNode } from "react";
-import { ThemeToggle } from "@/shared/ui/ThemeToggle";
 import { HostTabBar, type HostTabId } from "@/features/host/components/HostTabBar";
 
 interface HostShellProps {
@@ -26,12 +25,9 @@ export function HostShell({
     <motion.div className="flex min-h-dvh flex-col pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))]">
       <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4 px-4 pt-[max(1rem,env(safe-area-inset-top))] sm:gap-6 sm:px-6 sm:py-6">
         <header className="flex flex-col gap-2">
-          <div className="flex items-start justify-between gap-3">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary-text sm:text-xs">
+          <p className="pr-14 text-[10px] font-semibold uppercase tracking-[0.2em] text-primary-text sm:text-xs">
             Host
           </p>
-          <ThemeToggle />
-          </div>
           <h1 className="text-xl font-semibold tracking-tight text-fg sm:text-3xl">
             {title}
           </h1>

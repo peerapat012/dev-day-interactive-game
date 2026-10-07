@@ -3,7 +3,6 @@
 import { motion } from "framer-motion";
 import { AppNav } from "@/shared/components/AppNav";
 import { PlayerBadge } from "@/shared/components/PlayerBadge";
-import { ThemeToggle } from "@/shared/ui/ThemeToggle";
 import { AppShell } from "@/shared/components/layout/AppShell";
 
 interface PageShellProps {
@@ -46,10 +45,7 @@ export function PageShell({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
-            <div className="flex items-center gap-2">
-              <PlayerBadge />
-              <ThemeToggle />
-            </div>
+            <PlayerBadge />
             {showGameNav ? <AppNav /> : null}
           </motion.div>
         </header>
