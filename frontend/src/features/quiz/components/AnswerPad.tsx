@@ -51,18 +51,18 @@ export function AnswerPad({
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-6">
       <div className="flex flex-col gap-3">
-        <p className="text-xs font-semibold uppercase tracking-wider text-violet-400">
+        <p className="text-xs font-semibold uppercase tracking-wider text-primary-text">
           Question {index + 1}
         </p>
-        <h2 className="text-2xl font-bold leading-snug text-balance text-zinc-50 sm:text-3xl">
+        <h2 className="text-2xl font-bold leading-snug text-balance text-fg sm:text-3xl">
           {question.prompt}
         </h2>
-        <p className="text-sm tabular-nums text-zinc-500">
+        <p className="text-sm tabular-nums text-fg-muted">
           {seconds} {seconds === 1 ? "second" : "seconds"} left
         </p>
-        <div className="h-2 overflow-hidden rounded-full bg-white/5">
+        <div className="h-2 overflow-hidden rounded-full bg-surface">
           <motion.div
-            className="h-full rounded-full bg-violet-500"
+            className="h-full rounded-full bg-primary"
             initial={false}
             animate={{ width: `${remainingPct}%` }}
             transition={{ duration: 0.1 }}
@@ -87,10 +87,10 @@ export function AnswerPad({
               className={`flex min-h-[64px] items-center gap-3 rounded-3xl border border-transparent p-4 text-left transition-colors ${
                 isSelected
                   ? `${color.bar} text-zinc-950`
-                  : `bg-zinc-900/70 text-zinc-100 ${
+                  : `bg-surface text-fg ${
                       isDisabled
                         ? "opacity-40"
-                        : "active:bg-zinc-800 hover:bg-zinc-800/80"
+                        : "active:bg-surface-hover hover:bg-surface-hover"
                     }`
               }`}
               initial={{ opacity: 0, y: 10 }}
@@ -122,16 +122,16 @@ export function AnswerPad({
       <div className="flex flex-col items-center gap-2">
         {answered ? (
           <motion.p
-            className="text-sm font-medium text-emerald-300"
+            className="text-sm font-medium text-success"
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
           >
             Answer locked in — waiting for the host to reveal.
           </motion.p>
         ) : submitting ? (
-          <p className="text-sm text-zinc-400">Sending answer…</p>
+          <p className="text-sm text-fg-muted">Sending answer…</p>
         ) : (
-          <p className="text-sm text-zinc-500">Tap an option to answer.</p>
+          <p className="text-sm text-fg-muted">Tap an option to answer.</p>
         )}
       </div>
     </div>

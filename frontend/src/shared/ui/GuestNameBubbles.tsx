@@ -48,7 +48,7 @@ export function GuestNameBubbles({ tags }: GuestNameBubblesProps) {
           <button
             type="button"
             onClick={() => setModalOpen(true)}
-            className="relative inline-flex min-h-[28px] items-center rounded-full border border-white/15 bg-white/5 px-2.5 py-0.5 text-xs font-medium text-zinc-300 transition-[transform,background-color,color,border-color] duration-150 ease-out after:absolute after:-inset-2 after:content-[''] hover:border-white/25 hover:bg-white/10 hover:text-zinc-100 active:scale-[0.96]"
+            className="relative inline-flex min-h-[28px] items-center rounded-full border border-line-strong bg-surface px-2.5 py-0.5 text-xs font-medium text-fg-secondary transition-[transform,background-color,color,border-color] duration-150 ease-out after:absolute after:-inset-2 after:content-[''] hover:border-line-strong hover:bg-surface-hover hover:text-fg active:scale-[0.96]"
           >
             Show more
           </button>
@@ -61,12 +61,12 @@ export function GuestNameBubbles({ tags }: GuestNameBubblesProps) {
         title="Guests"
         elevated
       >
-        <p className="mb-3 text-[11px] leading-relaxed text-zinc-500">
-          <span className="text-zinc-400">(n)</span> = number of phrases that guest
+        <p className="mb-3 text-[11px] leading-relaxed text-fg-muted">
+          <span className="text-fg-muted">(n)</span> = number of phrases that guest
           submitted in this group. Inputs are shown below each name.
         </p>
         <GuestContributorList tags={tags} aria-label="All guests" />
-        <p className="mt-4 text-xs text-zinc-500">
+        <p className="mt-4 text-xs text-fg-muted">
           {tags.length} guest{tags.length === 1 ? "" : "s"}
         </p>
       </Modal>

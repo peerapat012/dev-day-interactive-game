@@ -11,7 +11,7 @@ export default function GuestPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-dvh items-center justify-center text-sm text-zinc-500">
+        <div className="flex min-h-dvh items-center justify-center text-sm text-fg-muted">
           Loading…
         </div>
       }

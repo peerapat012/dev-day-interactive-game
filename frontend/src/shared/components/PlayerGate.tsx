@@ -64,7 +64,7 @@ export function PlayerGate({ children }: { children: React.ReactNode }) {
 
   if (!ready) {
     return (
-      <div className="flex min-h-dvh items-center justify-center text-sm text-zinc-500">
+      <div className="flex min-h-dvh items-center justify-center text-sm text-fg-muted">
         Loading…
       </div>
     );

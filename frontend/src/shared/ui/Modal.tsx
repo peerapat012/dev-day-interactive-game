@@ -38,33 +38,33 @@ export function Modal({
           <motion.button
             type="button"
             aria-label="Close"
-            className={`fixed inset-0 ${backdropZ} bg-black/60 backdrop-blur-sm`}
+            className={`fixed inset-0 ${backdropZ} bg-slate-950/50 backdrop-blur-sm`}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
           />
           <motion.aside
-            className={`fixed inset-x-0 bottom-0 ${panelZ} flex max-h-[min(85dvh,640px)] flex-col rounded-t-3xl border border-white/10 border-b-0 bg-zinc-950/95 p-5 shadow-2xl backdrop-blur-xl md:inset-x-auto md:right-0 md:top-0 md:bottom-0 md:h-full md:max-h-none md:w-full md:max-w-md md:rounded-none md:border-b md:border-l md:p-6`}
+            className={`fixed inset-x-0 bottom-0 ${panelZ} flex max-h-[min(85dvh,640px)] flex-col rounded-t-3xl border border-line border-b-0 bg-background/90 p-5 shadow-2xl backdrop-blur-xl md:inset-x-auto md:right-0 md:top-0 md:bottom-0 md:h-full md:max-h-none md:w-full md:max-w-md md:rounded-none md:border-b md:border-l md:p-6`}
             style={{ paddingBottom: "max(1.25rem, env(safe-area-inset-bottom))" }}
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", stiffness: 320, damping: 32 }}
           >
-            <div className="mx-auto mb-3 h-1 w-10 shrink-0 rounded-full bg-white/20 md:hidden" />
+            <div className="mx-auto mb-3 h-1 w-10 shrink-0 rounded-full bg-line-strong md:hidden" />
             <motion.div
               className="mb-4 flex items-center justify-between gap-3"
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
             >
-              <h2 className="text-lg font-semibold capitalize text-zinc-100">
+              <h2 className="text-lg font-semibold capitalize text-fg">
                 {title}
               </h2>
               <button
                 type="button"
                 onClick={onClose}
-                className="min-h-[44px] min-w-[44px] rounded-full px-3 text-sm text-zinc-400 active:bg-white/10 active:text-zinc-100"
+                className="min-h-[44px] min-w-[44px] rounded-full px-3 text-sm text-fg-muted active:bg-surface-hover active:text-fg"
               >
                 Close
               </button>

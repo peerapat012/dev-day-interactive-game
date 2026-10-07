@@ -89,7 +89,7 @@ export function HostScreen({
 
   if (!ready) {
     return (
-      <div className="flex min-h-dvh items-center justify-center text-sm text-zinc-500">
+      <div className="flex min-h-dvh items-center justify-center text-sm text-fg-muted">
         Preparing host room…
       </div>
     );
@@ -97,7 +97,7 @@ export function HostScreen({
 
   if (error || !roomId || !roomRowId) {
     return (
-      <div className="flex min-h-dvh items-center justify-center px-4 text-center text-sm text-rose-400">
+      <div className="flex min-h-dvh items-center justify-center px-4 text-center text-sm text-danger">
         {error ?? "Could not open host room."}
       </div>
     );

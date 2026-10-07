@@ -31,7 +31,7 @@ export function HostInputsTab({ roomId, roomRowId }: HostInputsTabProps) {
   if (!isHydrated) {
     return (
       <motion.div
-        className="flex min-h-[40dvh] items-center justify-center text-sm text-zinc-500"
+        className="flex min-h-[40dvh] items-center justify-center text-sm text-fg-muted"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
       >
@@ -47,7 +47,7 @@ export function HostInputsTab({ roomId, roomRowId }: HostInputsTabProps) {
         question={question}
         onSaved={setQuestion}
       />
-      <p className="text-sm text-zinc-400">
+      <p className="text-sm text-fg-muted">
         {roomEntries.length === 0
           ? "No guest phrases yet."
           : `${roomEntries.length} phrase${roomEntries.length === 1 ? "" : "s"} floating live`}

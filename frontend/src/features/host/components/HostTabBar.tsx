@@ -22,7 +22,7 @@ export function HostTabBar({
 }: HostTabBarProps) {
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-zinc-950/90 backdrop-blur-xl"
+      className="fixed inset-x-0 bottom-0 z-50 border-t border-line bg-background/90 backdrop-blur-xl"
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       aria-label="Host navigation"
     >
@@ -46,10 +46,10 @@ export function HostTabBar({
                 }
                 className={`flex min-h-[52px] w-full flex-col items-center justify-center gap-1 rounded-xl px-2 py-1.5 transition-[transform,background-color] ${
                   disabled
-                    ? "cursor-not-allowed text-zinc-600"
+                    ? "cursor-not-allowed text-fg-muted"
                     : active
-                      ? "bg-violet-500/15 text-violet-300 active:scale-[0.96]"
-                      : "text-zinc-400 active:scale-[0.96] active:bg-white/5"
+                      ? "bg-primary/15 text-primary-text active:scale-[0.96]"
+                      : "text-fg-muted active:scale-[0.96] active:bg-surface"
                 }`}
               >
                 <span className="text-[10px] font-medium leading-none sm:text-xs">

@@ -30,19 +30,19 @@ export function HostAuthChoice({
       transition={{ type: "spring", stiffness: 280, damping: 26 }}
     >
       <motion.div
-        className="flex w-full flex-col gap-5 rounded-3xl border border-white/10 bg-zinc-900/70 p-6"
+        className="flex w-full flex-col gap-5 rounded-3xl border border-line bg-surface p-6"
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.05 }}
       >
         <div className="flex flex-col gap-1 text-center">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-violet-400 sm:text-xs">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary-text sm:text-xs">
             Quiz host
           </p>
-          <h1 className="text-xl font-semibold tracking-tight text-zinc-50 sm:text-2xl">
+          <h1 className="text-xl font-semibold tracking-tight text-fg sm:text-2xl">
             How do you want to host?
           </h1>
-          <p className="mx-auto max-w-sm text-xs leading-relaxed text-zinc-400 sm:text-sm">
+          <p className="mx-auto max-w-sm text-xs leading-relaxed text-fg-muted sm:text-sm">
             Host as a guest for a quick quiz on this device, or log in to save
             decks to your account and reuse them across devices.
           </p>
@@ -83,7 +83,7 @@ export function HostAuthChoice({
               <button
                 type="button"
                 onClick={() => setView("choice")}
-                className="min-h-[40px] self-center rounded-full px-3 text-xs text-zinc-400 transition-transform active:scale-[0.96]"
+                className="min-h-[40px] self-center rounded-full px-3 text-xs text-fg-muted transition-transform active:scale-[0.96]"
               >
                 ← Back
               </button>
@@ -95,7 +95,7 @@ export function HostAuthChoice({
       <button
         type="button"
         onClick={() => router.replace("/")}
-        className="min-h-[40px] rounded-full px-3 text-xs text-zinc-400 transition-transform active:scale-[0.96]"
+        className="min-h-[40px] rounded-full px-3 text-xs text-fg-muted transition-transform active:scale-[0.96]"
       >
         ← Back to home
       </button>

@@ -16,7 +16,7 @@ export function QuizMusicToggle({
       onClick={toggleMute}
       aria-label={muted ? "Unmute countdown music" : "Mute countdown music"}
       aria-pressed={muted}
-      className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/10 bg-white/5 text-sm text-zinc-300 transition-[transform,background-color] duration-150 ease-out active:scale-[0.96] hover:bg-white/10"
+      className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-line bg-surface text-sm text-fg-secondary transition-[transform,background-color] duration-150 ease-out active:scale-[0.96] hover:bg-surface-hover"
     >
       {muted ? (
         <svg

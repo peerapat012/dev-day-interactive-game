@@ -60,7 +60,7 @@ export function AuthForm({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex rounded-full border border-white/10 bg-white/5 p-1">
+      <div className="flex rounded-full border border-line bg-surface p-1">
         {(["login", "register"] as const).map((mode) => (
           <button
             key={mode}
@@ -70,13 +70,13 @@ export function AuthForm({
               setAuthError(null);
             }}
             className={`relative flex-1 rounded-full py-2 text-xs font-medium transition-transform active:scale-[0.96] ${
-              authMode === mode ? "text-white" : "text-zinc-400"
+              authMode === mode ? "text-fg" : "text-fg-muted"
             }`}
           >
             {authMode === mode ? (
               <motion.span
                 layoutId="auth-mode-pill"
-                className="absolute inset-0 rounded-full bg-violet-500/80"
+                className="absolute inset-0 rounded-full bg-primary/80"
                 transition={{ type: "spring", duration: 0.3, bounce: 0 }}
               />
             ) : null}
@@ -126,9 +126,9 @@ export function AuthForm({
             : "Create account"}
       </Button>
       {authError ? (
-        <p className="text-center text-xs text-rose-400">{authError}</p>
+        <p className="text-center text-xs text-danger">{authError}</p>
       ) : null}
-      <p className="text-xs leading-relaxed text-zinc-500">{helperText}</p>
+      <p className="text-xs leading-relaxed text-fg-muted">{helperText}</p>
     </div>
   );
 }

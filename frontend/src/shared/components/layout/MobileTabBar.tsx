@@ -7,7 +7,7 @@ import { GAME_NAV } from "@/lib/gameNav";
 function CloudIcon({ active }: { active: boolean }) {
   return (
     <svg
-      className={`h-6 w-6 ${active ? "text-violet-400" : "text-zinc-500"}`}
+      className={`h-6 w-6 ${active ? "text-primary-text" : "text-fg-muted"}`}
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -26,7 +26,7 @@ function CloudIcon({ active }: { active: boolean }) {
 function SummaryIcon({ active }: { active: boolean }) {
   return (
     <svg
-      className={`h-6 w-6 ${active ? "text-violet-400" : "text-zinc-500"}`}
+      className={`h-6 w-6 ${active ? "text-primary-text" : "text-fg-muted"}`}
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -45,7 +45,7 @@ function SummaryIcon({ active }: { active: boolean }) {
 function QuizIcon({ active }: { active: boolean }) {
   return (
     <svg
-      className={`h-6 w-6 ${active ? "text-violet-400" : "text-zinc-500"}`}
+      className={`h-6 w-6 ${active ? "text-primary-text" : "text-fg-muted"}`}
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -75,7 +75,7 @@ export function MobileTabBar() {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-zinc-950/90 backdrop-blur-xl md:hidden"
+      className="fixed inset-x-0 bottom-0 z-50 border-t border-line bg-background/90 backdrop-blur-xl md:hidden"
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       aria-label="Main navigation"
     >
@@ -91,8 +91,8 @@ export function MobileTabBar() {
                 href={item.href}
                 className={`flex min-h-[52px] flex-col items-center justify-center gap-1 rounded-xl px-2 py-1.5 transition-[transform,background-color] active:scale-[0.96] ${
                   active
-                    ? "bg-violet-500/15 text-violet-300"
-                    : "text-zinc-400 active:bg-white/5"
+                    ? "bg-primary/15 text-primary-text"
+                    : "text-fg-muted active:bg-surface"
                 }`}
               >
                 <Icon active={active} />

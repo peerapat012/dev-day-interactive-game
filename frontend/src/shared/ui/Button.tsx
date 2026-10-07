@@ -14,8 +14,8 @@ export function Button({
     "inline-flex min-h-[48px] items-center justify-center rounded-full px-5 py-2.5 text-sm font-medium transition-[transform,background-color] duration-150 ease-out active:scale-[0.96] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100";
   const styles =
     variant === "primary"
-      ? "bg-violet-500 text-white active:bg-violet-400 shadow-lg shadow-violet-500/20"
-      : "bg-white/5 text-zinc-200 active:bg-white/10 border border-white/10";
+      ? "bg-primary text-primary-fg active:bg-primary/90 shadow-lg shadow-primary/20"
+      : "bg-surface text-fg-secondary active:bg-surface-hover border border-line";
 
   return (
     <button className={`${base} ${styles} ${className}`} {...props}>

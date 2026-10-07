@@ -94,7 +94,7 @@ export function GuestScreen() {
   if (!storesReady) {
     return (
       <motion.div
-        className="flex min-h-dvh items-center justify-center text-sm text-zinc-500"
+        className="flex min-h-dvh items-center justify-center text-sm text-fg-muted"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
       >
@@ -112,11 +112,11 @@ export function GuestScreen() {
           animate={{ opacity: 1 }}
         >
           <motion.div
-            className="absolute -left-32 top-20 h-64 w-64 rounded-full bg-violet-600/20 blur-3xl"
+            className="absolute -left-32 top-20 h-64 w-64 rounded-full bg-primary-soft blur-3xl"
             animate={{ scale: [1, 1.05, 1] }}
             transition={{ duration: 8, repeat: Infinity }}
           />
-          <div className="absolute -right-24 bottom-24 h-72 w-72 rounded-full bg-fuchsia-600/15 blur-3xl" />
+          <div className="absolute -right-24 bottom-24 h-72 w-72 rounded-full bg-primary-soft blur-3xl" />
         </motion.div>
 
         <motion.div
@@ -124,17 +124,17 @@ export function GuestScreen() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-violet-400">
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary-text">
             Word Cloud Game
           </p>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+          <h1 className="mt-3 text-3xl font-bold tracking-tight text-fg sm:text-4xl">
             Join as guest
           </h1>
-          <p className="mx-auto mt-3 max-w-sm text-zinc-400">
+          <p className="mx-auto mt-3 max-w-sm text-fg-muted">
             {roomFromUrl ? (
               <>
                 Room{" "}
-                <span className="font-mono font-semibold text-violet-300">
+                <span className="font-mono font-semibold text-primary-text">
                   {roomFromUrl}
                 </span>{" "}
                 from QR โ€” confirm the code and enter your nickname.

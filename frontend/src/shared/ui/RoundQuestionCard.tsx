@@ -10,12 +10,12 @@ export function RoundQuestionCard({ question, className = "" }: RoundQuestionCar
 
   return (
     <div
-      className={`rounded-2xl border border-violet-400/30 bg-violet-500/10 px-4 py-3 ${className}`}
+      className={`rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3 ${className}`}
     >
-      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-violet-300 sm:text-xs">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary-text sm:text-xs">
         Question
       </p>
-      <p className="mt-1 break-words text-base font-semibold text-zinc-50 sm:text-lg">
+      <p className="mt-1 break-words text-base font-semibold text-fg sm:text-lg">
         {text}
       </p>
     </div>

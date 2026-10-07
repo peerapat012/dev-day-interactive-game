@@ -17,7 +17,7 @@ interface PodiumProps {
 export function Podium({ topThree }: PodiumProps) {
   if (!topThree.length) {
     return (
-      <p className="rounded-2xl border border-white/10 bg-zinc-900/60 p-4 text-sm text-zinc-400">
+      <p className="rounded-2xl border border-line bg-surface p-4 text-sm text-fg-muted">
         No final scores to crown yet.
       </p>
     );
@@ -38,10 +38,10 @@ export function Podium({ topThree }: PodiumProps) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ type: "spring", duration: 0.4, bounce: 0, delay: index * 0.08 }}
             >
-              <span className="max-w-full truncate text-xs font-medium text-zinc-200">
+              <span className="max-w-full truncate text-xs font-medium text-fg-secondary">
                 {entry.displayName}
               </span>
-              <span className="font-mono text-lg font-bold tabular-nums text-violet-300">
+              <span className="font-mono text-lg font-bold tabular-nums text-primary-text">
                 {entry.score}
               </span>
               <motion.div

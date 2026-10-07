@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { AppNav } from "@/shared/components/AppNav";
 import { PlayerBadge } from "@/shared/components/PlayerBadge";
+import { ThemeToggle } from "@/shared/ui/ThemeToggle";
 import { AppShell } from "@/shared/components/layout/AppShell";
 
 interface PageShellProps {
@@ -28,14 +29,14 @@ export function PageShell({
             animate={{ opacity: 1, y: 0 }}
             className="min-w-0 flex-1"
           >
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-violet-400 sm:text-xs">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary-text sm:text-xs">
               Word Cloud Game
             </p>
-            <h1 className="mt-0.5 text-balance text-xl font-semibold tracking-tight text-zinc-50 sm:mt-1 sm:text-3xl">
+            <h1 className="mt-0.5 text-balance text-xl font-semibold tracking-tight text-fg sm:mt-1 sm:text-3xl">
               {title}
             </h1>
             {description ? (
-              <p className="mt-1 line-clamp-2 text-xs text-zinc-400 sm:mt-2 sm:line-clamp-none sm:text-sm">
+              <p className="mt-1 line-clamp-2 text-xs text-fg-muted sm:mt-2 sm:line-clamp-none sm:text-sm">
                 {description}
               </p>
             ) : null}
@@ -45,7 +46,10 @@ export function PageShell({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
-            <PlayerBadge />
+            <div className="flex items-center gap-2">
+              <PlayerBadge />
+              <ThemeToggle />
+            </div>
             {showGameNav ? <AppNav /> : null}
           </motion.div>
         </header>

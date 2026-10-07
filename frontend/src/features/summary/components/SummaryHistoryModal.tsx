@@ -74,14 +74,14 @@ function HistoryList({
 }) {
   if (loading) {
     return (
-      <p className="py-8 text-center text-sm text-zinc-500">Loading history…</p>
+      <p className="py-8 text-center text-sm text-fg-muted">Loading history…</p>
     );
   }
 
   if (error) {
     return (
       <div className="flex flex-col items-center gap-3 py-6 text-center">
-        <p className="text-sm text-rose-300">{error}</p>
+        <p className="text-sm text-danger">{error}</p>
         <Button type="button" variant="ghost" onClick={onRetry}>
           Try again
         </Button>
@@ -91,7 +91,7 @@ function HistoryList({
 
   if (rounds.length === 0) {
     return (
-      <p className="py-8 text-center text-sm text-zinc-500">
+      <p className="py-8 text-center text-sm text-fg-muted">
         No saved summaries yet. Refresh the active summary to move the current
         version into history.
       </p>
@@ -109,20 +109,20 @@ function HistoryList({
             <button
               type="button"
               onClick={() => onSelect(round)}
-              className="flex w-full flex-col gap-1 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left transition-colors active:bg-white/10"
+              className="flex w-full flex-col gap-1 rounded-2xl border border-line bg-surface px-4 py-3 text-left transition-colors active:bg-surface-hover"
             >
-              <span className="text-sm font-semibold text-zinc-100">
+              <span className="text-sm font-semibold text-fg">
                 Round {roundNumber}
               </span>
               {round.question?.trim() ? (
-                <span className="line-clamp-2 text-xs text-violet-200">
+                <span className="line-clamp-2 text-xs text-primary-text">
                   {round.question.trim()}
                 </span>
               ) : null}
-              <span className="text-xs text-zinc-400">
+              <span className="text-xs text-fg-muted">
                 {formatSavedAt(round.savedAt)}
               </span>
-              <span className="text-xs text-zinc-500">
+              <span className="text-xs text-fg-muted">
                 {summaryCount} summar{summaryCount === 1 ? "y" : "ies"}
               </span>
             </button>
@@ -145,7 +145,7 @@ function HistoryRoundDetail({
       <Button type="button" variant="ghost" onClick={onBack} className="w-fit px-4">
         ← Back to list
       </Button>
-      <p className="text-xs text-zinc-500">{formatSavedAt(snapshot.savedAt)}</p>
+      <p className="text-xs text-fg-muted">{formatSavedAt(snapshot.savedAt)}</p>
       <RoundQuestionCard question={snapshot.question ?? ""} />
 
       <ul className="flex flex-col gap-3">
@@ -161,16 +161,16 @@ function HistoryRoundDetail({
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
-              className="rounded-2xl border border-white/10 bg-zinc-900/80 p-4"
+              className="rounded-2xl border border-line bg-surface p-4"
             >
-              <h3 className="text-sm font-semibold text-violet-200">
+              <h3 className="text-sm font-semibold text-primary-text">
                 {getSummaryTopicLabel(card)}
               </h3>
-              <p className="mt-2 text-sm leading-relaxed text-zinc-200">
+              <p className="mt-2 text-sm leading-relaxed text-fg-secondary">
                 {card.summary}
               </p>
               {group ? (
-                <p className="mt-2 text-xs text-zinc-500">
+                <p className="mt-2 text-xs text-fg-muted">
                   {group.count} contribution{group.count === 1 ? "" : "s"}
                 </p>
               ) : null}
@@ -186,7 +186,7 @@ function HistoryRoundDetail({
       </ul>
 
       {snapshot.summaries.length === 0 ? (
-        <p className="text-sm text-zinc-500">No summary text saved for this round.</p>
+        <p className="text-sm text-fg-muted">No summary text saved for this round.</p>
       ) : null}
     </div>
   );

@@ -71,9 +71,9 @@ function FloatingTextPillComponent({
         className={`flex h-full w-full flex-col items-center justify-center rounded-full border text-center shadow-lg backdrop-blur-md ${
           isGroup
             ? isTopGroup
-              ? "border-violet-200/50 bg-violet-500/25"
-              : "border-violet-200/35 bg-violet-500/15"
-            : "border-white/25 bg-white/[0.08]"
+              ? "border-primary/50 bg-primary/25"
+              : "border-primary/30 bg-primary/15"
+            : "border-line-strong bg-surface"
         }`}
         style={{
           padding: isGroup
@@ -81,15 +81,15 @@ function FloatingTextPillComponent({
             : "0.5em 1em",
           boxSizing: "border-box",
           boxShadow: isTopGroup
-            ? `0 12px 40px hsla(${hue}, 70%, 50%, 0.35), inset 0 1px 0 rgba(255,255,255,0.18)`
-            : `0 8px 32px hsla(${hue}, 65%, 45%, 0.2), inset 0 1px 0 rgba(255,255,255,0.12)`,
+            ? `0 12px 40px hsla(${hue}, 70%, 50%, 0.35), inset 0 1px 0 var(--pill-highlight)`
+            : `0 8px 32px hsla(${hue}, 65%, 45%, 0.2), inset 0 1px 0 var(--pill-highlight)`,
         }}
       >
         <span
           className={`max-w-full truncate font-bold leading-tight ${
             isGroup
-              ? "capitalize text-[#f8ead8]"
-              : "font-semibold normal-case text-[#f5e6d8]"
+              ? "capitalize text-fg"
+              : "font-semibold normal-case text-fg"
           }`}
           style={{ fontSize: isGroup ? fontSize : Math.min(fontSize, 16) }}
           title={label}
@@ -97,12 +97,12 @@ function FloatingTextPillComponent({
           {label}
         </span>
         {meta ? (
-          <span className="mt-0.5 max-w-full truncate text-[10px] font-medium uppercase tracking-wide text-white/45">
+          <span className="mt-0.5 max-w-full truncate text-[10px] font-medium uppercase tracking-wide text-fg-muted">
             {meta}
           </span>
         ) : null}
         {group && !isGroup ? (
-          <span className="mt-0.5 max-w-full truncate text-[10px] capitalize text-violet-300/80">
+          <span className="mt-0.5 max-w-full truncate text-[10px] capitalize text-primary-text/80">
             {group}
           </span>
         ) : null}

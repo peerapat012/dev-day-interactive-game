@@ -55,33 +55,33 @@ export function GuestMessagePanel({ onLeaveRoom }: GuestMessagePanelProps) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >
-      <header className="shrink-0 border-b border-white/10 bg-zinc-950/90 px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur-md">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-violet-400 sm:text-xs">
+      <header className="shrink-0 border-b border-line bg-background/90 px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur-md">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary-text sm:text-xs">
           Word Cloud Game
         </p>
-        <h1 className="mt-1 text-xl font-semibold text-zinc-50 sm:text-2xl">
+        <h1 className="mt-1 text-xl font-semibold text-fg sm:text-2xl">
           Guest lobby
         </h1>
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
+          <div className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5">
             <span
-              className="flex h-7 w-7 items-center justify-center rounded-full bg-violet-500/30 text-xs font-bold uppercase text-violet-200"
+              className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/30 text-xs font-bold uppercase text-primary-text"
               aria-hidden
             >
               {displayName.slice(0, 1)}
             </span>
-            <span className="max-w-[200px] truncate text-sm font-medium text-zinc-200">
+            <span className="max-w-[200px] truncate text-sm font-medium text-fg-secondary">
               {displayName}
             </span>
           </div>
           {hasSubmitted ? (
-            <span className="text-xs text-emerald-400/90">Phrase sent</span>
+            <span className="text-xs text-success">Phrase sent</span>
           ) : null}
           <Button
             type="button"
             variant="ghost"
             onClick={handleLeaveRoom}
-            className="ml-auto shrink-0 px-3 py-1.5 text-xs text-zinc-400 hover:text-rose-300"
+            className="ml-auto shrink-0 px-3 py-1.5 text-xs text-fg-muted hover:text-danger"
           >
             Leave room
           </Button>
@@ -93,14 +93,14 @@ export function GuestMessagePanel({ onLeaveRoom }: GuestMessagePanelProps) {
         <GuestEntriesFeed />
       </main>
 
-      <footer className="shrink-0 border-t border-white/10 bg-zinc-950/95 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 backdrop-blur-md">
+      <footer className="shrink-0 border-t border-line bg-background/90 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 backdrop-blur-md">
         {guestInvalid ? (
           <motion.div
             className="mx-auto max-w-lg rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-5 text-center"
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <p className="text-base font-medium text-amber-200">
+            <p className="text-base font-medium text-accent-text">
               Room restarted by host
             </p>
             <p className="mt-2 text-sm text-amber-100/80">
@@ -110,23 +110,23 @@ export function GuestMessagePanel({ onLeaveRoom }: GuestMessagePanelProps) {
               type="button"
               variant="ghost"
               onClick={handleLeaveRoom}
-              className="mt-4 w-full border-amber-500/40 text-amber-200"
+              className="mt-4 w-full border-amber-500/40 text-accent-text"
             >
               Clear this device &amp; rejoin
             </Button>
           </motion.div>
         ) : checking ? (
-          <p className="text-center text-sm text-zinc-500">Checking submission…</p>
+          <p className="text-center text-sm text-fg-muted">Checking submission…</p>
         ) : hasSubmitted ? (
           <motion.div
-            className="mx-auto max-w-lg rounded-2xl border border-emerald-500/25 bg-emerald-500/10 px-4 py-5 text-center"
+            className="mx-auto max-w-lg rounded-2xl border border-emerald-500/25 bg-success-soft px-4 py-5 text-center"
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <p className="text-base font-medium text-emerald-200">
+            <p className="text-base font-medium text-success">
               You already sent your phrase
             </p>
-            <p className="mt-2 text-sm text-zinc-400">
+            <p className="mt-2 text-sm text-fg-muted">
               Each guest can only submit once. You can still read everyone else&apos;s
               phrases above.
             </p>
@@ -134,7 +134,7 @@ export function GuestMessagePanel({ onLeaveRoom }: GuestMessagePanelProps) {
               type="button"
               variant="ghost"
               onClick={handleLeaveRoom}
-              className="mt-4 w-full text-zinc-400 hover:text-rose-300"
+              className="mt-4 w-full text-fg-muted hover:text-danger"
             >
               Leave room
             </Button>
@@ -159,19 +159,19 @@ export function GuestMessagePanel({ onLeaveRoom }: GuestMessagePanelProps) {
             >
               {isSubmitting ? "Sending…" : "Send phrase (once)"}
             </Button>
-            <p className="text-center text-xs text-zinc-500">
+            <p className="text-center text-xs text-fg-muted">
               One phrase per guest — choose carefully.
             </p>
             <Button
               type="button"
               variant="ghost"
               onClick={handleLeaveRoom}
-              className="w-full text-xs text-zinc-500 hover:text-rose-300"
+              className="w-full text-xs text-fg-muted hover:text-danger"
             >
               Leave room
             </Button>
             {error ? (
-              <p className="text-center text-sm text-rose-400">{error}</p>
+              <p className="text-center text-sm text-danger">{error}</p>
             ) : null}
           </form>
         )}

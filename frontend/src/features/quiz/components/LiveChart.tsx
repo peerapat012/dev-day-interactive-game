@@ -41,25 +41,25 @@ export function LiveChart({ question, answerCounts, reveal = false }: LiveChartP
                 <span
                   className={`truncate ${
                     isCorrect
-                      ? "font-semibold text-white"
+                      ? "font-semibold text-fg"
                       : isWrong
-                        ? "text-zinc-500"
+                        ? "text-fg-muted"
                         : color.text
                   }`}
                 >
                   {option.text}
                 </span>
                 {isCorrect ? (
-                  <span className="shrink-0 rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
+                  <span className="shrink-0 rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-semibold text-success">
                     Correct
                   </span>
                 ) : null}
               </span>
-              <span className="shrink-0 font-mono text-xs tabular-nums text-zinc-400">
+              <span className="shrink-0 font-mono text-xs tabular-nums text-fg-muted">
                 {count}
               </span>
             </div>
-            <div className="h-3 overflow-hidden rounded-full bg-white/5">
+            <div className="h-3 overflow-hidden rounded-full bg-surface">
               <motion.div
                 className={`h-full rounded-full ${color.bar} ${
                   isWrong ? "opacity-40" : ""
@@ -72,7 +72,7 @@ export function LiveChart({ question, answerCounts, reveal = false }: LiveChartP
           </div>
         );
       })}
-      <p className="mt-1 text-right text-xs tabular-nums text-zinc-500">
+      <p className="mt-1 text-right text-xs tabular-nums text-fg-muted">
         {total} {total === 1 ? "answer" : "answers"}
       </p>
     </div>

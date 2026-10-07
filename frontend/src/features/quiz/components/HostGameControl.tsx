@@ -129,11 +129,11 @@ function LobbyView({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col items-center rounded-3xl border border-white/10 bg-zinc-900/70 p-6">
-        <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+      <div className="flex flex-col items-center rounded-3xl border border-line bg-surface p-6">
+        <p className="text-xs font-medium uppercase tracking-wider text-fg-muted">
           Scan to join
         </p>
-        <div className="mt-4 rounded-2xl bg-white p-3 shadow-lg shadow-violet-950/30">
+        <div className="mt-4 rounded-2xl bg-white p-3 shadow-lg shadow-primary/20">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={qrSrc}
@@ -143,8 +143,8 @@ function LobbyView({
             className="h-auto w-[min(280px,60vw)]"
           />
         </div>
-        <p className="mt-5 text-xs text-zinc-500">Room ID</p>
-        <p className="mt-1 font-mono text-3xl font-bold tracking-[0.2em] text-violet-300">
+        <p className="mt-5 text-xs text-fg-muted">Room ID</p>
+        <p className="mt-1 font-mono text-3xl font-bold tracking-[0.2em] text-primary-text">
           {roomId}
         </p>
         <div className="mt-3 flex flex-wrap justify-center gap-2">
@@ -163,17 +163,17 @@ function LobbyView({
             {copiedLink ? "Link copied!" : "Copy guest link"}
           </Button>
         </div>
-        <p className="mt-4 text-sm tabular-nums text-zinc-400">
+        <p className="mt-4 text-sm tabular-nums text-fg-muted">
           {guests.length} {guests.length === 1 ? "guest" : "guests"} joined
         </p>
       </div>
 
-      <div className="flex flex-col gap-3 rounded-3xl border border-white/10 bg-zinc-900/70 p-4">
+      <div className="flex flex-col gap-3 rounded-3xl border border-line bg-surface p-4">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-sm font-semibold text-zinc-200">
+          <p className="text-sm font-semibold text-fg-secondary">
             {deck?.name ?? "Ready to play"}
           </p>
-          <span className="text-xs tabular-nums text-zinc-500">
+          <span className="text-xs tabular-nums text-fg-muted">
             {questions.length} questions
           </span>
         </div>
@@ -188,24 +188,24 @@ function LobbyView({
       </div>
 
       <div className="flex flex-col gap-2">
-        <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+        <p className="text-xs font-medium uppercase tracking-wider text-fg-muted">
           Up next
         </p>
         {questions.length === 0 ? (
-          <p className="text-sm text-zinc-500">No questions in this deck.</p>
+          <p className="text-sm text-fg-muted">No questions in this deck.</p>
         ) : (
           questions.map((question, index) => (
             <div
               key={question.id}
-              className="flex items-center gap-3 rounded-2xl border border-white/10 bg-zinc-900/60 p-3"
+              className="flex items-center gap-3 rounded-2xl border border-line bg-surface p-3"
             >
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-violet-500/20 text-xs font-bold tabular-nums text-violet-300">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-primary/20 text-xs font-bold tabular-nums text-primary-text">
                 {index + 1}
               </span>
-              <span className="min-w-0 flex-1 truncate text-sm text-zinc-300">
+              <span className="min-w-0 flex-1 truncate text-sm text-fg-secondary">
                 {question.prompt}
               </span>
-              <span className="shrink-0 text-xs tabular-nums text-zinc-500">
+              <span className="shrink-0 text-xs tabular-nums text-fg-muted">
                 {question.timeLimitMs / 1000}s
               </span>
             </div>
@@ -252,27 +252,27 @@ function LiveView({
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-6">
       <div className="flex flex-col gap-3">
-        <p className="text-xs font-semibold uppercase tracking-wider text-violet-400">
+        <p className="text-xs font-semibold uppercase tracking-wider text-primary-text">
           Question {index + 1}
         </p>
-        <h2 className="text-2xl font-bold leading-snug text-balance text-zinc-50 sm:text-3xl">
+        <h2 className="text-2xl font-bold leading-snug text-balance text-fg sm:text-3xl">
           {question.prompt}
         </h2>
-        <p className="text-sm tabular-nums text-zinc-500">
+        <p className="text-sm tabular-nums text-fg-muted">
           {seconds} {seconds === 1 ? "second" : "seconds"} left — auto-reveals at 0
         </p>
       </div>
       <div
-        className="rounded-2xl border border-white/10 bg-zinc-900/60 p-5 text-center"
+        className="rounded-2xl border border-line bg-surface p-5 text-center"
         aria-live="polite"
       >
-        <p className="text-3xl font-bold tabular-nums text-violet-300">
+        <p className="text-3xl font-bold tabular-nums text-primary-text">
           {answeredCount}
         </p>
-        <p className="mt-1 text-sm text-zinc-400">
+        <p className="mt-1 text-sm text-fg-muted">
           {answeredCount === 1 ? "answer" : "answers"} received
         </p>
-        <p className="mt-2 text-xs text-zinc-500">
+        <p className="mt-2 text-xs text-fg-muted">
           Choice results stay hidden until reveal.
         </p>
       </div>
@@ -304,23 +304,23 @@ function RevealView({
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-6">
       <div className="flex flex-col gap-3">
-        <p className="text-xs font-semibold uppercase tracking-wider text-violet-400">
+        <p className="text-xs font-semibold uppercase tracking-wider text-primary-text">
           Answers revealed
         </p>
-        <h2 className="text-2xl font-bold leading-snug text-balance text-zinc-50 sm:text-3xl">
+        <h2 className="text-2xl font-bold leading-snug text-balance text-fg sm:text-3xl">
           {question.prompt}
         </h2>
-        <div className="flex items-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-3">
+        <div className="flex items-center gap-2 rounded-2xl border border-emerald-500/30 bg-success-soft p-3">
           <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg text-xs font-bold text-zinc-950 ${correctColor}`}>
             ✓
           </span>
-          <p className="min-w-0 flex-1 truncate text-sm font-medium text-emerald-200">
+          <p className="min-w-0 flex-1 truncate text-sm font-medium text-success">
             {correctText}
           </p>
         </div>
       </div>
       <LiveChart question={question} answerCounts={answerCounts} reveal />
-      <p className="text-center text-xs tabular-nums text-zinc-500">
+      <p className="text-center text-xs tabular-nums text-fg-muted">
         Auto-advances to the leaderboard in {AUTO_LEADERBOARD_DELAY_MS / 1000}s.
       </p>
       <Button type="button" onClick={onShowLeaderboard} className="w-full">
@@ -345,10 +345,10 @@ function LeaderboardView({
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-6">
       <div className="flex flex-col gap-2">
-        <p className="text-xs font-semibold uppercase tracking-wider text-violet-400">
+        <p className="text-xs font-semibold uppercase tracking-wider text-primary-text">
           Top {topLeaderboard.length}
         </p>
-        <h2 className="text-2xl font-bold text-zinc-50 sm:text-3xl">
+        <h2 className="text-2xl font-bold text-fg sm:text-3xl">
           Leaderboard
         </h2>
       </div>
@@ -364,7 +364,7 @@ function LeaderboardView({
           </Button>
         )}
         {leaderboard.length > topLeaderboard.length ? (
-          <p className="text-center text-xs tabular-nums text-zinc-500">
+          <p className="text-center text-xs tabular-nums text-fg-muted">
             {leaderboard.length} guests in this room
           </p>
         ) : null}
@@ -392,10 +392,10 @@ function PodiumView({
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-6">
       <div className="flex flex-col items-center gap-2 text-center">
-        <p className="text-xs font-semibold uppercase tracking-wider text-violet-400">
+        <p className="text-xs font-semibold uppercase tracking-wider text-primary-text">
           Quiz complete
         </p>
-        <h2 className="text-3xl font-bold tracking-tight text-zinc-50">
+        <h2 className="text-3xl font-bold tracking-tight text-fg">
           Final podium
         </h2>
       </div>

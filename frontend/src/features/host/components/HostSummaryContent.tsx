@@ -14,11 +14,11 @@ import { RoundQuestionCard } from "@/shared/ui/RoundQuestionCard";
 import { GuestNameBubbles } from "@/shared/ui/GuestNameBubbles";
 
 const RANK_STYLES = [
-  "from-violet-600/30 to-violet-950/40 border-violet-400/30",
-  "from-fuchsia-600/25 to-zinc-950/40 border-fuchsia-400/25",
-  "from-cyan-600/20 to-zinc-950/40 border-cyan-400/25",
-  "from-amber-600/20 to-zinc-950/40 border-amber-400/25",
-  "from-emerald-600/20 to-zinc-950/40 border-emerald-400/25",
+  "from-primary/15 to-background border-primary/30",
+  "from-primary/20 to-background/40 border-primary/25",
+  "from-cyan-600/20 to-background/40 border-cyan-400/25",
+  "from-amber-600/20 to-background/40 border-amber-400/25",
+  "from-emerald-600/20 to-background/40 border-emerald-400/25",
 ] as const;
 
 function summaryGridClass(count: number): string {
@@ -60,7 +60,7 @@ export function HostSummaryContent() {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="text-sm text-zinc-400"
+        className="text-sm text-fg-muted"
       >
         {status === "loading_saved" ? (
           <span>Loading summary…</span>
@@ -136,7 +136,7 @@ export function HostSummaryContent() {
       ) : null}
 
       {status === "error" ? (
-        <div className="flex flex-col items-center gap-3 rounded-2xl border border-rose-500/20 bg-rose-500/10 px-4 py-5 text-center text-sm text-rose-300">
+        <div className="flex flex-col items-center gap-3 rounded-2xl border border-rose-500/20 bg-rose-500/10 px-4 py-5 text-center text-sm text-danger">
           <p>{error ?? "Unable to load the summary."}</p>
           <Button
             type="button"
@@ -175,19 +175,19 @@ export function HostSummaryContent() {
                     animate={{ opacity: 1 }}
                     className="flex items-start justify-between gap-2"
                   >
-                    <h2 className="text-lg font-semibold text-white sm:text-xl">
+                    <h2 className="text-lg font-semibold text-fg sm:text-xl">
                       {getSummaryTopicLabel(card)}
                     </h2>
-                    <span className="shrink-0 rounded-full bg-black/30 px-2 py-0.5 text-xs font-medium text-violet-200">
+                    <span className="shrink-0 rounded-full bg-primary-soft px-2 py-0.5 text-xs font-medium text-primary-text">
                       #{index + 1}
                     </span>
                   </motion.div>
-                  <p className="flex-1 text-sm leading-relaxed text-zinc-100 sm:text-base">
+                  <p className="flex-1 text-sm leading-relaxed text-fg sm:text-base">
                     {card.summary}
                   </p>
                   <div className="mt-auto flex flex-col gap-2">
                     <GuestNameBubbles tags={guestTags} />
-                    <p className="text-xs text-zinc-500">
+                    <p className="text-xs text-fg-muted">
                       {group?.count ?? 0} contribution
                       {(group?.count ?? 0) === 1 ? "" : "s"}
                     </p>
@@ -196,18 +196,18 @@ export function HostSummaryContent() {
               );
             })}
           </motion.div>
-          <p className="text-center text-xs text-zinc-500">
+          <p className="text-center text-xs text-fg-muted">
             Refreshing creates a new summary and saves this one to summary history.
           </p>
         </>
       ) : null}
 
       {hasSummary && roomId ? (
-        <div className="rounded-3xl border border-white/10 bg-zinc-900/70 p-5">
-          <p className="text-base font-semibold text-zinc-100">
+        <div className="rounded-3xl border border-line bg-surface p-5">
+          <p className="text-base font-semibold text-fg">
             Ready for a new round?
           </p>
-          <p className="mt-1 text-sm text-zinc-400">
+          <p className="mt-1 text-sm text-fg-muted">
             Clears guest inputs and the active summary for this room. Guests stay
             in the room and can submit again — no need to scan the QR code again.
           </p>
@@ -240,7 +240,7 @@ export function HostSummaryContent() {
 function LoadingSpinner() {
   return (
     <motion.div
-      className="mb-4 h-10 w-10 rounded-full border-2 border-violet-400 border-t-transparent"
+      className="mb-4 h-10 w-10 rounded-full border-2 border-primary border-t-transparent"
       animate={{ rotate: 360 }}
       transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }}
     />
@@ -251,7 +251,7 @@ function StatusPanel({ children }: { children: React.ReactNode }) {
   return (
     <motion.div
       role="status"
-      className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-white/10 px-6 py-16 text-center text-sm text-zinc-500 sm:py-20 sm:text-base"
+      className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-line px-6 py-16 text-center text-sm text-fg-muted sm:py-20 sm:text-base"
     >
       {children}
     </motion.div>

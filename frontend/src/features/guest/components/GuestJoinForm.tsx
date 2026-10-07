@@ -141,12 +141,12 @@ export function GuestJoinForm({
         transition={{ type: "spring", stiffness: 280, damping: 26 }}
       >
         <motion.div
-          className="rounded-3xl border border-white/10 bg-zinc-900/80 p-6 shadow-2xl shadow-violet-950/40 backdrop-blur-xl sm:p-8"
+          className="rounded-3xl border border-line bg-surface p-6 shadow-2xl shadow-primary/20 backdrop-blur-xl sm:p-8"
           whileHover={{ scale: 1.01 }}
           transition={{ type: "spring", stiffness: 400, damping: 30 }}
         >
           {fromQr && urlPrefill ? (
-            <p className="mb-4 rounded-2xl border border-violet-500/25 bg-violet-500/10 px-3 py-2 text-center text-sm text-violet-200">
+            <p className="mb-4 rounded-2xl border border-primary/25 bg-primary/10 px-3 py-2 text-center text-sm text-primary-text">
               Scanned room{" "}
               <span className="font-mono font-bold tracking-widest">
                 {urlPrefill}
@@ -156,7 +156,7 @@ export function GuestJoinForm({
 
           <label
             htmlFor={roomFieldId}
-            className="mb-2 block text-sm font-medium text-zinc-300"
+            className="mb-2 block text-sm font-medium text-fg-secondary"
           >
             Room code
           </label>
@@ -181,13 +181,13 @@ export function GuestJoinForm({
             autoFocus={!urlPrefill}
             className="mb-1 text-center font-mono text-lg font-semibold tracking-widest"
           />
-          <p className="mb-5 text-center text-xs text-zinc-500">
+          <p className="mb-5 text-center text-xs text-fg-muted">
             {MIN_ROOM_CODE}–{MAX_ROOM_CODE} letters or numbers
           </p>
 
           <label
             htmlFor="guest-name"
-            className="mb-2 block text-sm font-medium text-zinc-300"
+            className="mb-2 block text-sm font-medium text-fg-secondary"
           >
             Your nickname
           </label>
@@ -205,12 +205,12 @@ export function GuestJoinForm({
             autoFocus={Boolean(urlPrefill)}
             className="mb-1 text-center text-lg font-semibold"
           />
-          <p className="mb-6 text-center text-xs text-zinc-500">
+          <p className="mb-6 text-center text-xs text-fg-muted">
             {MIN_NAME}–{MAX_NAME} characters
           </p>
 
           {error ? (
-            <p className="mb-4 text-center text-sm text-rose-400">{error}</p>
+            <p className="mb-4 text-center text-sm text-danger">{error}</p>
           ) : null}
 
           <Button
@@ -226,7 +226,7 @@ export function GuestJoinForm({
             variant="ghost"
             onClick={() => void handleClearDevice()}
             disabled={loading}
-            className="mt-3 w-full text-sm text-zinc-500 hover:text-rose-300"
+            className="mt-3 w-full text-sm text-fg-muted hover:text-danger"
           >
             Clear saved session on this device
           </Button>

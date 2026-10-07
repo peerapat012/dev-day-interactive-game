@@ -21,7 +21,7 @@ export function QuizGuestScreen({ onLeaveRoom }: QuizGuestScreenProps) {
 
   if (!ready) {
     return (
-      <div className="flex min-h-dvh items-center justify-center text-sm text-zinc-500">
+      <div className="flex min-h-dvh items-center justify-center text-sm text-fg-muted">
         Joining quiz…
       </div>
     );
@@ -30,7 +30,7 @@ export function QuizGuestScreen({ onLeaveRoom }: QuizGuestScreenProps) {
   if (error || !state) {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center gap-4 px-4 text-center">
-        <p className="text-sm text-rose-400">
+        <p className="text-sm text-danger">
           {error ?? "Could not open the quiz."}
         </p>
         <Button type="button" variant="ghost" onClick={onLeaveRoom}>
@@ -62,9 +62,9 @@ export function QuizGuestScreen({ onLeaveRoom }: QuizGuestScreenProps) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >
-      <header className="shrink-0 border-b border-white/10 bg-zinc-950/90 px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur-md">
+      <header className="shrink-0 border-b border-line bg-background/90 px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur-md">
         <div className="flex items-center gap-2">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-violet-400 sm:text-xs">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary-text sm:text-xs">
             Quiz
           </p>
           <div className="ml-auto flex items-center gap-2">
@@ -73,20 +73,20 @@ export function QuizGuestScreen({ onLeaveRoom }: QuizGuestScreenProps) {
               type="button"
               variant="ghost"
               onClick={onLeaveRoom}
-              className="shrink-0 px-3 py-1.5 text-xs text-zinc-400 hover:text-rose-300"
+              className="shrink-0 px-3 py-1.5 text-xs text-fg-muted hover:text-danger"
             >
               Leave room
             </Button>
           </div>
         </div>
-        <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
+        <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5">
           <span
-            className="flex h-7 w-7 items-center justify-center rounded-full bg-violet-500/30 text-xs font-bold uppercase text-violet-200"
+            className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/30 text-xs font-bold uppercase text-primary-text"
             aria-hidden
           >
             {displayName.slice(0, 1)}
           </span>
-          <span className="max-w-[200px] truncate text-sm font-medium text-zinc-200">
+          <span className="max-w-[200px] truncate text-sm font-medium text-fg-secondary">
             {displayName}
           </span>
         </div>
@@ -103,13 +103,13 @@ export function QuizGuestScreen({ onLeaveRoom }: QuizGuestScreenProps) {
               exit={{ opacity: 0, y: -4 }}
             >
               <div
-                className="h-10 w-10 animate-spin rounded-full border-2 border-violet-400/40 border-t-violet-300"
+                className="h-10 w-10 animate-spin rounded-full border-2 border-primary/40 border-t-primary"
                 aria-hidden="true"
               />
-              <p className="text-base font-medium text-zinc-200">
+              <p className="text-base font-medium text-fg-secondary">
                 Waiting for the host to start…
               </p>
-              <p className="text-sm text-zinc-500">
+              <p className="text-sm text-fg-muted">
                 Keep this tab open — the first question will appear here.
               </p>
             </motion.div>
@@ -130,7 +130,7 @@ export function QuizGuestScreen({ onLeaveRoom }: QuizGuestScreenProps) {
                 onExpire={() => undefined}
               />
               {submitError ? (
-                <p className="mt-4 text-center text-sm text-rose-400">
+                <p className="mt-4 text-center text-sm text-danger">
                   {submitError}
                 </p>
               ) : null}
@@ -156,15 +156,15 @@ export function QuizGuestScreen({ onLeaveRoom }: QuizGuestScreenProps) {
               exit={{ opacity: 0, y: -4 }}
             >
               <div className="flex flex-col gap-2">
-                <p className="text-xs font-semibold uppercase tracking-wider text-violet-400">
+                <p className="text-xs font-semibold uppercase tracking-wider text-primary-text">
                   Top {state.topLeaderboard.length}
                 </p>
-                <h2 className="text-2xl font-bold text-zinc-50 sm:text-3xl">
+                <h2 className="text-2xl font-bold text-fg sm:text-3xl">
                   Leaderboard
                 </h2>
               </div>
               <HostLeaderboard entries={state.topLeaderboard} />
-              <p className="text-center text-sm text-zinc-500">
+              <p className="text-center text-sm text-fg-muted">
                 Waiting for the host to continue…
               </p>
             </motion.div>
@@ -177,15 +177,15 @@ export function QuizGuestScreen({ onLeaveRoom }: QuizGuestScreenProps) {
               exit={{ opacity: 0, y: -4 }}
             >
               <div className="flex flex-col items-center gap-2 text-center">
-                <p className="text-xs font-semibold uppercase tracking-wider text-violet-400">
+                <p className="text-xs font-semibold uppercase tracking-wider text-primary-text">
                   Quiz complete
                 </p>
-                <h2 className="text-3xl font-bold tracking-tight text-zinc-50">
+                <h2 className="text-3xl font-bold tracking-tight text-fg">
                   Final podium
                 </h2>
               </div>
               <Podium topThree={state.topLeaderboard.slice(0, 3)} />
-              <p className="text-center text-sm text-zinc-500">
+              <p className="text-center text-sm text-fg-muted">
                 Thanks for playing!
               </p>
             </motion.div>

@@ -53,7 +53,7 @@ export function RoundQuestionEditor({
             {question.trim() ? "Edit question" : "Set round question (optional)"}
           </Button>
           {!question.trim() ? (
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-fg-muted">
               Guests see it and AI groups answers to it.
             </p>
           ) : null}
@@ -64,7 +64,7 @@ export function RoundQuestionEditor({
 
   return (
     <form
-      className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-zinc-900/60 p-4"
+      className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-4"
       onSubmit={(e) => {
         e.preventDefault();
         void save(draft);
@@ -88,7 +88,7 @@ export function RoundQuestionEditor({
             variant="ghost"
             disabled={saving}
             onClick={() => void save("")}
-            className="px-4 py-2 text-sm text-rose-300"
+            className="px-4 py-2 text-sm text-danger"
           >
             Clear question
           </Button>
@@ -103,10 +103,10 @@ export function RoundQuestionEditor({
           Cancel
         </Button>
       </div>
-      <p className="text-xs text-zinc-500">
+      <p className="text-xs text-fg-muted">
         Changing it mid-round affects how the next summary is generated.
       </p>
-      {error ? <p className="text-sm text-rose-400">{error}</p> : null}
+      {error ? <p className="text-sm text-danger">{error}</p> : null}
     </form>
   );
 }

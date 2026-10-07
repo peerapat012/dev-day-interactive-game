@@ -29,15 +29,15 @@ export function GuestFeedback({ question, myAnswer }: GuestFeedbackProps) {
         transition={{ type: "spring", duration: 0.4, bounce: 0 }}
         className={`grid h-24 w-24 place-items-center rounded-full border-2 text-4xl ${
           isCorrect
-            ? "border-emerald-400/60 bg-emerald-500/15 text-emerald-300"
-            : "border-rose-400/60 bg-rose-500/15 text-rose-300"
+            ? "border-emerald-400/60 bg-emerald-500/15 text-success"
+            : "border-rose-400/60 bg-rose-500/15 text-danger"
         }`}
       >
         {isCorrect ? "✓" : answered ? "✕" : "—"}
       </motion.div>
 
       <div className="flex flex-col gap-2">
-        <p className="text-lg font-semibold text-zinc-100">
+        <p className="text-lg font-semibold text-fg">
           {!answered
             ? "No answer submitted"
             : isCorrect
@@ -45,23 +45,23 @@ export function GuestFeedback({ question, myAnswer }: GuestFeedbackProps) {
               : "Not quite"}
         </p>
         {answered ? (
-          <p className="text-sm tabular-nums text-zinc-400">
+          <p className="text-sm tabular-nums text-fg-muted">
             +{myAnswer?.points ?? 0} points
           </p>
         ) : (
-          <p className="text-sm text-zinc-400">
+          <p className="text-sm text-fg-muted">
             Too late or missed this one — the answer counts for the leaderboard.
           </p>
         )}
       </div>
 
-      <div className="flex items-center gap-2 rounded-2xl border border-emerald-500/25 bg-emerald-500/10 p-3">
+      <div className="flex items-center gap-2 rounded-2xl border border-emerald-500/25 bg-success-soft p-3">
         <span
           className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg text-xs font-bold text-zinc-950 ${correctColor}`}
         >
           ✓
         </span>
-        <p className="min-w-0 flex-1 truncate text-sm font-medium text-emerald-200">
+        <p className="min-w-0 flex-1 truncate text-sm font-medium text-success">
           {correctOption?.text ?? ""}
         </p>
       </div>

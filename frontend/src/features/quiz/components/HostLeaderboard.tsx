@@ -16,7 +16,7 @@ export function HostLeaderboard({ entries, full = false }: HostLeaderboardProps)
 
   if (!visible.length) {
     return (
-      <p className="rounded-2xl border border-white/10 bg-zinc-900/60 p-4 text-sm text-zinc-400">
+      <p className="rounded-2xl border border-line bg-surface p-4 text-sm text-fg-muted">
         No scores yet — answers from guests will appear here as the game runs.
       </p>
     );
@@ -30,7 +30,7 @@ export function HostLeaderboard({ entries, full = false }: HostLeaderboardProps)
           className={`flex items-center gap-3 rounded-2xl border p-3 ${
             entry.rank === 1
               ? "border-amber-400/40 bg-amber-500/10"
-              : "border-white/10 bg-zinc-900/60"
+              : "border-line bg-surface"
           }`}
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -38,18 +38,18 @@ export function HostLeaderboard({ entries, full = false }: HostLeaderboardProps)
         >
           <span className="w-8 shrink-0 text-center text-lg tabular-nums">
             {MEDAL_EMOJI[entry.rank] ?? (
-              <span className="text-sm font-semibold text-zinc-400">
+              <span className="text-sm font-semibold text-fg-muted">
                 {entry.rank}
               </span>
             )}
           </span>
-          <span className="min-w-0 flex-1 truncate text-sm font-medium text-zinc-100">
+          <span className="min-w-0 flex-1 truncate text-sm font-medium text-fg">
             {entry.displayName}
           </span>
-          <span className="shrink-0 text-xs text-zinc-500">
+          <span className="shrink-0 text-xs text-fg-muted">
             {entry.correct} ✓
           </span>
-          <span className="w-16 shrink-0 text-right font-mono text-sm font-semibold tabular-nums text-violet-300">
+          <span className="w-16 shrink-0 text-right font-mono text-sm font-semibold tabular-nums text-primary-text">
             {entry.score}
           </span>
         </motion.div>

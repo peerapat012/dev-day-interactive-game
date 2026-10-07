@@ -219,7 +219,7 @@ export function DeckEditor({ initialDeck, onStart, onClearSession, auth }: DeckE
       <div className="flex flex-col gap-2">
         <label
           htmlFor="deck-name"
-          className="text-xs font-medium uppercase tracking-wider text-zinc-500"
+          className="text-xs font-medium uppercase tracking-wider text-fg-muted"
         >
           Quiz name
         </label>
@@ -231,14 +231,14 @@ export function DeckEditor({ initialDeck, onStart, onClearSession, auth }: DeckE
         />
       </div>
 
-      <div className="flex flex-col gap-3 rounded-3xl border border-violet-500/20 bg-violet-500/5 p-4">
+      <div className="flex flex-col gap-3 rounded-3xl border border-primary/20 bg-primary/5 p-4">
         <button
           type="button"
           onClick={() => setAiOpen((open) => !open)}
-          className="flex min-h-[44px] w-full items-center justify-between text-left text-sm font-medium text-zinc-200"
+          className="flex min-h-[44px] w-full items-center justify-between text-left text-sm font-medium text-fg-secondary"
         >
           <span>✨ Generate questions with AI</span>
-          <span className="text-zinc-500">{aiOpen ? "−" : "+"}</span>
+          <span className="text-fg-muted">{aiOpen ? "−" : "+"}</span>
         </button>
         <AnimatePresence initial={false}>
           {aiOpen ? (
@@ -252,7 +252,7 @@ export function DeckEditor({ initialDeck, onStart, onClearSession, auth }: DeckE
               <div className="flex flex-col gap-1.5">
                 <label
                   htmlFor="ai-topic"
-                  className="text-xs text-zinc-400"
+                  className="text-xs text-fg-muted"
                 >
                   Topic or type of question
                 </label>
@@ -268,7 +268,7 @@ export function DeckEditor({ initialDeck, onStart, onClearSession, auth }: DeckE
                 <div className="flex flex-col gap-1.5">
                   <label
                     htmlFor="ai-count"
-                    className="text-xs text-zinc-400"
+                    className="text-xs text-fg-muted"
                   >
                     Question amount
                   </label>
@@ -286,7 +286,7 @@ export function DeckEditor({ initialDeck, onStart, onClearSession, auth }: DeckE
                 <div className="flex flex-col gap-1.5">
                   <label
                     htmlFor="ai-option-count"
-                    className="text-xs text-zinc-400"
+                    className="text-xs text-fg-muted"
                   >
                     Choice amount
                   </label>
@@ -306,7 +306,7 @@ export function DeckEditor({ initialDeck, onStart, onClearSession, auth }: DeckE
               <div className="flex flex-col gap-1.5">
                 <label
                   htmlFor="ai-language"
-                  className="text-xs text-zinc-400"
+                  className="text-xs text-fg-muted"
                 >
                   Language
                 </label>
@@ -318,7 +318,7 @@ export function DeckEditor({ initialDeck, onStart, onClearSession, auth }: DeckE
                       event.target.value as (typeof GENERATION_LANGUAGES)[number],
                     )
                   }
-                  className="min-h-[48px] rounded-2xl border border-white/10 bg-zinc-900 px-4 text-sm text-zinc-200 outline-none ring-violet-500/40 focus:ring-2"
+                  className="min-h-[48px] rounded-2xl border border-line bg-surface px-4 text-sm text-fg-secondary outline-none ring-primary/40 focus:ring-2"
                 >
                   {GENERATION_LANGUAGES.map((lang) => (
                     <option key={lang} value={lang}>
@@ -337,10 +337,10 @@ export function DeckEditor({ initialDeck, onStart, onClearSession, auth }: DeckE
                 {aiBusy ? "Generating…" : "Generate questions"}
               </Button>
               {aiError ? (
-                <p className="text-center text-xs text-rose-400">{aiError}</p>
+                <p className="text-center text-xs text-danger">{aiError}</p>
               ) : null}
               {aiDone > 0 ? (
-                <p className="text-center text-xs text-emerald-400">
+                <p className="text-center text-xs text-success">
                   Generated {aiDone} questions — they replaced your current
                   deck. Review and edit them below.
                 </p>
@@ -352,7 +352,7 @@ export function DeckEditor({ initialDeck, onStart, onClearSession, auth }: DeckE
 
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-zinc-200">
+          <h2 className="text-sm font-semibold text-fg-secondary">
             Questions ({questions.length})
           </h2>
           <Button type="button" variant="ghost" onClick={addQuestion}>
@@ -363,19 +363,19 @@ export function DeckEditor({ initialDeck, onStart, onClearSession, auth }: DeckE
         {questions.map((question, index) => (
           <motion.section
             key={question.id}
-            className="flex flex-col gap-3 rounded-3xl border border-white/10 bg-zinc-900/70 p-4"
+            className="flex flex-col gap-3 rounded-3xl border border-line bg-surface p-4"
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
           >
             <div className="flex items-center justify-between gap-2">
-              <span className="text-xs font-semibold uppercase tracking-wider text-violet-400">
+              <span className="text-xs font-semibold uppercase tracking-wider text-primary-text">
                 Question {index + 1}
               </span>
               <button
                 type="button"
                 onClick={() => removeQuestion(index)}
-                className="min-h-[40px] min-w-[40px] rounded-full px-2 text-xs text-rose-400 transition-transform active:scale-[0.96]"
+                className="min-h-[40px] min-w-[40px] rounded-full px-2 text-xs text-danger transition-transform active:scale-[0.96]"
               >
                 Remove
               </button>
@@ -407,7 +407,7 @@ export function DeckEditor({ initialDeck, onStart, onClearSession, auth }: DeckE
                       }
                       className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl text-xs font-bold text-zinc-950 transition-transform active:scale-[0.96] ${color.bar} ${
                         isCorrect
-                          ? "ring-2 ring-white/80"
+                          ? "ring-2 ring-fg"
                           : "opacity-50 hover:opacity-80"
                       }`}
                     >
@@ -426,7 +426,7 @@ export function DeckEditor({ initialDeck, onStart, onClearSession, auth }: DeckE
                         type="button"
                         onClick={() => removeOption(index, option.id)}
                         aria-label="Remove option"
-                        className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-zinc-500 transition-transform active:scale-[0.96]"
+                        className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-fg-muted transition-transform active:scale-[0.96]"
                       >
                         ✕
                       </button>
@@ -448,7 +448,7 @@ export function DeckEditor({ initialDeck, onStart, onClearSession, auth }: DeckE
             <div className="flex items-center justify-between gap-2">
               <label
                 htmlFor={`time-${question.id}`}
-                className="text-xs text-zinc-400"
+                className="text-xs text-fg-muted"
               >
                 Time limit
               </label>
@@ -460,7 +460,7 @@ export function DeckEditor({ initialDeck, onStart, onClearSession, auth }: DeckE
                     timeLimitMs: Number(event.target.value),
                   })
                 }
-                className="min-h-[40px] rounded-xl border border-white/10 bg-zinc-900 px-3 text-sm text-zinc-200 outline-none ring-violet-500/40 focus:ring-2"
+                className="min-h-[40px] rounded-xl border border-line bg-surface px-3 text-sm text-fg-secondary outline-none ring-primary/40 focus:ring-2"
               >
                 {TIME_LIMITS_MS.map((ms) => (
                   <option key={ms} value={ms}>
@@ -483,21 +483,21 @@ export function DeckEditor({ initialDeck, onStart, onClearSession, auth }: DeckE
           Start quiz
         </Button>
         {!valid ? (
-          <p className="text-center text-xs text-zinc-500">
+          <p className="text-center text-xs text-fg-muted">
             Each question needs a prompt and at least two options with one
             marked correct.
           </p>
         ) : null}
       </div>
 
-      <div className="rounded-3xl border border-white/10 bg-zinc-900/60 p-4">
+      <div className="rounded-3xl border border-line bg-surface p-4">
         <button
           type="button"
           onClick={() => setAuthOpen((open) => !open)}
-          className="flex min-h-[44px] w-full items-center justify-between text-left text-sm font-medium text-zinc-200"
+          className="flex min-h-[44px] w-full items-center justify-between text-left text-sm font-medium text-fg-secondary"
         >
           <span>My saved decks</span>
-          <span className="text-zinc-500">{authOpen ? "−" : "+"}</span>
+          <span className="text-fg-muted">{authOpen ? "−" : "+"}</span>
         </button>
         <AnimatePresence initial={false}>
           {authOpen ? (
@@ -513,13 +513,13 @@ export function DeckEditor({ initialDeck, onStart, onClearSession, auth }: DeckE
               ) : (
                 <div className="flex flex-col gap-3">
                   <div className="flex items-center justify-between gap-2">
-                    <p className="truncate text-sm text-zinc-300">
-                      Signed in as <span className="text-zinc-100">{auth.user.name || auth.user.email}</span>
+                    <p className="truncate text-sm text-fg-secondary">
+                      Signed in as <span className="text-fg">{auth.user.name || auth.user.email}</span>
                     </p>
                     <button
                       type="button"
                       onClick={() => void auth.logout()}
-                      className="min-h-[40px] rounded-full px-3 text-xs text-zinc-400 transition-transform active:scale-[0.96]"
+                      className="min-h-[40px] rounded-full px-3 text-xs text-fg-muted transition-transform active:scale-[0.96]"
                     >
                       Log out
                     </button>
@@ -533,37 +533,37 @@ export function DeckEditor({ initialDeck, onStart, onClearSession, auth }: DeckE
                     {saveBusy ? "Saving…" : "Save this deck to my account"}
                   </Button>
                   {saveError ? (
-                    <p className="text-center text-xs text-rose-400">
+                    <p className="text-center text-xs text-danger">
                       {saveError}
                     </p>
                   ) : null}
 
                   <div className="flex flex-col gap-2">
-                    <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+                    <p className="text-xs font-medium uppercase tracking-wider text-fg-muted">
                       Saved decks
                     </p>
                     {auth.savedDecks.length === 0 ? (
-                      <p className="text-xs text-zinc-500">
+                      <p className="text-xs text-fg-muted">
                         Nothing saved yet.
                       </p>
                     ) : (
                       auth.savedDecks.map((deck) => (
                         <div
                           key={deck.$id}
-                          className="flex items-center gap-2 rounded-2xl border border-white/10 bg-zinc-900/60 p-2.5"
+                          className="flex items-center gap-2 rounded-2xl border border-line bg-surface p-2.5"
                         >
                           <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm text-zinc-200">
+                            <p className="truncate text-sm text-fg-secondary">
                               {deck.name}
                             </p>
-                            <p className="text-xs tabular-nums text-zinc-500">
+                            <p className="text-xs tabular-nums text-fg-muted">
                               {deck.questions.length} questions
                             </p>
                           </div>
                           <button
                             type="button"
                             onClick={() => loadDeckIntoEditor(deck)}
-                            className="min-h-[40px] rounded-full px-3 text-xs font-medium text-violet-300 transition-transform active:scale-[0.96]"
+                            className="min-h-[40px] rounded-full px-3 text-xs font-medium text-primary-text transition-transform active:scale-[0.96]"
                           >
                             Load
                           </button>
@@ -571,7 +571,7 @@ export function DeckEditor({ initialDeck, onStart, onClearSession, auth }: DeckE
                             type="button"
                             onClick={() => void auth.deleteDeckFromCloud(deck.$id)}
                             aria-label={`Delete ${deck.name}`}
-                            className="min-h-[40px] min-w-[40px] rounded-full text-zinc-500 transition-transform active:scale-[0.96]"
+                            className="min-h-[40px] min-w-[40px] rounded-full text-fg-muted transition-transform active:scale-[0.96]"
                           >
                             ✕
                           </button>
@@ -587,7 +587,7 @@ export function DeckEditor({ initialDeck, onStart, onClearSession, auth }: DeckE
       </div>
 
       <div className="flex flex-col gap-2 rounded-2xl border border-rose-500/20 bg-rose-500/5 p-4">
-        <p className="text-xs text-zinc-400">
+        <p className="text-xs text-fg-muted">
           Start over on this device: wipes the local deck and gives you a fresh
           room code.
         </p>
@@ -599,7 +599,7 @@ export function DeckEditor({ initialDeck, onStart, onClearSession, auth }: DeckE
               onClearSession();
             }
           }}
-          className="w-full border-rose-500/30 text-rose-300"
+          className="w-full border-rose-500/30 text-danger"
         >
           Clear session
         </Button>

@@ -3,13 +3,14 @@
 import { useEffect } from "react";
 import { useRealtimeEntries } from "@/features/cloud/hooks/useRealtimeEntries";
 import { ensureGuestSession } from "@/services/appwrite/auth";
+import { useThemeStore } from "@/shared/theme/themeStore";
 import { PlayerGate } from "@/shared/components/PlayerGate";
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   useRealtimeEntries();
 
   useEffect(() => {
-    document.documentElement.classList.add("dark");
+    useThemeStore.getState().syncFromDocument();
     void ensureGuestSession().catch(() => undefined);
   }, []);
 

@@ -134,11 +134,11 @@ export function HostRoomTab({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
     >
-      <div className="flex flex-col items-center rounded-3xl border border-white/10 bg-zinc-900/70 p-6">
-        <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+      <div className="flex flex-col items-center rounded-3xl border border-line bg-surface p-6">
+        <p className="text-xs font-medium uppercase tracking-wider text-fg-muted">
           Scan to join
         </p>
-        <div className="mt-4 rounded-2xl bg-white p-3 shadow-lg shadow-violet-950/30">
+        <div className="mt-4 rounded-2xl bg-white p-3 shadow-lg shadow-primary/20">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={qrSrc}
@@ -148,8 +148,8 @@ export function HostRoomTab({
             className="h-auto w-[min(280px,70vw)]"
           />
         </div>
-        <p className="mt-5 text-xs text-zinc-500">Room ID</p>
-        <p className="mt-1 font-mono text-3xl font-bold tracking-[0.2em] text-violet-300">
+        <p className="mt-5 text-xs text-fg-muted">Room ID</p>
+        <p className="mt-1 font-mono text-3xl font-bold tracking-[0.2em] text-primary-text">
           {roomId}
         </p>
         <Button
@@ -162,8 +162,8 @@ export function HostRoomTab({
         </Button>
       </div>
 
-      <motion.div className="rounded-2xl border border-violet-500/20 bg-violet-500/5 p-4">
-        <p className="text-sm text-zinc-300">
+      <motion.div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
+        <p className="text-sm text-fg-secondary">
           Need a fresh room code for a new session? Guests will use the new QR
           and link below.
         </p>
@@ -176,18 +176,18 @@ export function HostRoomTab({
           {creating ? "Creating…" : "Create new room"}
         </Button>
         {createdCode ? (
-          <p className="mt-3 text-center text-sm text-emerald-300">
+          <p className="mt-3 text-center text-sm text-success">
             New room code:{" "}
             <span className="font-mono font-bold">{createdCode}</span>
           </p>
         ) : null}
         {createError ? (
-          <p className="mt-3 text-sm text-rose-400">{createError}</p>
+          <p className="mt-3 text-sm text-danger">{createError}</p>
         ) : null}
       </motion.div>
 
       <motion.div className="rounded-2xl border border-amber-500/25 bg-amber-500/5 p-4">
-        <p className="text-sm text-zinc-300">
+        <p className="text-sm text-fg-secondary">
           End the live session: connected guests are cleared locally, joins to this
           QR stop working, and you return to the home page to host again later.
         </p>
@@ -196,20 +196,20 @@ export function HostRoomTab({
           variant="ghost"
           onClick={() => void handleCloseRoomSession()}
           disabled={closing || clearing}
-          className="mt-3 w-full border-amber-500/35 text-amber-200 hover:text-amber-100"
+          className="mt-3 w-full border-amber-500/35 text-accent-text hover:text-amber-100"
         >
           {closing ? "Closing session…" : "Close room & end session"}
         </Button>
         {closeError ? (
-          <p className="mt-3 text-sm text-rose-400">{closeError}</p>
+          <p className="mt-3 text-sm text-danger">{closeError}</p>
         ) : null}
       </motion.div>
 
-      <motion.div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-4">
-        <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+      <motion.div className="rounded-2xl border border-line bg-surface p-4">
+        <p className="text-xs font-medium uppercase tracking-wider text-fg-muted">
           Guest link
         </p>
-        <p className="mt-2 break-all text-sm text-zinc-300">{guestUrl}</p>
+        <p className="mt-2 break-all text-sm text-fg-secondary">{guestUrl}</p>
         <Button
           type="button"
           onClick={() => void handleCopyLink()}
@@ -220,7 +220,7 @@ export function HostRoomTab({
       </motion.div>
 
       <motion.div className="rounded-2xl border border-rose-500/20 bg-rose-500/5 p-4">
-        <p className="text-sm text-zinc-400">
+        <p className="text-sm text-fg-muted">
           Removes all phrases, groups, summaries, and saved rounds for this room. Guest
           nicknames stay; everyone can submit a new phrase again with the same link.
         </p>
@@ -229,12 +229,12 @@ export function HostRoomTab({
           variant="ghost"
           onClick={() => void handleClear()}
           disabled={clearing || closing}
-          className="mt-3 w-full border-rose-500/30 text-rose-300"
+          className="mt-3 w-full border-rose-500/30 text-danger"
         >
           {clearing ? "Clearing…" : "Clear room data"}
         </Button>
         {clearError ? (
-          <p className="mt-3 text-sm text-rose-400">{clearError}</p>
+          <p className="mt-3 text-sm text-danger">{clearError}</p>
         ) : null}
       </motion.div>
     </motion.div>

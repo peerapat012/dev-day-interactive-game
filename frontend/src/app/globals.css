@@ -1,14 +1,84 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #09090b;
-  --foreground: #fafafa;
+  color-scheme: light;
+  --background: #f7f8fb;
+  --surface: #ffffff;
+  --surface-hover: #eef1f7;
+  --fg: #0b1220;
+  --fg-secondary: #334155;
+  --fg-muted: #64748b;
+  --line: rgb(15 23 42 / 0.1);
+  --line-strong: rgb(15 23 42 / 0.2);
+  --primary: var(--brand-blue);
+  --primary-fg: #ffffff;
+  --primary-text: #0043d6;
+  --primary-soft: rgb(0 80 252 / 0.08);
+  --accent-text: #c2410c;
+  --danger: #e11d48;
+  --danger-soft: #fff1f2;
+  --success: #059669;
+  --success-soft: #ecfdf5;
+  --pill-highlight: rgb(255 255 255 / 0.6);
   --tab-bar-height: 4.5rem;
+
+  /* SCGJWD brand colors, sampled from the logo */
+  --brand-blue: #0050fc;
+  --brand-orange: #f8761e;
+  --brand-yellow: #f6b019;
+  --brand-gradient: linear-gradient(
+    90deg,
+    var(--brand-blue),
+    var(--brand-orange) 55%,
+    var(--brand-yellow)
+  );
+}
+
+.dark {
+  color-scheme: dark;
+  --background: #09090b;
+  --surface: rgb(24 24 27 / 0.6);
+  --surface-hover: rgb(255 255 255 / 0.1);
+  --fg: #fafafa;
+  --fg-secondary: #d4d4d8;
+  --fg-muted: #a1a1aa;
+  --line: rgb(255 255 255 / 0.1);
+  --line-strong: rgb(255 255 255 / 0.2);
+  --primary: #3b7bff;
+  --primary-text: #7aa5ff;
+  --primary-soft: rgb(59 123 255 / 0.15);
+  --accent-text: #fdba74;
+  --danger: #fb7185;
+  --danger-soft: rgb(244 63 94 / 0.1);
+  --success: #6ee7b7;
+  --success-soft: rgb(16 185 129 / 0.1);
+  --pill-highlight: rgb(255 255 255 / 0.15);
 }
 
 @theme inline {
   --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-foreground: var(--fg);
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
+  --color-fg: var(--fg);
+  --color-fg-secondary: var(--fg-secondary);
+  --color-fg-muted: var(--fg-muted);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-primary: var(--primary);
+  --color-primary-fg: var(--primary-fg);
+  --color-primary-text: var(--primary-text);
+  --color-primary-soft: var(--primary-soft);
+  --color-accent-text: var(--accent-text);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-brand: var(--brand-blue);
+  --color-accent: var(--brand-orange);
+  --color-highlight: var(--brand-yellow);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -19,7 +89,7 @@ html {
 
 body {
   background: var(--background);
-  color: var(--foreground);
+  color: var(--fg);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }

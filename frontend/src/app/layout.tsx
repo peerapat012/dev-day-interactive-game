@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   description: "Interactive semantic word cloud — mobile web",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
     title: "Word Cloud",
   },
 };
@@ -28,8 +28,13 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   viewportFit: "cover",
-  themeColor: "#09090b",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f7f8fb" },
+    { media: "(prefers-color-scheme: dark)", color: "#09090b" },
+  ],
 };
+
+const themeInitScript = `try{if(localStorage.getItem("theme")==="dark")document.documentElement.classList.add("dark")}catch(e){}`;
 
 export default function RootLayout({
   children,
@@ -39,9 +44,13 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} dark h-full antialiased`}
+      suppressHydrationWarning
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="flex min-h-dvh flex-col overflow-x-hidden bg-zinc-950 text-zinc-100 touch-manipulation">
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
+      <body className="flex min-h-dvh flex-col overflow-x-hidden bg-background text-fg touch-manipulation">
         <AppProviders>{children}</AppProviders>
       </body>
     </html>

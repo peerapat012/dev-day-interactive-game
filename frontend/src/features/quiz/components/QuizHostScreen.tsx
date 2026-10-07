@@ -20,7 +20,7 @@ export function QuizHostScreen() {
 
   if (!host.ready || !host.authLoaded) {
     return (
-      <div className="flex min-h-dvh items-center justify-center text-sm text-zinc-500">
+      <div className="flex min-h-dvh items-center justify-center text-sm text-fg-muted">
         Preparing quiz host…
       </div>
     );
@@ -29,7 +29,7 @@ export function QuizHostScreen() {
   if (host.error || !host.roomId || !host.roomRowId) {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center gap-4 px-4 text-center">
-        <p className="text-sm text-rose-400">
+        <p className="text-sm text-danger">
           {host.error ?? "Could not open quiz host."}
         </p>
         <Button type="button" onClick={() => router.replace("/")}>
@@ -62,7 +62,7 @@ export function QuizHostScreen() {
             <button
               type="button"
               onClick={host.backToEditor}
-              className="mb-2 self-start rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-transform active:scale-[0.96] hover:bg-white/10"
+              className="mb-2 self-start rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium text-fg-secondary transition-transform active:scale-[0.96] hover:bg-surface-hover"
             >
               ← Back to deck editor
             </button>
@@ -71,13 +71,13 @@ export function QuizHostScreen() {
           )}
           <QuizMusicToggle phase={gameState?.phase} />
         </div>
-        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-violet-400 sm:text-xs">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary-text sm:text-xs">
           Quiz host
         </p>
-        <h1 className="text-xl font-semibold tracking-tight text-zinc-50 sm:text-3xl">
+        <h1 className="text-xl font-semibold tracking-tight text-fg sm:text-3xl">
           {inGame ? "Run the quiz" : "Build your quiz"}
         </h1>
-        <p className="text-xs text-zinc-400 sm:text-sm">
+        <p className="text-xs text-fg-muted sm:text-sm">
           {inGame
             ? "Share the room, start questions, and reveal answers as you go."
             : "Write questions and options, then start when guests have joined."}
@@ -86,10 +86,10 @@ export function QuizHostScreen() {
 
       {host.user ? (
         <div className="flex items-center gap-2 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3">
-          <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-emerald-500/20 text-[10px] font-bold text-emerald-300">
+          <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-emerald-500/20 text-[10px] font-bold text-success">
             ✓
           </span>
-          <p className="text-xs text-emerald-200/90">
+          <p className="text-xs text-success">
             Signed in as{" "}
             <span className="font-medium text-emerald-100">
               {host.user.name || host.user.email}
@@ -99,10 +99,10 @@ export function QuizHostScreen() {
         </div>
       ) : (
         <div className="flex items-center gap-2 rounded-2xl border border-amber-500/20 bg-amber-500/5 px-4 py-3">
-          <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-amber-500/20 text-[10px] font-bold text-amber-300">
+          <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-amber-500/20 text-[10px] font-bold text-accent-text">
             ?
           </span>
-          <p className="text-xs text-amber-200/90">
+          <p className="text-xs text-accent-text/90">
             Hosting as a guest — your deck stays on this device.{" "}
             <span className="font-medium text-amber-100">
               Log in to save decks to your account.
@@ -147,7 +147,7 @@ export function QuizHostScreen() {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <p className="text-sm text-zinc-400">
+        <p className="text-sm text-fg-muted">
           End the live session: connected guests are cleared locally, joins to
           this room stop working, and you return to the home page to host again
           later.
@@ -165,7 +165,7 @@ export function QuizHostScreen() {
             }
           }}
           disabled={host.closing}
-          className="w-full border-amber-500/35 text-amber-200"
+          className="w-full border-amber-500/35 text-accent-text"
         >
           {host.closing ? "Closing room…" : "Close room & end session"}
         </Button>
