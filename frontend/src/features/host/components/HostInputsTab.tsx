@@ -3,7 +3,6 @@
 import { motion } from "framer-motion";
 import { useMemo } from "react";
 import { buildFloatingItemsFromEntries } from "@/lib/buildFloatingTextItems";
-import { useRoundQuestion } from "@/features/cloud/hooks/useRoundQuestion";
 import { RoundQuestionEditor } from "@/features/host/components/RoundQuestionEditor";
 import { FloatingTextField } from "@/shared/components/floating-text/FloatingTextField";
 import { useEntriesStore } from "@/store/entriesStore";
@@ -11,10 +10,16 @@ import { useEntriesStore } from "@/store/entriesStore";
 interface HostInputsTabProps {
   roomId: string;
   roomRowId: string;
+  question: string;
+  onQuestionSaved: (question: string) => void;
 }
 
-export function HostInputsTab({ roomId, roomRowId }: HostInputsTabProps) {
-  const { question, setQuestion } = useRoundQuestion(roomId);
+export function HostInputsTab({
+  roomId,
+  roomRowId,
+  question,
+  onQuestionSaved,
+}: HostInputsTabProps) {
   const entries = useEntriesStore((s) => s.entries);
   const isHydrated = useEntriesStore((s) => s.isHydrated);
 
@@ -45,7 +50,7 @@ export function HostInputsTab({ roomId, roomRowId }: HostInputsTabProps) {
       <RoundQuestionEditor
         roomRowId={roomRowId}
         question={question}
-        onSaved={setQuestion}
+        onSaved={onQuestionSaved}
       />
       <p className="text-sm text-fg-muted">
         {roomEntries.length === 0

@@ -8,6 +8,7 @@ import { getGroupContributors } from "@/lib/aggregateEntries";
 import { buildContributorTags } from "@/lib/contributorTags";
 import { getSummaryTopicLabel } from "@/lib/hostSummaryState";
 import { ROUND_QUESTION_MAX_LENGTH } from "@/lib/constants";
+import { confirmDialog } from "@/shared/feedback/dialogStore";
 import { Button } from "@/shared/ui/Button";
 import { Input } from "@/shared/ui/Input";
 import { RoundQuestionCard } from "@/shared/ui/RoundQuestionCard";
@@ -29,7 +30,7 @@ function summaryGridClass(count: number): string {
   return "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5";
 }
 
-export function HostSummaryContent() {
+export function HostSummaryContent({ isActive }: { isActive: boolean }) {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [nextQuestion, setNextQuestion] = useState("");
   const {
@@ -46,7 +47,16 @@ export function HostSummaryContent() {
     beginNewRound,
     roomId,
     roomRowId,
-  } = useHostRoomSummary();
+  } = useHostRoomSummary({ isActive });
+
+  const handleRefresh = async () => {
+    const confirmed = await confirmDialog({
+      title: "Refresh summary?",
+      message: `AI will summarize all ${entryCount} input${entryCount === 1 ? "" : "s"} again. The current summary is saved to summary history.`,
+      confirmLabel: "Refresh summary",
+    });
+    if (confirmed) await regenerate();
+  };
 
   const hasSummary = status === "ready" && summaries.length > 0;
   const showSummaryCards = hasSummary && !busy;
@@ -90,7 +100,7 @@ export function HostSummaryContent() {
         {hasSummary ? (
           <Button
             type="button"
-            onClick={() => void regenerate()}
+            onClick={() => void handleRefresh()}
             disabled={busy || entryCount === 0}
             className="w-full shrink-0 px-6 py-3 sm:w-auto"
           >

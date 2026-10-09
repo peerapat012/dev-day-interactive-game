@@ -5,6 +5,7 @@ import { toast } from "@/shared/feedback/toastStore";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { RoundQuestionEditor } from "@/features/host/components/RoundQuestionEditor";
 import { useSwitchRoomMode } from "@/features/host/hooks/useSwitchRoomMode";
 import { buildGuestJoinUrl } from "@/lib/guestJoinUrl";
 import { modeLabel } from "@/lib/roomMode";
@@ -19,6 +20,8 @@ interface HostRoomTabProps {
   roomRowId: string;
   creating: boolean;
   onCreateNewRoom: () => Promise<string>;
+  question: string;
+  onQuestionSaved: (question: string) => void;
 }
 
 export function HostRoomTab({
@@ -26,6 +29,8 @@ export function HostRoomTab({
   roomRowId,
   creating,
   onCreateNewRoom,
+  question,
+  onQuestionSaved,
 }: HostRoomTabProps) {
   const router = useRouter();
   const setEntries = useEntriesStore((s) => s.setEntries);
@@ -141,6 +146,12 @@ export function HostRoomTab({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
     >
+      <RoundQuestionEditor
+        roomRowId={roomRowId}
+        question={question}
+        onSaved={onQuestionSaved}
+      />
+
       <div className="flex flex-col items-center rounded-3xl border border-line bg-surface p-6">
         <p className="text-xs font-medium uppercase tracking-wider text-fg-muted">
           Scan to join

@@ -48,7 +48,11 @@ function getErrorMessage(error: unknown, fallback: string): string {
   return error instanceof Error ? error.message : fallback;
 }
 
-export function useHostRoomSummary() {
+/**
+ * @param isActive Whether the Summary view is on screen. The view stays mounted
+ * while hidden, so generation waits until the host opens it (ADR 0011).
+ */
+export function useHostRoomSummary({ isActive }: { isActive: boolean }) {
   const entries = useEntriesStore((s) => s.entries);
   const setEntriesForRoom = useEntriesStore((s) => s.setEntriesForRoom);
   const isHydrated = useEntriesStore((s) => s.isHydrated);
@@ -173,7 +177,7 @@ export function useHostRoomSummary() {
   );
 
   useEffect(() => {
-    if (!isHydrated || !roomRowId) return;
+    if (!isActive || !isHydrated || !roomRowId) return;
 
     const cachedState = stateByRoomRef.current.get(roomRowId);
     if (initializedRoomsRef.current.has(roomRowId)) {
@@ -185,16 +189,17 @@ export function useHostRoomSummary() {
     busyRef.current = true;
     const operation = ++operationRef.current;
     void resolveSavedOrGenerate(roomRowId, operation);
-  }, [isHydrated, roomRowId, resolveSavedOrGenerate]);
+  }, [isActive, isHydrated, roomRowId, resolveSavedOrGenerate]);
 
   useEffect(() => {
-    if (!isHydrated || !roomRowId || busyRef.current) return;
+    if (!isActive || !isHydrated || !roomRowId || busyRef.current) return;
     if (!shouldAutoGenerateAfterEmptyState(state.status, roomEntries.length)) return;
 
     busyRef.current = true;
     const operation = ++operationRef.current;
     void resolveSavedOrGenerate(roomRowId, operation);
   }, [
+    isActive,
     isHydrated,
     roomRowId,
     roomEntries.length,
