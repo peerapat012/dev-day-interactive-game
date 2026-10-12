@@ -4,7 +4,7 @@ import { confirmDialog } from "@/shared/feedback/dialogStore";
 import { toast } from "@/shared/feedback/toastStore";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { RoundQuestionEditor } from "@/features/host/components/RoundQuestionEditor";
 import { useSwitchRoomMode } from "@/features/host/hooks/useSwitchRoomMode";
 import { buildGuestJoinUrl } from "@/lib/guestJoinUrl";
@@ -140,122 +140,157 @@ export function HostRoomTab({
     }
   }
 
+  const busy = creating || clearing || closing;
+
   return (
     <motion.div
-      className="flex flex-col gap-6"
+      className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:gap-8"
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
     >
-      <RoundQuestionEditor
-        roomRowId={roomRowId}
-        question={question}
-        onSaved={onQuestionSaved}
-      />
-
-      <div className="flex flex-col items-center rounded-3xl border border-line bg-surface p-6">
-        <p className="text-xs font-medium uppercase tracking-wider text-fg-muted">
-          Scan to join
-        </p>
-        <div className="mt-4 rounded-2xl bg-white p-3 shadow-lg shadow-primary/20">
+      <section
+        aria-label="Join this room"
+        className="flex flex-col items-center rounded-3xl border border-line bg-surface px-5 py-8 sm:px-8 lg:sticky lg:top-6"
+      >
+        <div className="rounded-2xl bg-white p-3 shadow-[0_12px_32px_-12px_rgb(0_80_252/0.35)]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={qrSrc}
             alt={`QR code for room ${roomId}`}
             width={280}
             height={280}
-            className="h-auto w-[min(280px,70vw)]"
+            className="block h-auto w-[min(280px,68vw)] lg:w-[min(340px,30vw)]"
           />
         </div>
-        <p className="mt-5 text-xs text-fg-muted">Room ID</p>
-        <p className="mt-1 font-mono text-3xl font-bold tracking-[0.2em] text-primary-text">
+
+        <p className="mt-6 text-sm text-fg-muted">Scan or enter room code</p>
+        <p className="mt-1 font-mono text-4xl font-bold tracking-[0.2em] text-primary-text tabular-nums sm:text-5xl">
           {roomId}
         </p>
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={() => void handleCopyCode()}
-          className="mt-3"
-        >
-          {copiedCode ? "Code copied!" : "Copy room ID"}
-        </Button>
+
+        <div className="mt-6 grid w-full max-w-sm grid-cols-2 gap-2">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => void handleCopyCode()}
+          >
+            {copiedCode ? "Code copied!" : "Copy room ID"}
+          </Button>
+          <Button type="button" onClick={() => void handleCopyLink()}>
+            {copiedLink ? "Link copied!" : "Copy guest link"}
+          </Button>
+        </div>
+        <p className="mt-3 w-full max-w-sm break-all text-center text-xs text-fg-muted">
+          {guestUrl}
+        </p>
+      </section>
+
+      <div className="flex flex-col gap-6">
+        <RoundQuestionEditor
+          roomRowId={roomRowId}
+          question={question}
+          onSaved={onQuestionSaved}
+        />
+
+        <ActionGroup title="Session">
+          <ActionRow
+            description="Run a quiz in this same room. The code and guests stay; their screens switch automatically."
+          >
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => void switchMode()}
+              disabled={switching || busy}
+              className="w-full sm:w-auto"
+            >
+              {switching ? "Switching…" : `Switch to ${modeLabel(target)}`}
+            </Button>
+          </ActionRow>
+          <ActionRow description="Need a fresh room code for a new session? Guests will use the new QR and link.">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => void handleCreateNewRoom()}
+              disabled={busy}
+              className="w-full sm:w-auto"
+            >
+              {creating ? "Creating…" : "Create new room"}
+            </Button>
+          </ActionRow>
+        </ActionGroup>
+
+        <ActionGroup title="Danger zone" tone="danger">
+          <ActionRow description="Removes all phrases, groups, summaries, and saved rounds for this room. Guest nicknames stay; everyone can submit a new phrase again with the same link.">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => void handleClear()}
+              disabled={clearing || closing}
+              className="w-full border-danger/30 text-danger sm:w-auto"
+            >
+              {clearing ? "Clearing…" : "Clear room data"}
+            </Button>
+          </ActionRow>
+          <ActionRow description="End the live session: connected guests are cleared locally, joins to this QR stop working, and you return to the home page to host again later.">
+            <Button
+              type="button"
+              variant="danger"
+              onClick={() => void handleCloseRoomSession()}
+              disabled={closing || clearing}
+              className="w-full sm:w-auto"
+            >
+              {closing ? "Closing session…" : "Close room & end session"}
+            </Button>
+          </ActionRow>
+        </ActionGroup>
       </div>
-
-      <motion.div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
-        <p className="text-sm text-fg-secondary">
-          Need a fresh room code for a new session? Guests will use the new QR
-          and link below.
-        </p>
-        <Button
-          type="button"
-          onClick={() => void handleCreateNewRoom()}
-          disabled={creating || clearing || closing}
-          className="mt-3 w-full"
-        >
-          {creating ? "Creating…" : "Create new room"}
-        </Button>
-      </motion.div>
-
-      <motion.div className="rounded-2xl border border-line bg-surface p-4">
-        <p className="text-sm text-fg-secondary">
-          Run a quiz in this same room. The code and guests stay; their screens
-          switch automatically.
-        </p>
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={() => void switchMode()}
-          disabled={switching || creating || clearing || closing}
-          className="mt-3 w-full"
-        >
-          {switching ? "Switching…" : `Switch to ${modeLabel(target)}`}
-        </Button>
-      </motion.div>
-
-      <motion.div className="rounded-2xl border border-amber-500/25 bg-amber-500/5 p-4">
-        <p className="text-sm text-fg-secondary">
-          End the live session: connected guests are cleared locally, joins to this
-          QR stop working, and you return to the home page to host again later.
-        </p>
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={() => void handleCloseRoomSession()}
-          disabled={closing || clearing}
-          className="mt-3 w-full border-amber-500/35 text-accent-text hover:text-amber-100"
-        >
-          {closing ? "Closing session…" : "Close room & end session"}
-        </Button>
-      </motion.div>
-
-      <motion.div className="rounded-2xl border border-line bg-surface p-4">
-        <p className="text-xs font-medium uppercase tracking-wider text-fg-muted">
-          Guest link
-        </p>
-        <p className="mt-2 break-all text-sm text-fg-secondary">{guestUrl}</p>
-        <Button
-          type="button"
-          onClick={() => void handleCopyLink()}
-          className="mt-4 w-full"
-        >
-          {copiedLink ? "Link copied!" : "Copy guest link"}
-        </Button>
-      </motion.div>
-
-      <motion.div className="rounded-2xl border border-rose-500/20 bg-rose-500/5 p-4">
-        <p className="text-sm text-fg-muted">
-          Removes all phrases, groups, summaries, and saved rounds for this room. Guest
-          nicknames stay; everyone can submit a new phrase again with the same link.
-        </p>
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={() => void handleClear()}
-          disabled={clearing || closing}
-          className="mt-3 w-full border-rose-500/30 text-danger"
-        >
-          {clearing ? "Clearing…" : "Clear room data"}
-        </Button>
-      </motion.div>
     </motion.div>
+  );
+}
+
+function ActionGroup({
+  title,
+  tone = "default",
+  children,
+}: {
+  title: string;
+  tone?: "default" | "danger";
+  children: ReactNode;
+}) {
+  const danger = tone === "danger";
+  return (
+    <section className="flex flex-col gap-2">
+      <h2
+        className={`px-1 text-sm font-semibold ${danger ? "text-danger" : "text-fg-secondary"}`}
+      >
+        {title}
+      </h2>
+      <div
+        className={`flex flex-col divide-y rounded-2xl border ${
+          danger
+            ? "divide-danger/15 border-danger/25 bg-danger-soft"
+            : "divide-line border-line bg-surface"
+        }`}
+      >
+        {children}
+      </div>
+    </section>
+  );
+}
+
+function ActionRow({
+  description,
+  children,
+}: {
+  description: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:gap-5">
+      <p className="flex-1 text-pretty text-sm leading-relaxed text-fg-secondary">
+        {description}
+      </p>
+      <div className="shrink-0">{children}</div>
+    </div>
   );
 }

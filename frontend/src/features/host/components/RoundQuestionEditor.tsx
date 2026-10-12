@@ -11,6 +11,8 @@ interface RoundQuestionEditorProps {
   roomRowId: string;
   question: string;
   onSaved: (question: string) => void;
+  /** Compact renders a single inline row, for screens where the content below needs the space. */
+  variant?: "default" | "compact";
 }
 
 /** Host control to set the optional question guests answer in this round. */
@@ -18,6 +20,7 @@ export function RoundQuestionEditor({
   roomRowId,
   question,
   onSaved,
+  variant = "default",
 }: RoundQuestionEditorProps) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
@@ -44,6 +47,29 @@ export function RoundQuestionEditor({
     }
   }
 
+  if (!editing && variant === "compact") {
+    const text = question.trim();
+    return (
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <p className="min-w-0 flex-1 truncate text-base text-fg" title={text || undefined}>
+          {text ? (
+            <span className="font-semibold">{text}</span>
+          ) : (
+            <span className="text-fg-muted">No round question set</span>
+          )}
+        </p>
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={startEditing}
+          className="min-h-11 shrink-0 px-4 py-1.5 text-sm"
+        >
+          {text ? "Edit" : "Set question"}
+        </Button>
+      </div>
+    );
+  }
+
   if (!editing) {
     return (
       <div className="flex flex-col gap-2">
@@ -64,7 +90,11 @@ export function RoundQuestionEditor({
 
   return (
     <form
-      className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-4"
+      className={
+        variant === "compact"
+          ? "flex w-full flex-col gap-3 py-2.5 pr-2.5"
+          : "flex flex-col gap-3 rounded-2xl border border-line bg-surface p-4"
+      }
       onSubmit={(e) => {
         e.preventDefault();
         void save(draft);

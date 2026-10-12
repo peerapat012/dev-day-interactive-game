@@ -12,74 +12,56 @@ const MODES: { mode: RoomMode; label: string }[] = [
   { mode: "quiz", label: "Quiz" },
 ];
 
+const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
+
 export function HomeScreen() {
   const [mode, setMode] = useState<RoomMode>("wordcloud");
   const isQuiz = mode === "quiz";
 
   return (
-    <motion.div
-      className="flex min-h-dvh flex-col items-center justify-center px-4 pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)]"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-    >
-      <motion.div
-        className="pointer-events-none absolute inset-0 overflow-hidden"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-      >
-        <div className="absolute -left-32 top-20 h-64 w-64 rounded-full bg-primary-soft blur-3xl" />
-        <motion.div
-          className="absolute -right-24 bottom-24 h-72 w-72 rounded-full bg-primary-soft blur-3xl"
-          animate={{ scale: [1, 1.08, 1] }}
-          transition={{ duration: 6, repeat: Infinity }}
-        />
-        <motion.div
-          className="absolute left-1/2 top-1/3 h-48 w-48 -translate-x-1/2 rounded-full bg-primary/10 blur-3xl"
-          animate={{ opacity: [0.5, 0.9, 0.5] }}
-          transition={{ duration: 5, repeat: Infinity }}
-        />
-      </motion.div>
+    <div className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(4.5rem,env(safe-area-inset-top))]">
+      <div
+        className="pointer-events-none absolute left-1/2 top-0 h-[28rem] w-[min(48rem,140vw)] -translate-x-1/2 -translate-y-1/3 rounded-full bg-primary-soft blur-3xl"
+        aria-hidden
+      />
 
       <motion.div
-        className="relative z-10 w-full max-w-lg"
-        initial={{ y: 24, opacity: 0 }}
+        className="relative z-10 flex w-full max-w-md flex-col"
+        initial={{ y: 16, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ type: "spring", stiffness: 280, damping: 26 }}
+        transition={{ duration: 0.6, ease: EASE_OUT_EXPO }}
       >
-        <div className="mb-8 text-center">
-          <motion.p
-            className="text-sm font-semibold uppercase tracking-[0.2em] text-primary-text"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.1 }}
-          >
+        <header className="text-center">
+          <h1 className="text-balance text-4xl font-bold tracking-tight text-fg sm:text-5xl">
             Word Cloud Game
-          </motion.p>
-          <h1 className="mt-3 text-4xl font-bold tracking-tight text-fg sm:text-5xl">
-            Choose your mode
           </h1>
-          <p className="mx-auto mt-3 max-w-md text-fg-muted">
+          <p className="mx-auto mt-3 max-w-sm text-pretty text-fg-muted">
             Pick a game mode, then host a session with a room code and QR, or
             join as a guest with the link from the presenter.
           </p>
-        </div>
+        </header>
 
-        <div className="mb-6 inline-flex w-full max-w-xs rounded-full border border-line bg-surface p-1">
+        <div
+          role="group"
+          aria-label="Game mode"
+          className="mt-10 flex rounded-full border border-line bg-surface p-1"
+        >
           {MODES.map((item) => {
             const active = mode === item.mode;
             return (
               <button
                 key={item.mode}
                 type="button"
+                aria-pressed={active}
                 onClick={() => setMode(item.mode)}
-                className={`relative flex-1 rounded-full py-2.5 text-sm font-medium transition-transform active:scale-[0.96] ${
-                  active ? "text-fg" : "text-fg-muted"
+                className={`relative min-h-11 flex-1 rounded-full text-sm font-medium transition-[transform,color] active:scale-[0.96] ${
+                  active ? "text-primary-fg" : "text-fg-muted hover:text-fg"
                 }`}
               >
                 {active ? (
                   <motion.span
                     layoutId="mode-pill"
-                    className="absolute inset-0 rounded-full bg-primary shadow-lg shadow-primary/20"
+                    className="absolute inset-0 rounded-full bg-primary shadow-md shadow-primary/20"
                     transition={{ type: "spring", duration: 0.3, bounce: 0 }}
                   />
                 ) : null}
@@ -89,31 +71,42 @@ export function HomeScreen() {
           })}
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <RoleCard
-            href={isQuiz ? QUIZ_HOST_PATH : HOST_PATH}
-            title={isQuiz ? "Host a Quiz" : "Host"}
-            description={
-              isQuiz
-                ? "Build a question deck, run live rounds with a timer, and crown the winner."
-                : "Create a room, share the QR, collect inputs, and view summaries."
-            }
-            accent="from-primary/15 to-background border-primary/30"
-            delay={0.15}
-          />
-          <RoleCard
+        <nav aria-label="Choose a role" className="mt-4 flex flex-col gap-3">
+          <Link
             href={GUEST_PATH}
-            title="Guest"
-            description="Enter the host’s room code and your nickname to join and play."
-            accent="from-cyan-600/25 to-background/50 border-cyan-400/25"
-            delay={0.22}
-          />
-        </div>
+            className="group flex items-center gap-4 rounded-3xl bg-primary px-6 py-5 text-primary-fg shadow-lg shadow-primary/25 transition-transform duration-200 ease-out hover:-translate-y-0.5 active:scale-[0.98]"
+          >
+            <span className="flex flex-1 flex-col gap-1">
+              <span className="text-xl font-semibold">Join a room</span>
+              <span className="text-sm leading-relaxed text-primary-fg/80">
+                Enter the host’s room code and your nickname to join and play.
+              </span>
+            </span>
+            <Arrow />
+          </Link>
+
+          <Link
+            href={isQuiz ? QUIZ_HOST_PATH : HOST_PATH}
+            className="group flex items-center gap-4 rounded-3xl border border-line bg-surface px-6 py-5 transition-[transform,border-color] duration-200 ease-out hover:-translate-y-0.5 hover:border-line-strong active:scale-[0.98]"
+          >
+            <span className="flex flex-1 flex-col gap-1">
+              <span className="text-lg font-semibold text-fg">
+                {isQuiz ? "Host a Quiz" : "Host a Word Cloud"}
+              </span>
+              <span className="text-sm leading-relaxed text-fg-muted">
+                {isQuiz
+                  ? "Build a question deck, run live rounds with a timer, and crown the winner."
+                  : "Create a room, share the QR, collect inputs, and view summaries."}
+              </span>
+            </span>
+            <Arrow className="text-primary-text" />
+          </Link>
+        </nav>
 
         <AnimatePresence initial={false}>
           {isQuiz ? (
             <motion.p
-              className="mt-6 text-center text-xs leading-relaxed text-fg-muted"
+              className="mt-5 text-center text-xs leading-relaxed text-fg-muted"
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -4 }}
@@ -124,39 +117,23 @@ export function HomeScreen() {
           ) : null}
         </AnimatePresence>
       </motion.div>
-    </motion.div>
+    </div>
   );
 }
 
-function RoleCard({
-  href,
-  title,
-  description,
-  accent,
-  delay,
-}: {
-  href: string;
-  title: string;
-  description: string;
-  accent: string;
-  delay: number;
-}) {
+function Arrow({ className = "" }: { className?: string }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay }}
+    <svg
+      viewBox="0 0 20 20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={`size-5 shrink-0 transition-transform duration-200 ease-out group-hover:translate-x-1 ${className}`}
+      aria-hidden
     >
-      <Link
-        href={href}
-        className={`group flex h-full flex-col gap-3 rounded-3xl border bg-gradient-to-br p-6 shadow-xl transition-[transform,border-color] duration-200 ease-out hover:scale-[1.02] hover:border-line-strong ${accent}`}
-      >
-        <h2 className="text-xl font-semibold text-fg">{title}</h2>
-        <p className="flex-1 text-sm leading-relaxed text-fg-secondary">{description}</p>
-        <span className="text-sm font-medium text-primary-text group-hover:text-fg">
-          Open {title.toLowerCase()} →
-        </span>
-      </Link>
-    </motion.div>
+      <path d="M4 10h12M11 5l5 5-5 5" />
+    </svg>
   );
 }

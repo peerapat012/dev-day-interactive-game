@@ -47,16 +47,28 @@ export function HostInputsTab({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
-      <RoundQuestionEditor
-        roomRowId={roomRowId}
-        question={question}
-        onSaved={onQuestionSaved}
-      />
-      <p className="text-sm text-fg-muted">
-        {roomEntries.length === 0
-          ? "No guest phrases yet."
-          : `${roomEntries.length} phrase${roomEntries.length === 1 ? "" : "s"} floating live`}
-      </p>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl border border-line bg-surface py-1.5 pl-4 pr-1.5">
+        <div className="flex min-w-0 flex-1 basis-[16rem]">
+          <RoundQuestionEditor
+            roomRowId={roomRowId}
+            question={question}
+            onSaved={onQuestionSaved}
+            variant="compact"
+          />
+        </div>
+        <p
+          className="flex shrink-0 items-center gap-2 pr-3 text-sm text-fg-secondary tabular-nums"
+          aria-live="polite"
+        >
+          <span
+            className={`size-2 rounded-full ${roomEntries.length ? "bg-success" : "bg-fg-muted/50"}`}
+            aria-hidden
+          />
+          {roomEntries.length === 0
+            ? "No phrases yet"
+            : `${roomEntries.length} phrase${roomEntries.length === 1 ? "" : "s"} live`}
+        </p>
+      </div>
 
       <FloatingTextField
         items={floatingItems}

@@ -57,126 +57,123 @@ export function GuestMessagePanel({ onLeaveRoom }: GuestMessagePanelProps) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >
-      <header className="shrink-0 border-b border-line bg-background/90 px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur-md">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary-text sm:text-xs">
-          Word Cloud Game
-        </p>
-        <h1 className="mt-1 text-xl font-semibold text-fg sm:text-2xl">
-          Guest lobby
-        </h1>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <div className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5">
-            <span
-              className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/30 text-xs font-bold uppercase text-primary-text"
-              aria-hidden
-            >
-              {displayName.slice(0, 1)}
-            </span>
-            <span className="max-w-[200px] truncate text-sm font-medium text-fg-secondary">
+      <header className="shrink-0 border-b border-line bg-background/90 py-3 pl-4 pr-16 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur-md">
+        <div className="mx-auto flex max-w-3xl items-center gap-3">
+          <span
+            className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/20 text-sm font-bold uppercase text-primary-text"
+            aria-hidden
+          >
+            {displayName.slice(0, 1)}
+          </span>
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate text-base font-semibold text-fg">
               {displayName}
-            </span>
+            </h1>
+            <p className="text-xs text-fg-muted">Guest lobby · Word Cloud Game</p>
           </div>
-          {hasSubmitted ? (
-            <span className="text-xs text-success">Phrase sent</span>
-          ) : null}
           <Button
             type="button"
             variant="ghost"
             onClick={handleLeaveRoom}
-            className="ml-auto shrink-0 px-3 py-1.5 text-xs text-fg-muted hover:text-danger"
+            className="min-h-11 shrink-0 px-4 py-1.5 text-xs text-fg-muted hover:text-danger"
           >
             Leave room
           </Button>
         </div>
       </header>
 
-      <main className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
-        <RoundQuestionCard question={question} className="mb-3" />
+      <main className="mx-auto flex min-h-0 w-full max-w-3xl flex-1 flex-col gap-3 overflow-y-auto px-4 py-4">
+        <RoundQuestionCard question={question} />
         <GuestEntriesFeed />
       </main>
 
-      <footer className="shrink-0 border-t border-line bg-background/90 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 backdrop-blur-md">
-        {guestInvalid ? (
-          <motion.div
-            className="mx-auto max-w-lg rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-5 text-center"
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <p className="text-base font-medium text-accent-text">
-              Room restarted by host
-            </p>
-            <p className="mt-2 text-sm text-amber-100/80">
-              Rejoin using the host&apos;s QR code to send a new phrase.
-            </p>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={handleLeaveRoom}
-              className="mt-4 w-full border-amber-500/40 text-accent-text"
+      <footer className="shrink-0 border-t border-line bg-background/90 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-md">
+        <div className="mx-auto w-full max-w-lg">
+          {guestInvalid ? (
+            <motion.div
+              className="flex flex-col gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3 sm:flex-row sm:items-center"
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
             >
-              Clear this device &amp; rejoin
-            </Button>
-          </motion.div>
-        ) : checking ? (
-          <p className="text-center text-sm text-fg-muted">Checking submission…</p>
-        ) : hasSubmitted ? (
-          <motion.div
-            className="mx-auto max-w-lg rounded-2xl border border-emerald-500/25 bg-success-soft px-4 py-5 text-center"
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <p className="text-base font-medium text-success">
-              You already sent your phrase
+              <p className="flex-1 px-1 text-sm text-fg-secondary">
+                <span className="font-semibold text-accent-text">
+                  Room restarted by host.
+                </span>{" "}
+                Rejoin using the host&apos;s QR code to send a new phrase.
+              </p>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={handleLeaveRoom}
+                className="shrink-0 border-amber-500/40 text-accent-text"
+              >
+                Clear this device &amp; rejoin
+              </Button>
+            </motion.div>
+          ) : checking ? (
+            <p className="py-3 text-center text-sm text-fg-muted">
+              Checking submission…
             </p>
-            <p className="mt-2 text-sm text-fg-muted">
-              Each guest can only submit once. You can still read everyone else&apos;s
-              phrases above.
-            </p>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={handleLeaveRoom}
-              className="mt-4 w-full text-fg-muted hover:text-danger"
+          ) : hasSubmitted ? (
+            <motion.div
+              className="flex items-start gap-3 rounded-2xl bg-success-soft px-4 py-3"
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              role="status"
             >
-              Leave room
-            </Button>
-          </motion.div>
-        ) : (
-          <form
-            onSubmit={handleSubmit}
-            className="mx-auto flex w-full max-w-lg flex-col gap-3"
-          >
-            <Input
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder={question.trim() ? "Type your short answer…" : "Type your one phrase for this game…"}
-              disabled={isSubmitting}
-              maxLength={200}
-              autoComplete="off"
-            />
-            <Button
-              type="submit"
-              disabled={isSubmitting || !text.trim()}
-              className="w-full"
-            >
-              {isSubmitting ? "Sending…" : "Send phrase (once)"}
-            </Button>
-            <p className="text-center text-xs text-fg-muted">
-              One phrase per guest — choose carefully.
-            </p>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={handleLeaveRoom}
-              className="w-full text-xs text-fg-muted hover:text-danger"
-            >
-              Leave room
-            </Button>
-            {error ? (
-              <p className="text-center text-sm text-danger">{error}</p>
-            ) : null}
-          </form>
-        )}
+              <svg
+                viewBox="0 0 20 20"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="mt-0.5 size-5 shrink-0 text-success"
+                aria-hidden
+              >
+                <path d="M4.5 10.5l3.5 3.5 7.5-8" />
+              </svg>
+              <p className="text-sm text-fg-secondary">
+                <span className="font-semibold text-success">
+                  You already sent your phrase.
+                </span>{" "}
+                Each guest can only submit once. You can still read everyone
+                else&apos;s phrases above.
+              </p>
+            </motion.div>
+          ) : (
+            <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+              <div className="flex gap-2">
+                <Input
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  placeholder={question.trim() ? "Type your short answer…" : "Type your one phrase for this game…"}
+                  disabled={isSubmitting}
+                  maxLength={200}
+                  autoComplete="off"
+                  aria-label="Your phrase"
+                  className="min-w-0 flex-1"
+                />
+                <Button
+                  type="submit"
+                  disabled={isSubmitting || !text.trim()}
+                  className="shrink-0"
+                >
+                  {isSubmitting ? "Sending…" : "Send"}
+                </Button>
+              </div>
+              {error ? (
+                <p className="text-center text-sm text-danger" role="alert">
+                  {error}
+                </p>
+              ) : (
+                <p className="text-center text-xs text-fg-muted">
+                  One phrase per guest — choose carefully.
+                </p>
+              )}
+            </form>
+          )}
+        </div>
       </footer>
     </motion.div>
   );
