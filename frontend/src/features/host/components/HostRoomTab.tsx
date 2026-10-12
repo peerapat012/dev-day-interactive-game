@@ -4,16 +4,17 @@ import { confirmDialog } from "@/shared/feedback/dialogStore";
 import { toast } from "@/shared/feedback/toastStore";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, type ReactNode } from "react";
+import { useState } from "react";
 import { RoundQuestionEditor } from "@/features/host/components/RoundQuestionEditor";
 import { useSwitchRoomMode } from "@/features/host/hooks/useSwitchRoomMode";
-import { buildGuestJoinUrl } from "@/lib/guestJoinUrl";
 import { modeLabel } from "@/lib/roomMode";
 import { leaveHostRoom } from "@/lib/leaveHostRoom";
 import { clearRoomRows, closeRoomSession } from "@/services/appwrite/rooms";
 import { useEntriesStore } from "@/store/entriesStore";
 import { useRoomStore } from "@/store/roomStore";
+import { ActionGroup, ActionRow } from "@/shared/ui/ActionGroup";
 import { Button } from "@/shared/ui/Button";
+import { RoomJoinPanel } from "@/shared/ui/RoomJoinPanel";
 
 interface HostRoomTabProps {
   roomId: string;
@@ -35,8 +36,6 @@ export function HostRoomTab({
   const router = useRouter();
   const setEntries = useEntriesStore((s) => s.setEntries);
   const setIsSummary = useRoomStore((s) => s.setIsSummary);
-  const [copiedLink, setCopiedLink] = useState(false);
-  const [copiedCode, setCopiedCode] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [closing, setClosing] = useState(false);
 
@@ -45,34 +44,6 @@ export function HostRoomTab({
     roomId,
     roomRowId,
   );
-
-  const guestUrl = useMemo(() => buildGuestJoinUrl(roomId), [roomId]);
-
-  const qrSrc = useMemo(
-    () =>
-      `https://api.qrserver.com/v1/create-qr-code/?size=280x280&margin=12&data=${encodeURIComponent(guestUrl)}`,
-    [guestUrl],
-  );
-
-  async function handleCopyLink() {
-    try {
-      await navigator.clipboard.writeText(guestUrl);
-      setCopiedLink(true);
-      setTimeout(() => setCopiedLink(false), 2000);
-    } catch {
-      setCopiedLink(false);
-    }
-  }
-
-  async function handleCopyCode() {
-    try {
-      await navigator.clipboard.writeText(roomId);
-      setCopiedCode(true);
-      setTimeout(() => setCopiedCode(false), 2000);
-    } catch {
-      setCopiedCode(false);
-    }
-  }
 
   async function handleCreateNewRoom() {
     const confirmed = await confirmDialog({
@@ -148,42 +119,7 @@ export function HostRoomTab({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
     >
-      <section
-        aria-label="Join this room"
-        className="flex flex-col items-center rounded-3xl border border-line bg-surface px-5 py-8 sm:px-8 lg:sticky lg:top-6"
-      >
-        <div className="rounded-2xl bg-white p-3 shadow-[0_12px_32px_-12px_rgb(0_80_252/0.35)]">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={qrSrc}
-            alt={`QR code for room ${roomId}`}
-            width={280}
-            height={280}
-            className="block h-auto w-[min(280px,68vw)] lg:w-[min(340px,30vw)]"
-          />
-        </div>
-
-        <p className="mt-6 text-sm text-fg-muted">Scan or enter room code</p>
-        <p className="mt-1 font-mono text-4xl font-bold tracking-[0.2em] text-primary-text tabular-nums sm:text-5xl">
-          {roomId}
-        </p>
-
-        <div className="mt-6 grid w-full max-w-sm grid-cols-2 gap-2">
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => void handleCopyCode()}
-          >
-            {copiedCode ? "Code copied!" : "Copy room ID"}
-          </Button>
-          <Button type="button" onClick={() => void handleCopyLink()}>
-            {copiedLink ? "Link copied!" : "Copy guest link"}
-          </Button>
-        </div>
-        <p className="mt-3 w-full max-w-sm break-all text-center text-xs text-fg-muted">
-          {guestUrl}
-        </p>
-      </section>
+      <RoomJoinPanel roomId={roomId} className="lg:sticky lg:top-6" />
 
       <div className="flex flex-col gap-6">
         <RoundQuestionEditor
@@ -245,52 +181,5 @@ export function HostRoomTab({
         </ActionGroup>
       </div>
     </motion.div>
-  );
-}
-
-function ActionGroup({
-  title,
-  tone = "default",
-  children,
-}: {
-  title: string;
-  tone?: "default" | "danger";
-  children: ReactNode;
-}) {
-  const danger = tone === "danger";
-  return (
-    <section className="flex flex-col gap-2">
-      <h2
-        className={`px-1 text-sm font-semibold ${danger ? "text-danger" : "text-fg-secondary"}`}
-      >
-        {title}
-      </h2>
-      <div
-        className={`flex flex-col divide-y rounded-2xl border ${
-          danger
-            ? "divide-danger/15 border-danger/25 bg-danger-soft"
-            : "divide-line border-line bg-surface"
-        }`}
-      >
-        {children}
-      </div>
-    </section>
-  );
-}
-
-function ActionRow({
-  description,
-  children,
-}: {
-  description: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:gap-5">
-      <p className="flex-1 text-pretty text-sm leading-relaxed text-fg-secondary">
-        {description}
-      </p>
-      <div className="shrink-0">{children}</div>
-    </div>
   );
 }

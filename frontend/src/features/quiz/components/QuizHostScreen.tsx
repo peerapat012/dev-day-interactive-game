@@ -10,7 +10,9 @@ import { HostGameControl } from "@/features/quiz/components/HostGameControl";
 import { QuizMusicToggle } from "@/features/quiz/components/QuizMusicToggle";
 import { useSwitchRoomMode } from "@/features/host/hooks/useSwitchRoomMode";
 import { useQuizHost } from "@/features/quiz/hooks/useQuizHost";
+import { ActionGroup, ActionRow } from "@/shared/ui/ActionGroup";
 import { Button } from "@/shared/ui/Button";
+import { ArrowLeftIcon } from "@/shared/ui/icons";
 
 export function QuizHostScreen() {
   const router = useRouter();
@@ -56,67 +58,131 @@ export function QuizHostScreen() {
     );
   }
 
+  const phase = gameState?.phase;
+  const showRoomActions = !inGame || phase === "lobby";
+
+  function handleCloseRoom() {
+    void confirmDialog({
+      title: "Close this room?",
+      message:
+        "Guests will be cleared, the room link will stop working, and you will return to the home page.",
+      confirmLabel: "Close room",
+      tone: "danger",
+    }).then((confirmed) => {
+      if (confirmed) {
+        void host.closeRoom().then(() => router.replace("/"));
+      }
+    });
+  }
+
+  function handleClearSession() {
+    void confirmDialog({
+      title: "Clear session?",
+      message: "The deck will be cleared and you will start a fresh room.",
+      confirmLabel: "Clear",
+      tone: "danger",
+    }).then((confirmed) => {
+      if (confirmed) void host.clearSession();
+    });
+  }
+
+  const roomActions = showRoomActions ? (
+    <>
+      <ActionGroup title="Session">
+        <ActionRow description="Go back to the word cloud in this same room. The code and guests stay; their screens switch automatically.">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => void switchMode()}
+            disabled={switching || host.closing}
+            className="w-full sm:w-auto"
+          >
+            {switching ? "Switching…" : "Switch to Word Cloud"}
+          </Button>
+        </ActionRow>
+        {inGame ? (
+          <ActionRow description="Need a fresh room code? Guests will use the new QR and link.">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => void host.createNewRoom()}
+              disabled={host.creating || host.closing}
+              className="w-full sm:w-auto"
+            >
+              {host.creating ? "Creating…" : "Create new room"}
+            </Button>
+          </ActionRow>
+        ) : null}
+      </ActionGroup>
+
+      <ActionGroup title="Danger zone" tone="danger">
+        {!inGame ? (
+          <ActionRow description="Start over on this device: wipes the local deck and gives you a fresh room code.">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={handleClearSession}
+              disabled={host.closing}
+              className="w-full border-danger/30 text-danger sm:w-auto"
+            >
+              Clear session
+            </Button>
+          </ActionRow>
+        ) : null}
+        <ActionRow description="End the live session: connected guests are cleared locally, joins to this room stop working, and you return to the home page to host again later.">
+          <Button
+            type="button"
+            variant="danger"
+            onClick={handleCloseRoom}
+            disabled={host.closing}
+            className="w-full sm:w-auto"
+          >
+            {host.closing ? "Closing room…" : "Close room & end session"}
+          </Button>
+        </ActionRow>
+      </ActionGroup>
+    </>
+  ) : null;
+
   return (
     <motion.div
-      className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col gap-6 px-4 pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] pt-[max(1.25rem,env(safe-area-inset-top))] sm:px-6 sm:py-6"
+      className={`mx-auto flex min-h-dvh w-full max-w-6xl flex-col gap-6 px-4 pt-[max(1rem,env(safe-area-inset-top))] sm:px-6 sm:pt-6 ${
+        inGame
+          ? "pb-[max(2rem,env(safe-area-inset-bottom))]"
+          : "pb-[calc(9rem+env(safe-area-inset-bottom,0px))] lg:pb-8"
+      }`}
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ type: "spring", stiffness: 280, damping: 26 }}
+      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
     >
-      <header className="flex flex-col gap-1">
-        <div className="flex items-center justify-between gap-2">
-          {inGame ? (
-            <button
-              type="button"
-              onClick={host.backToEditor}
-              className="mb-2 self-start rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium text-fg-secondary transition-transform active:scale-[0.96] hover:bg-surface-hover"
-            >
-              ← Back to deck editor
-            </button>
-          ) : (
-            <span className="mb-2" />
-          )}
-          <QuizMusicToggle phase={gameState?.phase} />
+      <header className="flex flex-col gap-3 pr-14">
+        {inGame ? (
+          <button
+            type="button"
+            onClick={host.backToEditor}
+            className="-ml-2 inline-flex min-h-10 items-center gap-1.5 self-start rounded-full px-2 text-sm font-medium text-fg-muted transition-[transform,color] hover:text-fg active:scale-[0.96]"
+          >
+            <ArrowLeftIcon />
+            Deck editor
+          </button>
+        ) : null}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <div className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-4">
+            <h1 className="text-xl font-semibold tracking-tight text-fg sm:text-2xl">
+              {inGame ? "Run the quiz" : "Build your quiz"}
+            </h1>
+            <p className="text-sm text-fg-muted">
+              {inGame
+                ? "Share the room, start questions, and reveal answers as you go."
+                : "Write questions and options, then start when guests have joined."}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <AccountChip user={host.user} />
+            <QuizMusicToggle phase={phase} />
+          </div>
         </div>
-        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary-text sm:text-xs">
-          Quiz host
-        </p>
-        <h1 className="text-xl font-semibold tracking-tight text-fg sm:text-3xl">
-          {inGame ? "Run the quiz" : "Build your quiz"}
-        </h1>
-        <p className="text-xs text-fg-muted sm:text-sm">
-          {inGame
-            ? "Share the room, start questions, and reveal answers as you go."
-            : "Write questions and options, then start when guests have joined."}
-        </p>
       </header>
-
-      {host.user ? (
-        <div className="flex items-center gap-2 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3">
-          <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-emerald-500/20 text-[10px] font-bold text-success">
-            ✓
-          </span>
-          <p className="text-xs text-success">
-            Signed in as{" "}
-            <span className="font-medium text-emerald-100">
-              {host.user.name || host.user.email}
-            </span>{" "}
-            — decks save to your account.
-          </p>
-        </div>
-      ) : (
-        <div className="flex items-center gap-2 rounded-2xl border border-amber-500/20 bg-amber-500/5 px-4 py-3">
-          <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-amber-500/20 text-[10px] font-bold text-accent-text">
-            ?
-          </span>
-          <p className="text-xs text-accent-text/90">
-            Hosting as a guest — your deck stays on this device.{" "}
-            <span className="font-medium text-amber-100">
-              Log in to save decks to your account.
-            </span>
-          </p>
-        </div>
-      )}
 
       {inGame && gameState ? (
         <HostGameControl
@@ -128,14 +194,13 @@ export function QuizHostScreen() {
           onShowLeaderboard={host.showLeaderboard}
           onNextQuestion={host.nextQuestion}
           onEndGame={host.endGame}
-          onCreateNewRoom={host.createNewRoom}
-          creating={host.creating}
+          lobbyAside={roomActions}
         />
       ) : (
         <DeckEditor
           initialDeck={host.deck}
           onStart={(deck) => void host.startGame(deck)}
-          onClearSession={() => void host.clearSession()}
+          aside={roomActions}
           auth={{
             user: host.user,
             login: host.login,
@@ -148,55 +213,39 @@ export function QuizHostScreen() {
           }}
         />
       )}
-
-      <section className="flex flex-col gap-2 rounded-2xl border border-line bg-surface p-4">
-        <p className="text-sm text-fg-muted">
-          Go back to the word cloud in this same room. The code and guests stay;
-          their screens switch automatically.
-        </p>
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={() => void switchMode()}
-          disabled={switching || host.closing}
-          className="w-full"
-        >
-          {switching ? "Switching…" : "Switch to Word Cloud"}
-        </Button>
-      </section>
-
-      <motion.section
-        className="flex flex-col gap-2 rounded-2xl border border-amber-500/25 bg-amber-500/5 p-4"
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        <p className="text-sm text-fg-muted">
-          End the live session: connected guests are cleared locally, joins to
-          this room stop working, and you return to the home page to host again
-          later.
-        </p>
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={() => {
-            void confirmDialog({
-              title: "Close this room?",
-              message:
-                "Guests will be cleared, the room link will stop working, and you will return to the home page.",
-              confirmLabel: "Close room",
-              tone: "danger",
-            }).then((confirmed) => {
-              if (confirmed) {
-                void host.closeRoom().then(() => router.replace("/"));
-              }
-            });
-          }}
-          disabled={host.closing}
-          className="w-full border-amber-500/35 text-accent-text"
-        >
-          {host.closing ? "Closing room…" : "Close room & end session"}
-        </Button>
-      </motion.section>
     </motion.div>
+  );
+}
+
+function AccountChip({
+  user,
+}: {
+  user: { name: string; email: string } | null;
+}) {
+  const signedIn = Boolean(user);
+  return (
+    <p
+      className="inline-flex min-h-9 max-w-[16rem] items-center gap-2 rounded-full border border-line bg-surface px-3 text-xs text-fg-secondary"
+      title={
+        signedIn
+          ? "Decks save to your account."
+          : "Your deck stays on this device. Log in under My saved decks to save it to your account."
+      }
+    >
+      <span
+        className={`size-2 shrink-0 rounded-full ${signedIn ? "bg-success" : "bg-accent"}`}
+        aria-hidden
+      />
+      <span className="truncate">
+        {user ? (
+          <>
+            Signed in as{" "}
+            <span className="font-medium text-fg">{user.name || user.email}</span>
+          </>
+        ) : (
+          "Hosting as guest · deck stays on this device"
+        )}
+      </span>
+    </p>
   );
 }

@@ -1,10 +1,16 @@
 "use client";
 
-import { confirmDialog } from "@/shared/feedback/dialogStore";
 import { AnimatePresence, motion } from "framer-motion";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Button } from "@/shared/ui/Button";
 import { Input } from "@/shared/ui/Input";
+import {
+  CheckIcon,
+  ChevronDownIcon,
+  CloseIcon,
+  PlusIcon,
+  SparkleIcon,
+} from "@/shared/ui/icons";
 import { AuthForm } from "@/features/quiz/components/AuthForm";
 import { optionColorAt, optionLetter } from "@/features/quiz/components/quizOptionStyles";
 import {
@@ -22,7 +28,8 @@ import type { QuestionDeck, QuizQuestion } from "@/types/quiz";
 interface DeckEditorProps {
   initialDeck: QuestionDeck | null;
   onStart: (deck: QuestionDeck) => void;
-  onClearSession: () => void;
+  /** Extra sidebar content below the deck tools (room/session actions). */
+  aside?: ReactNode;
   auth: {
     user: { id: string; email: string; name: string } | null;
     login: (email: string, password: string) => Promise<void>;
@@ -88,7 +95,7 @@ function isQuestionValid(question: DraftQuestion): boolean {
   );
 }
 
-export function DeckEditor({ initialDeck, onStart, onClearSession, auth }: DeckEditorProps) {
+export function DeckEditor({ initialDeck, onStart, aside, auth }: DeckEditorProps) {
   const [name, setName] = useState(initialDeck?.name ?? "");
   const [questions, setQuestions] = useState<DraftQuestion[]>(
     initialDeck ? deckToDraft(initialDeck) : [emptyQuestion()],
@@ -216,181 +223,53 @@ export function DeckEditor({ initialDeck, onStart, onClearSession, auth }: DeckE
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-2">
-        <label
-          htmlFor="deck-name"
-          className="text-xs font-medium uppercase tracking-wider text-fg-muted"
-        >
-          Quiz name
-        </label>
-        <Input
-          id="deck-name"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          placeholder="e.g. General knowledge"
-        />
-      </div>
+    <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,24rem)] lg:gap-8">
+      <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-2">
+          <label htmlFor="deck-name" className="px-1 text-sm font-semibold text-fg-secondary">
+            Quiz name
+          </label>
+          <Input
+            id="deck-name"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            placeholder="e.g. General knowledge"
+            className="text-lg font-semibold sm:text-base"
+          />
+        </div>
 
-      <div className="flex flex-col gap-3 rounded-3xl border border-primary/20 bg-primary/5 p-4">
-        <button
-          type="button"
-          onClick={() => setAiOpen((open) => !open)}
-          className="flex min-h-[44px] w-full items-center justify-between text-left text-sm font-medium text-fg-secondary"
-        >
-          <span>✨ Generate questions with AI</span>
-          <span className="text-fg-muted">{aiOpen ? "−" : "+"}</span>
-        </button>
-        <AnimatePresence initial={false}>
-          {aiOpen ? (
-            <motion.div
-              className="flex flex-col gap-3 pt-1"
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.2 }}
-            >
-              <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor="ai-topic"
-                  className="text-xs text-fg-muted"
-                >
-                  Topic or type of question
-                </label>
-                <Input
-                  id="ai-topic"
-                  value={aiTopic}
-                  onChange={(event) => setAiTopic(event.target.value)}
-                  placeholder="e.g. Space exploration"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <label
-                    htmlFor="ai-count"
-                    className="text-xs text-fg-muted"
-                  >
-                    Question amount
-                  </label>
-                  <Input
-                    id="ai-count"
-                    type="number"
-                    min={1}
-                    max={20}
-                    value={aiQuestionCount}
-                    onChange={(event) =>
-                      setAiQuestionCount(Number(event.target.value))
-                    }
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label
-                    htmlFor="ai-option-count"
-                    className="text-xs text-fg-muted"
-                  >
-                    Choice amount
-                  </label>
-                  <Input
-                    id="ai-option-count"
-                    type="number"
-                    min={MIN_DRAFT_OPTIONS}
-                    max={MAX_DRAFT_OPTIONS}
-                    value={aiOptionCount}
-                    onChange={(event) =>
-                      setAiOptionCount(Number(event.target.value))
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor="ai-language"
-                  className="text-xs text-fg-muted"
-                >
-                  Language
-                </label>
-                <select
-                  id="ai-language"
-                  value={aiLanguage}
-                  onChange={(event) =>
-                    setAiLanguage(
-                      event.target.value as (typeof GENERATION_LANGUAGES)[number],
-                    )
-                  }
-                  className="min-h-[48px] rounded-2xl border border-line bg-surface px-4 text-sm text-fg-secondary outline-none ring-primary/40 focus:ring-2"
-                >
-                  {GENERATION_LANGUAGES.map((lang) => (
-                    <option key={lang} value={lang}>
-                      {lang}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <Button
-                type="button"
-                onClick={() => void handleGenerateWithAi()}
-                disabled={!aiTopic.trim() || aiBusy}
-                className="w-full"
-              >
-                {aiBusy ? "Generating…" : "Generate questions"}
-              </Button>
-              {aiError ? (
-                <p className="text-center text-xs text-danger">{aiError}</p>
-              ) : null}
-              {aiDone > 0 ? (
-                <p className="text-center text-xs text-success">
-                  Generated {aiDone} questions — they replaced your current
-                  deck. Review and edit them below.
-                </p>
-              ) : null}
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
-      </div>
-
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-fg-secondary">
-            Questions ({questions.length})
-          </h2>
-          <Button type="button" variant="ghost" onClick={addQuestion}>
-            Add question
-          </Button>
+        <div className="flex items-baseline justify-between gap-2 px-1 pt-2">
+          <h2 className="text-sm font-semibold text-fg-secondary">Questions</h2>
+          <span className="text-xs tabular-nums text-fg-muted">
+            {questions.length} {questions.length === 1 ? "question" : "questions"}
+          </span>
         </div>
 
         {questions.map((question, index) => (
           <motion.section
             key={question.id}
-            className="flex flex-col gap-3 rounded-3xl border border-line bg-surface p-4"
+            aria-label={`Question ${index + 1}`}
+            className="flex flex-col gap-3 rounded-3xl border border-line bg-surface p-4 sm:p-5"
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
           >
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-xs font-semibold uppercase tracking-wider text-primary-text">
-                Question {index + 1}
+            <div className="flex items-center gap-3">
+              <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary/15 text-xs font-bold tabular-nums text-primary-text">
+                {index + 1}
               </span>
-              <button
-                type="button"
-                onClick={() => removeQuestion(index)}
-                className="min-h-[40px] min-w-[40px] rounded-full px-2 text-xs text-danger transition-transform active:scale-[0.96]"
-              >
-                Remove
-              </button>
+              <Input
+                value={question.prompt}
+                onChange={(event) =>
+                  updateQuestion(index, { prompt: event.target.value })
+                }
+                placeholder="Type the question…"
+                aria-label={`Question ${index + 1} prompt`}
+                className="min-w-0 flex-1 font-medium"
+              />
             </div>
 
-            <Input
-              value={question.prompt}
-              onChange={(event) =>
-                updateQuestion(index, { prompt: event.target.value })
-              }
-              placeholder="Type the question…"
-            />
-
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 sm:pl-11">
               {question.options.map((option, optionIndex) => {
                 const color = optionColorAt(optionIndex);
                 const isCorrect = option.id === question.correctOptionId;
@@ -406,13 +285,14 @@ export function DeckEditor({ initialDeck, onStart, onClearSession, auth }: DeckE
                           ? "Correct answer"
                           : "Mark as correct answer"
                       }
-                      className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl text-xs font-bold text-zinc-950 transition-transform active:scale-[0.96] ${color.bar} ${
+                      aria-pressed={isCorrect}
+                      className={`grid size-10 shrink-0 place-items-center rounded-xl text-xs font-bold text-zinc-950 transition-[transform,opacity] active:scale-[0.96] ${color.bar} ${
                         isCorrect
-                          ? "ring-2 ring-fg"
+                          ? "ring-2 ring-fg ring-offset-2 ring-offset-background"
                           : "opacity-50 hover:opacity-80"
                       }`}
                     >
-                      {isCorrect ? "✓" : optionLetter(optionIndex)}
+                      {isCorrect ? <CheckIcon className="size-4" strokeWidth={2.5} /> : optionLetter(optionIndex)}
                     </button>
                     <Input
                       value={option.text}
@@ -420,36 +300,37 @@ export function DeckEditor({ initialDeck, onStart, onClearSession, auth }: DeckE
                         updateOption(index, option.id, event.target.value)
                       }
                       placeholder={`Option ${optionLetter(optionIndex)}`}
-                      className="min-h-[40px]"
+                      className="min-h-[40px] min-w-0 flex-1"
                     />
                     {question.options.length > MIN_DRAFT_OPTIONS ? (
                       <button
                         type="button"
                         onClick={() => removeOption(index, option.id)}
-                        aria-label="Remove option"
-                        className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-fg-muted transition-transform active:scale-[0.96]"
+                        aria-label={`Remove option ${optionLetter(optionIndex)}`}
+                        className="grid size-10 shrink-0 place-items-center rounded-full text-fg-muted transition-[transform,color] hover:text-danger active:scale-[0.96]"
                       >
-                        ✕
+                        <CloseIcon />
                       </button>
                     ) : null}
                   </div>
                 );
               })}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 border-t border-line pt-3 sm:pl-11">
               <Button
                 type="button"
                 variant="ghost"
                 onClick={() => addOption(index)}
                 disabled={question.options.length >= MAX_DRAFT_OPTIONS}
-                className="self-start"
+                className="min-h-10 gap-1.5 px-4 py-1.5"
               >
+                <PlusIcon />
                 Add option
               </Button>
-            </div>
-
-            <div className="flex items-center justify-between gap-2">
               <label
                 htmlFor={`time-${question.id}`}
-                className="text-xs text-fg-muted"
+                className="ml-auto text-xs text-fg-muted"
               >
                 Time limit
               </label>
@@ -461,7 +342,7 @@ export function DeckEditor({ initialDeck, onStart, onClearSession, auth }: DeckE
                     timeLimitMs: Number(event.target.value),
                   })
                 }
-                className="min-h-[40px] rounded-xl border border-line bg-surface px-3 text-sm text-fg-secondary outline-none ring-primary/40 focus:ring-2"
+                className="min-h-10 rounded-xl border border-line bg-surface px-3 text-sm tabular-nums text-fg-secondary outline-none ring-primary/40 focus:ring-2"
               >
                 {TIME_LIMITS_MS.map((ms) => (
                   <option key={ms} value={ms}>
@@ -469,148 +350,267 @@ export function DeckEditor({ initialDeck, onStart, onClearSession, auth }: DeckE
                   </option>
                 ))}
               </select>
+              <button
+                type="button"
+                onClick={() => removeQuestion(index)}
+                className="min-h-10 rounded-full px-3 text-xs font-medium text-danger transition-transform active:scale-[0.96]"
+              >
+                Remove
+              </button>
             </div>
           </motion.section>
         ))}
-      </div>
 
-      <div className="flex flex-col gap-3">
-        <Button
-          type="button"
-          onClick={handleStart}
-          disabled={!valid}
-          className="w-full"
-        >
-          Start quiz
-        </Button>
-        {!valid ? (
-          <p className="text-center text-xs text-fg-muted">
-            Each question needs a prompt and at least two options with one
-            marked correct.
-          </p>
-        ) : null}
-      </div>
-
-      <div className="rounded-3xl border border-line bg-surface p-4">
         <button
           type="button"
-          onClick={() => setAuthOpen((open) => !open)}
-          className="flex min-h-[44px] w-full items-center justify-between text-left text-sm font-medium text-fg-secondary"
+          onClick={addQuestion}
+          className="flex min-h-14 items-center justify-center gap-2 rounded-3xl border border-dashed border-line-strong text-sm font-medium text-fg-secondary transition-[transform,background-color] hover:bg-surface active:scale-[0.99]"
         >
-          <span>My saved decks</span>
-          <span className="text-fg-muted">{authOpen ? "−" : "+"}</span>
+          <PlusIcon />
+          Add question
         </button>
-        <AnimatePresence initial={false}>
-          {authOpen ? (
-            <motion.div
-              className="flex flex-col gap-4 pt-4"
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.2 }}
-            >
-              {!auth.user ? (
-                <AuthForm onLogin={auth.login} onRegister={auth.register} />
-              ) : (
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="truncate text-sm text-fg-secondary">
-                      Signed in as <span className="text-fg">{auth.user.name || auth.user.email}</span>
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => void auth.logout()}
-                      className="min-h-[40px] rounded-full px-3 text-xs text-fg-muted transition-transform active:scale-[0.96]"
-                    >
-                      Log out
-                    </button>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => void handleSaveToCloud()}
-                    disabled={!valid || saveBusy}
-                  >
-                    {saveBusy ? "Saving…" : "Save this deck to my account"}
-                  </Button>
-                  {saveError ? (
-                    <p className="text-center text-xs text-danger">
-                      {saveError}
-                    </p>
-                  ) : null}
+      </div>
 
-                  <div className="flex flex-col gap-2">
-                    <p className="text-xs font-medium uppercase tracking-wider text-fg-muted">
-                      Saved decks
-                    </p>
-                    {auth.savedDecks.length === 0 ? (
-                      <p className="text-xs text-fg-muted">
-                        Nothing saved yet.
-                      </p>
-                    ) : (
-                      auth.savedDecks.map((deck) => (
-                        <div
-                          key={deck.$id}
-                          className="flex items-center gap-2 rounded-2xl border border-line bg-surface p-2.5"
-                        >
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm text-fg-secondary">
-                              {deck.name}
-                            </p>
-                            <p className="text-xs tabular-nums text-fg-muted">
-                              {deck.questions.length} questions
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => loadDeckIntoEditor(deck)}
-                            className="min-h-[40px] rounded-full px-3 text-xs font-medium text-primary-text transition-transform active:scale-[0.96]"
-                          >
-                            Load
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => void auth.deleteDeckFromCloud(deck.$id)}
-                            aria-label={`Delete ${deck.name}`}
-                            className="min-h-[40px] min-w-[40px] rounded-full text-fg-muted transition-transform active:scale-[0.96]"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      ))
-                    )}
+      <aside className="flex flex-col gap-6 lg:sticky lg:top-6">
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-background/90 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-md lg:static lg:z-auto lg:rounded-3xl lg:border lg:bg-surface lg:p-5 lg:backdrop-blur-none">
+          <div className="mx-auto flex max-w-lg flex-col gap-2 lg:max-w-none">
+            <p className="hidden text-sm text-fg-secondary lg:block">
+              <span className="font-semibold text-fg">{name.trim() || "Untitled quiz"}</span>
+              <span className="tabular-nums text-fg-muted">
+                {" "}· {questions.length} {questions.length === 1 ? "question" : "questions"}
+              </span>
+            </p>
+            <Button
+              type="button"
+              onClick={handleStart}
+              disabled={!valid}
+              className="w-full text-base font-semibold"
+            >
+              Start quiz
+            </Button>
+            {!valid ? (
+              <p className="text-center text-xs text-fg-muted lg:text-left">
+                Each question needs a prompt and at least two options with one
+                marked correct.
+              </p>
+            ) : null}
+          </div>
+        </div>
+
+        <section className="rounded-3xl border border-primary/20 bg-primary/5 p-4">
+          <button
+            type="button"
+            onClick={() => setAiOpen((open) => !open)}
+            aria-expanded={aiOpen}
+            className="flex min-h-11 w-full items-center gap-2 text-left text-sm font-semibold text-fg"
+          >
+            <SparkleIcon className="size-4 text-primary-text" />
+            <span className="flex-1">Generate questions with AI</span>
+            <ChevronDownIcon
+              className={`size-4 text-fg-muted transition-transform duration-200 ${aiOpen ? "rotate-180" : ""}`}
+            />
+          </button>
+          <AnimatePresence initial={false}>
+            {aiOpen ? (
+              <motion.div
+                className="flex flex-col gap-3 overflow-hidden pt-2"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="ai-topic" className="text-xs text-fg-muted">
+                    Topic or type of question
+                  </label>
+                  <Input
+                    id="ai-topic"
+                    value={aiTopic}
+                    onChange={(event) => setAiTopic(event.target.value)}
+                    placeholder="e.g. Space exploration"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="ai-count" className="text-xs text-fg-muted">
+                      Question amount
+                    </label>
+                    <Input
+                      id="ai-count"
+                      type="number"
+                      min={1}
+                      max={20}
+                      value={aiQuestionCount}
+                      onChange={(event) =>
+                        setAiQuestionCount(Number(event.target.value))
+                      }
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="ai-option-count" className="text-xs text-fg-muted">
+                      Choice amount
+                    </label>
+                    <Input
+                      id="ai-option-count"
+                      type="number"
+                      min={MIN_DRAFT_OPTIONS}
+                      max={MAX_DRAFT_OPTIONS}
+                      value={aiOptionCount}
+                      onChange={(event) =>
+                        setAiOptionCount(Number(event.target.value))
+                      }
+                    />
                   </div>
                 </div>
-              )}
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
-      </div>
 
-      <div className="flex flex-col gap-2 rounded-2xl border border-rose-500/20 bg-rose-500/5 p-4">
-        <p className="text-xs text-fg-muted">
-          Start over on this device: wipes the local deck and gives you a fresh
-          room code.
-        </p>
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={() => {
-            void confirmDialog({
-              title: "Clear session?",
-              message:
-                "The deck will be cleared and you will start a fresh room.",
-              confirmLabel: "Clear",
-              tone: "danger",
-            }).then((confirmed) => {
-              if (confirmed) onClearSession();
-            });
-          }}
-          className="w-full border-rose-500/30 text-danger"
-        >
-          Clear session
-        </Button>
-      </div>
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="ai-language" className="text-xs text-fg-muted">
+                    Language
+                  </label>
+                  <select
+                    id="ai-language"
+                    value={aiLanguage}
+                    onChange={(event) =>
+                      setAiLanguage(
+                        event.target.value as (typeof GENERATION_LANGUAGES)[number],
+                      )
+                    }
+                    className="min-h-[48px] rounded-2xl border border-line bg-surface px-4 text-sm text-fg-secondary outline-none ring-primary/40 focus:ring-2"
+                  >
+                    {GENERATION_LANGUAGES.map((lang) => (
+                      <option key={lang} value={lang}>
+                        {lang}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <Button
+                  type="button"
+                  onClick={() => void handleGenerateWithAi()}
+                  disabled={!aiTopic.trim() || aiBusy}
+                  className="w-full"
+                >
+                  {aiBusy ? "Generating…" : "Generate questions"}
+                </Button>
+                {aiError ? (
+                  <p className="text-center text-xs text-danger" role="alert">
+                    {aiError}
+                  </p>
+                ) : null}
+                {aiDone > 0 ? (
+                  <p className="text-center text-xs text-success">
+                    Generated {aiDone} questions — they replaced your current
+                    deck. Review and edit them below.
+                  </p>
+                ) : null}
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
+        </section>
+
+        <section className="rounded-3xl border border-line bg-surface p-4">
+          <button
+            type="button"
+            onClick={() => setAuthOpen((open) => !open)}
+            aria-expanded={authOpen}
+            className="flex min-h-11 w-full items-center gap-2 text-left text-sm font-semibold text-fg"
+          >
+            <span className="flex-1">My saved decks</span>
+            <ChevronDownIcon
+              className={`size-4 text-fg-muted transition-transform duration-200 ${authOpen ? "rotate-180" : ""}`}
+            />
+          </button>
+          <AnimatePresence initial={false}>
+            {authOpen ? (
+              <motion.div
+                className="flex flex-col gap-4 overflow-hidden pt-3"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                {!auth.user ? (
+                  <AuthForm onLogin={auth.login} onRegister={auth.register} />
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="truncate text-sm text-fg-secondary">
+                        Signed in as <span className="text-fg">{auth.user.name || auth.user.email}</span>
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => void auth.logout()}
+                        className="min-h-[40px] rounded-full px-3 text-xs text-fg-muted transition-transform active:scale-[0.96]"
+                      >
+                        Log out
+                      </button>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => void handleSaveToCloud()}
+                      disabled={!valid || saveBusy}
+                    >
+                      {saveBusy ? "Saving…" : "Save this deck to my account"}
+                    </Button>
+                    {saveError ? (
+                      <p className="text-center text-xs text-danger" role="alert">
+                        {saveError}
+                      </p>
+                    ) : null}
+
+                    <div className="flex flex-col gap-2">
+                      <p className="text-xs font-medium text-fg-muted">
+                        Saved decks
+                      </p>
+                      {auth.savedDecks.length === 0 ? (
+                        <p className="text-xs text-fg-muted">
+                          Nothing saved yet.
+                        </p>
+                      ) : (
+                        auth.savedDecks.map((deck) => (
+                          <div
+                            key={deck.$id}
+                            className="flex items-center gap-2 rounded-2xl border border-line p-2.5"
+                          >
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm text-fg-secondary">
+                                {deck.name}
+                              </p>
+                              <p className="text-xs tabular-nums text-fg-muted">
+                                {deck.questions.length} questions
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => loadDeckIntoEditor(deck)}
+                              className="min-h-[40px] rounded-full px-3 text-xs font-medium text-primary-text transition-transform active:scale-[0.96]"
+                            >
+                              Load
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void auth.deleteDeckFromCloud(deck.$id)}
+                              aria-label={`Delete ${deck.name}`}
+                              className="grid size-10 place-items-center rounded-full text-fg-muted transition-[transform,color] hover:text-danger active:scale-[0.96]"
+                            >
+                              <CloseIcon />
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
+        </section>
+
+        {aside}
+      </aside>
     </div>
   );
 }
