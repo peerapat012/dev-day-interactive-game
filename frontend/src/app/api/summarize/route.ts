@@ -21,7 +21,7 @@ function normalizeInputs(inputs: string | string[] | undefined): string {
 
 
 /**
- * Summarize top groups via TanStack AI + Gemini (or mock when LLM_USE_MOCK=true).
+ * Summarize top groups via TanStack AI + Azure OpenAI (or mock when LLM_USE_MOCK=true).
  */
 export async function POST(request: Request) {
   const parsed = summarizeRequestSchema.safeParse(await request.json().catch(() => null));

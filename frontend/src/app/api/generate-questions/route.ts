@@ -27,7 +27,7 @@ function normalizeRequest(body: Partial<GenerateQuestionsRequest>) {
 }
 
 /**
- * Generate quiz questions via TanStack AI + Gemini
+ * Generate quiz questions via TanStack AI + Azure OpenAI
  * (or mock when LLM_USE_MOCK=true).
  */
 export async function POST(request: Request) {

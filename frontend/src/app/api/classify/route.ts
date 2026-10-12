@@ -17,7 +17,7 @@ function rawGroupLabel(group: string | undefined): string {
 export const runtime = "nodejs";
 
 /**
- * Batch-classify pending inputs in one LLM call (TanStack AI + Gemini).
+ * Batch-classify pending inputs in one LLM call (TanStack AI + Azure OpenAI).
  */
 export async function POST(request: Request) {
   const parsed = classifyRequestSchema.safeParse(await request.json().catch(() => null));

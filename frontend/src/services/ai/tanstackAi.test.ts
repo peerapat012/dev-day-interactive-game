@@ -30,8 +30,9 @@ const request = (body: unknown) => new Request("http://localhost/api/test", {
 });
 
 beforeEach(() => {
-  vi.stubEnv("GOOGLE_API_KEY", "test-key-not-real");
-  vi.stubEnv("AI_MODEL", "gemini-3.1-flash-lite");
+  vi.stubEnv("AZURE_OPENAI_API_KEY", "test-key-not-real");
+  vi.stubEnv("AZURE_OPENAI_BASE_URL", "https://example.test/openai/responses?api-version=2025-04-01-preview");
+  vi.stubEnv("AI_MODEL", "test-deployment");
   vi.stubEnv("LLM_USE_MOCK", "false");
   chatMock.mockReset();
 });
@@ -182,15 +183,15 @@ describe("existing API contracts", () => {
   });
 
   it.each(endpoints)("returns 503 without a key and never silently mocks", async ({ handler, payload }) => {
-    vi.stubEnv("GOOGLE_API_KEY", "");
+    vi.stubEnv("AZURE_OPENAI_API_KEY", "");
     const response = await handler(request(payload));
     expect(response.status).toBe(503);
-    expect(await response.text()).toContain("GOOGLE_API_KEY");
+    expect(await response.text()).toContain("AZURE_OPENAI_API_KEY");
     expect(chatMock).not.toHaveBeenCalled();
   });
 
   it.each(endpoints)("runs explicit mock mode without a key", async ({ handler, payload }) => {
-    vi.stubEnv("GOOGLE_API_KEY", "");
+    vi.stubEnv("AZURE_OPENAI_API_KEY", "");
     vi.stubEnv("LLM_USE_MOCK", "true");
     expect((await handler(request(payload))).status).toBe(200);
     expect(chatMock).not.toHaveBeenCalled();
@@ -262,18 +263,18 @@ describe("existing API contracts", () => {
     expect(chatMock).not.toHaveBeenCalled();
   });
 
-  it("checks configuration without probing Gemini or exposing the key", async () => {
+  it("checks configuration without probing the provider or exposing the key", async () => {
     const response = await health();
     expect(await response.json()).toMatchObject({ mode: "tanstack", ok: true, providerChecked: false });
-    vi.stubEnv("GOOGLE_API_KEY", "");
+    vi.stubEnv("AZURE_OPENAI_API_KEY", "");
     expect((await health()).status).toBe(503);
     vi.stubEnv("LLM_USE_MOCK", "true");
     expect(await (await health()).json()).toEqual({ mode: "mock", ok: true, providerChecked: false });
     expect(chatMock).not.toHaveBeenCalled();
   });
 
-  it("rejects unsupported model configuration without calling Gemini", async () => {
-    vi.stubEnv("AI_MODEL", "unknown-model");
+  it("rejects missing deployment configuration without calling the provider", async () => {
+    vi.stubEnv("AI_MODEL", "");
     expect((await questions(request(questionRequest))).status).toBe(503);
     expect(chatMock).not.toHaveBeenCalled();
   });

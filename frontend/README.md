@@ -2,7 +2,7 @@
 
 Interactive web app where users submit short phrases, a placeholder API classifies them into semantic groups, and the UI visualizes raw inputs and grouped categories as animated bubbles. Built with Next.js App Router, TypeScript, Tailwind CSS, Zustand, Appwrite (guest access), and Framer Motion.
 
-**AI runtime:** Next.js API routes call TanStack AI with Gemini directly for batch classification, Thai summaries, and quiz question generation. Appwrite continues to provide database, authentication, and realtime services. See [AI configuration](#ai-configuration).
+**AI runtime:** Next.js API routes call TanStack AI with Azure OpenAI directly for batch classification, Thai summaries, and quiz question generation. Appwrite continues to provide database, authentication, and realtime services. See [AI configuration](#ai-configuration).
 
 ## Tech stack
 
@@ -152,8 +152,8 @@ language (Thai or English), then generate. The AI returns questions with
 review and edit before starting.
 
 - Client calls `POST /api/generate-questions` (`src/services/ai/generateQuestions.ts`).
-- The route uses TanStack AI + Gemini through `src/services/ai/generateQuestionsLlm.ts`.
-  `LLM_USE_MOCK=true` explicitly selects `mockGenerateQuestions` without contacting Gemini.
+- The route uses TanStack AI + Azure OpenAI through `src/services/ai/generateQuestionsLlm.ts`.
+  `LLM_USE_MOCK=true` explicitly selects `mockGenerateQuestions` without contacting Azure OpenAI.
 - Responses are strictly validated against the requested question and option
   counts before conversion to editor drafts in
   `src/lib/generatedQuestionsToDraft.ts` (defaults the time limit to 20s).
@@ -301,11 +301,11 @@ Guest input
 
 Host opens Summary / Refresh summary:
   → captured entries → POST /api/host-summary/generate
-  → TanStack AI + Gemini: classify batch, then summarize top groups
+  → TanStack AI + Azure OpenAI: classify batch, then summarize top groups
   → persist entry groups and room snapshot in Appwrite → Summary cards
 
 Quiz deck generation:
-  → POST /api/generate-questions → TanStack AI + Gemini
+  → POST /api/generate-questions → TanStack AI + Azure OpenAI
   → validated questions → host reviews/edits deck → optional save
 ```
 
@@ -349,8 +349,10 @@ are sanitized; model output is never silently repaired or substituted with mock 
 Keep existing Appwrite settings in `.env.local`. Add the AI variables documented in
 [.env.example](.env.example) when ready; no real key is included in the repository:
 
-- `GOOGLE_API_KEY`: Gemini key, read only by the Next.js server. Never use a `NEXT_PUBLIC_` prefix.
-- `AI_MODEL`: defaults to `gemini-3.1-flash-lite`; must be supported by the installed Gemini adapter.
+- `AZURE_OPENAI_BASE_URL`: the Azure Responses endpoint, either the full
+  `https://<host>/openai/responses?api-version=...` URL or its `/openai` base. Its `api-version` is forwarded.
+- `AZURE_OPENAI_API_KEY`: sent as the `api-key` header, read only by the Next.js server. Never use a `NEXT_PUBLIC_` prefix.
+- `AI_MODEL`: the Azure OpenAI deployment name (required).
 - `LLM_USE_MOCK`: only the exact value `true` enables local mock responses. Default is real AI.
 
 The app can build and serve non-AI features without a key. AI requests return a clear
@@ -359,7 +361,7 @@ Restart the Next.js process after changing environment variables.
 
 Each model call has a 120-second deadline. A host summary makes two sequential calls;
 configure deployment request limits to allow up to 240 seconds plus processing overhead.
-The health endpoint checks configuration only: it does not validate the key or call Gemini.
+The health endpoint checks configuration only: it does not validate the key or call Azure OpenAI.
 
 The old `LLM_USE_APPWRITE_FUNCTION`, `LLM_APPWRITE_FUNCTION_ID`, and `LLM_*_URL`
 settings are no longer read. The retained `../lang-chain-python/` directory is reference
@@ -368,7 +370,7 @@ No database migration is required. Existing deployed Appwrite Functions are not 
 
 Before releasing with real credentials, smoke-test batch classification, Thai summary
 creation/refresh, and Thai/English quiz generation followed by editing and saving a deck.
-Automated tests mock the TanStack AI call and do not consume Gemini quota.
+Automated tests mock the TanStack AI call and do not consume Azure OpenAI quota.
 
 ## Appwrite integration
 
@@ -453,6 +455,6 @@ npm run lint     # ESLint
 | `src/store/entriesStore.ts` | Zustand live state |
 | `src/services/appwrite/entries.ts` | Appwrite CRUD |
 | `src/services/appwrite/realtime.ts` | Realtime subscription |
-| `src/services/ai/structuredOutput.ts` | Server-only TanStack AI + Gemini structured generation |
+| `src/services/ai/structuredOutput.ts` | Server-only TanStack AI + Azure OpenAI structured generation |
 | `src/services/ai/mock.ts` | Fallback mock classify + summarize |
 | `src/features/cloud/hooks/useSubmitEntry.ts` | Submit → classify → save |

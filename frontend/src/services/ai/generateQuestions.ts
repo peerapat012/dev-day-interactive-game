@@ -3,7 +3,7 @@ import type {
   GenerateQuestionsResponse,
 } from "@/types/api";
 
-/** Client → Next.js /api/generate-questions → TanStack AI + Gemini */
+/** Client → Next.js /api/generate-questions → TanStack AI + Azure OpenAI */
 export async function generateQuestions(
   payload: GenerateQuestionsRequest,
 ): Promise<GenerateQuestionsResponse> {
